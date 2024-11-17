@@ -3,10 +3,9 @@
 import React from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Task } from './TaskItem'
-import { AddTaskDialog } from './AddTaskDialog'
 
 type CalendarViewProps = {
   selectedDate: Date;
@@ -14,9 +13,10 @@ type CalendarViewProps = {
   tasks: Task[];
   addTask: (task: Omit<Task, 'id'>) => void;
   addLabel: (newLabel: string) => void;
+  labels: string[];
 }
 
-export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel }: CalendarViewProps) {
+export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel, labels }: CalendarViewProps) {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -24,15 +24,6 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
 
   // 空白セルの数を決定
   const blankDays = Array.from({ length: startWeekDay }, (_, i) => i);
-
-  // 現在選択されている日付にタスクを追加するためのダイアログの状態管理
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-
-  const handleAddTask = (title: string, memo: string, label: string) => {
-    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-    addTask({ title, memo, scheduledDate: formattedDate, label, status: 'planned', starred: false })
-    setIsAddDialogOpen(false);
-  }
 
   return (
     <div>
@@ -134,16 +125,6 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
           )
         })}
       </div>
-
-      {/* タスク追加ダイアログ */}
-      {isAddDialogOpen && (
-        <AddTaskDialog 
-          labels={labels} 
-          addTask={handleAddTask} 
-          isToday={isToday(day)} 
-          addLabel={addLabel}
-        />
-      )}
     </div>
   )
 } 

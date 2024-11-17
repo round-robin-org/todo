@@ -9,8 +9,7 @@ import { format, isToday as isTodayFn } from 'date-fns'
 import { Header } from './Header'
 import { Task, TaskList } from './TaskList'
 import { ExecutedTasks } from './ExecutedTasks'
-import { AddTaskDialog } from './AddTaskDialog'
-import { EditTaskDialog } from './EditTaskDialog'
+import { TaskDialog } from './TaskDialog'
 import { CalendarView } from './CalendarView'
 import { ReviewSection } from './ReviewSection'
 import { supabase } from '@/lib/supabase'
@@ -221,11 +220,12 @@ export function TaskManagementApp() {
                     <Eye className="h-4 w-4 mr-2" />
                     {showExecutedTasks ? '実行済みタスクを隠す' : '実行済みタスクを表示'}
                   </Button>
-                  <AddTaskDialog 
+                  <TaskDialog 
                     labels={labels} 
                     addTask={addTask} 
                     isToday={true} 
                     addLabel={addLabel}
+                    isEdit={false}
                   />
                 </div>
               </CardTitle>
@@ -266,11 +266,13 @@ export function TaskManagementApp() {
                     <Eye className="h-4 w-4 mr-2" />
                     {showExecutedTasks ? '実行済みタスクを隠す' : '実行済みタスクを表示'}
                   </Button>
-                  <AddTaskDialog 
+                  <TaskDialog 
                     labels={labels} 
                     addTask={addTask} 
                     isToday={false} 
                     addLabel={addLabel}
+                    open={false} // 追加用ダイアログはボタンから開くためfalse
+                    onClose={() => {}} // 追加用は内部で閉じる
                   />
                 </div>
               </CardTitle>
@@ -282,6 +284,8 @@ export function TaskManagementApp() {
                 setSelectedDate={setSelectedDate} 
                 tasks={tasks} 
                 addTask={addTask}
+                addLabel={addLabel}
+                labels={labels}
               />
               {selectedDate && (
                 <Card className="mt-4">
@@ -320,13 +324,17 @@ export function TaskManagementApp() {
         </TabsContent>
       </Tabs>
 
-      {/* タスク編集ダイアログ */}
+      {/* タスク編集ダイアログを TaskDialog に統一 */}
       {editingTask && (
-        <EditTaskDialog 
-          task={editingTask}
+        <TaskDialog 
           labels={labels}
           updateTask={updateTask}
-          onClose={() => setEditingTask(null)}
+          isEdit={true}
+          taskToEdit={editingTask}
+          isToday={false}
+          addLabel={addLabel}
+          open={true} // 編集時はダイアログを開く
+          onClose={() => setEditingTask(null)} // ダイアログを閉じたときに編集タスクをリセット
         />
       )}
     </div>
