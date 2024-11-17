@@ -20,6 +20,10 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const startWeekDay = monthStart.getDay();
+
+  // 空白セルの数を決定
+  const blankDays = Array.from({ length: startWeekDay }, (_, i) => i);
 
   // 現在選択されている日付にタスクを追加するためのダイアログの状態管理
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
@@ -56,6 +60,9 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
           <div key={day} className="text-center font-medium text-sm py-1">
             {day}
           </div>
+        ))}
+        {blankDays.map((_, index) => (
+          <div key={`blank-${index}`} className="h-14"></div>
         ))}
         {monthDays.map(day => {
           const formattedDay = format(day, 'yyyy-MM-dd')

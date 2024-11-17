@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,12 +17,10 @@ import { supabase } from '@/lib/supabase'
 
 export function TaskManagementApp() {
   const [tasks, setTasks] = useState<Task[]>([])
-
   const [activeTab, setActiveTab] = useState("today")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showExecutedTasks, setShowExecutedTasks] = useState(false)
   const [labels, setLabels] = useState(["健康", "仕事", "家事"])
-  const newLabelRef = useRef(null)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [error, setError] = useState<string | null>(null)
 
@@ -190,71 +188,6 @@ export function TaskManagementApp() {
       console.error('タスクの追加に失敗しました:', error)
       setError(error.message || 'タスクの追加に失敗しました。')
     }
-  }
-
-  // ルーティンに基づいて未来のタスクを生成（メモリ問題を防ぐため1ヶ月先までに制限）
-  const generateFutureTasks = (task: Task) => {
-    const { routine } = task;
-    if (!routine) return;
-
-    const startDate = new Date(routine.starts);
-    const endDate = routine.ends.type === 'on' ? new Date(routine.ends.value as string) : null;
-    const occurrences = routine.ends.type === 'after' ? routine.ends.value as number : Infinity;
-    const maxDate = new Date();
-    maxDate.setMonth(maxDate.getMonth() + 1); // 1ヶ月先までに制限
-
-    let currentDate = startDate;
-    let count = 0;
-    const newTasks: Task[] = [];
-
-    while ((!endDate || currentDate <= endDate) && count < occurrences && currentDate <= maxDate) {
-      if (count > 0) { // 最初の発生は既に存在しているためスキップ
-        const newTask: Task = {
-          ...task,
-          id: String(Date.now() + count), // 一意なIDを生成
-          scheduledDate: format(currentDate, 'yyyy-MM-dd'),
-          routine: undefined, // 新しいタスクにはルーティンを引き継がない
-        };
-        newTasks.push(newTask);
-      }
-
-      // 次の発生日を計算
-      switch (routine.interval.unit) {
-        case 'day':
-          currentDate.setDate(currentDate.getDate() + routine.interval.number);
-          break;
-        case 'week':
-          currentDate.setDate(currentDate.getDate() + routine.interval.number * 7);
-          break;
-        case 'month':
-          currentDate.setMonth(currentDate.getMonth() + routine.interval.number);
-          break;
-        case 'year':
-          currentDate.setFullYear(currentDate.getFullYear() + routine.interval.number);
-          break;
-        default:
-          break;
-      }
-
-      count++;
-    }
-
-    if (newTasks.length > 0) {
-      setTasks(prevTasks => [...prevTasks, ...newTasks]);
-    }
-  };
-
-  // ドラッグ＆ドロップの終了時処理
-  const onDragEnd = (result: any) => {
-    if (!result.destination) {
-      return
-    }
-
-    const newTasks = Array.from(tasks)
-    const [reorderedItem] = newTasks.splice(result.source.index, 1)
-    newTasks.splice(result.destination.index, 0, reorderedItem)
-
-    setTasks(newTasks)
   }
 
   const addLabel = (newLabel: string) => {
