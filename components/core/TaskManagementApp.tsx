@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Eye, Plus } from 'lucide-react'
-import { format, isToday as isTodayFn, startOfMonth, endOfMonth } from 'date-fns'
+import { Eye } from 'lucide-react'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { Header } from './Header'
-import { Task, TaskList } from './TaskList'
+import { Task } from './Task'
+import { TaskList } from './TaskList'
 import { ExecutedTasks } from './ExecutedTasks'
 import { TaskDialog } from './TaskDialog'
 import { CalendarView } from './CalendarView'
@@ -60,7 +61,7 @@ export function TaskManagementApp() {
       const formattedTasks: Task[] = data
         .filter((task: any) => task !== null) // nullのタスクを除外
         .map(task => ({
-          id: task.id,
+          id: task.id.toString(),
           title: task.title,
           memo: task.memo,
           status: task.status === 'executed' ? 'executed' : 'planned',
@@ -72,6 +73,7 @@ export function TaskManagementApp() {
       setTasks(formattedTasks)
     } catch (error) {
       console.error('タスクの取得に失敗しました:', error)
+      setError('タスクの取得に失敗しました。')
     }
   }
 
@@ -97,7 +99,7 @@ export function TaskManagementApp() {
       const formattedTasks: Task[] = data
         .filter((task: any) => task !== null)
         .map(task => ({
-          id: task.id,
+          id: task.id.toString(),
           title: task.title,
           memo: task.memo,
           status: task.status === 'executed' ? 'executed' : 'planned',
@@ -109,6 +111,7 @@ export function TaskManagementApp() {
       setTasks(formattedTasks)
     } catch (error) {
       console.error('今日のタスクの取得に失敗しました:', error)
+      setError('今日のタスクの取得に失敗しました。')
     }
   }
 
@@ -143,6 +146,7 @@ export function TaskManagementApp() {
       ))
     } catch (error) {
       console.error('タスクの更新に失敗しました:', error)
+      setError('タスクの更新に失敗しました。')
     }
   }
 
@@ -166,6 +170,7 @@ export function TaskManagementApp() {
       ))
     } catch (error) {
       console.error('タスクの更新に失敗しました:', error)
+      setError('タスクの更新に失敗しました。')
     }
   }
 
@@ -190,8 +195,10 @@ export function TaskManagementApp() {
         task.id === updatedTask.id ? updatedTask : task
       ))
       setEditingTask(null)
+      setError(null)
     } catch (error) {
       console.error('タスクの更新に失敗しました:', error)
+      setError('タスクの更新に失敗しました。')
     }
   }
 
@@ -219,7 +226,7 @@ export function TaskManagementApp() {
       // dataがnullでないことを確認
       if (data) {
         const createdTask: Task = {
-          id: data.id,
+          id: data.id.toString(),
           title: data.title,
           memo: data.memo,
           status: data.status === 'executed' ? 'executed' : 'planned',

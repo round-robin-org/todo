@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { supabase } from '@/lib/supabase'
 import { startOfWeek, addDays, format } from 'date-fns'
 import { ja } from 'date-fns/locale'

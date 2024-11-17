@@ -5,27 +5,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Star } from 'lucide-react'
-
-// タスクの型定義
-export type Task = {
-  id: number;
-  title: string;
-  memo: string;
-  status: "planned" | "executed";
-  starred: boolean;
-  scheduledDate: string;
-  label: string;
-  routine?: {
-    interval: { number: number; unit: 'day' | 'week' | 'month' | 'year' };
-    starts: string;
-    ends: { type: 'never' | 'on' | 'after'; value?: string | number };
-  };
-};
+import { Task } from './Task' // `Task` 型をインポート
 
 type TaskItemProps = {
   task: Task;
-  toggleStatus: (id: number) => void;
-  toggleStar: (id: number) => void;
+  toggleStatus: (id: string) => void; // IDをstringに統一
+  toggleStar: (id: string) => void;   // IDをstringに統一
   onEdit: (task: Task) => void;
 }
 

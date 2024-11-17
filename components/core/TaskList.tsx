@@ -2,12 +2,13 @@
 
 import React from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
-import { Task, TaskItem } from './TaskItem'
+import { TaskItem } from './TaskItem'
+import { Task } from './Task'
 
 type TaskListProps = {
   tasks: Task[];
-  toggleStatus: (id: number) => void;
-  toggleStar: (id: number) => void;
+  toggleStatus: (id: string) => void;
+  toggleStar: (id: string) => void;
   onEdit: (task: Task) => void;
   isDraggable: boolean;
   onDragEnd?: (result: DropResult) => void;
@@ -23,7 +24,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
           {(provided) => (
             <ul className="space-y-2" ref={provided.innerRef} {...provided.droppableProps}>
               {plannedTasks.map((task, index) => (
-                <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                <Draggable key={task.id} draggableId={task.id} index={index}>
                   {(provided) => (
                     <div
                       ref={provided.innerRef}
