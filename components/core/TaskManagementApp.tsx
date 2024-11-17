@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Eye, Plus } from 'lucide-react'
-import { format, isToday as isTodayFn } from 'date-fns'
+import { format, isToday as isTodayFn, startOfMonth, endOfMonth } from 'date-fns'
 import { Header } from './Header'
 import { Task, TaskList } from './TaskList'
 import { ExecutedTasks } from './ExecutedTasks'
@@ -39,40 +39,87 @@ export function TaskManagementApp() {
     { name: '家事', planned: 5, executed: 3 },
   ]
 
-  // タスクをデータベースから取得
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('tasks')
-          .select('*')
-          .order('created_at', { ascending: false })
+  // 特定の月のタスクを取得
+  const fetchTasksByMonth = async (date: Date) => {
+    const start = format(startOfMonth(date), 'yyyy-MM-dd')
+    const end = format(endOfMonth(date), 'yyyy-MM-dd')
 
-        if (error) {
-          throw error
-        }
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .gte('scheduled_date', start)
+        .lte('scheduled_date', end)
+        .order('created_at', { ascending: false })
 
-        // データベースから取得したデータを適切な形式に変換
-        const formattedTasks: Task[] = data
-          .filter((task: any) => task !== null) // nullのタスクを除外
-          .map(task => ({
-            id: task.id,
-            title: task.title,
-            memo: task.memo,
-            status: task.status === 'executed' ? 'executed' : 'planned',
-            starred: task.starred || false,
-            scheduledDate: task.scheduled_date || '', // nullの場合は空文字に設定
-            label: task.label || ''
-          }))
-
-        setTasks(formattedTasks)
-      } catch (error) {
-        console.error('タスクの取得に失敗しました:', error)
+      if (error) {
+        throw error
       }
-    }
 
-    fetchTasks()
-  }, [])
+      // データベースから取得したデータを適切な形式に変換
+      const formattedTasks: Task[] = data
+        .filter((task: any) => task !== null) // nullのタスクを除外
+        .map(task => ({
+          id: task.id,
+          title: task.title,
+          memo: task.memo,
+          status: task.status === 'executed' ? 'executed' : 'planned',
+          starred: task.starred || false,
+          scheduledDate: task.scheduled_date || '', // nullの場合は空文字に設定
+          label: task.label || ''
+        }))
+
+      setTasks(formattedTasks)
+    } catch (error) {
+      console.error('タスクの取得に失敗しました:', error)
+    }
+  }
+
+  // 初回およびselectedDateが変更されたときにタスクを取得
+  useEffect(() => {
+    fetchTasksByMonth(selectedDate)
+  }, [selectedDate])
+
+  // タスクをデータベースから取得（今日のタスク用）
+  const fetchTodayTasks = async () => {
+    const today = format(new Date(), 'yyyy-MM-dd')
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('scheduled_date', today)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      const formattedTasks: Task[] = data
+        .filter((task: any) => task !== null)
+        .map(task => ({
+          id: task.id,
+          title: task.title,
+          memo: task.memo,
+          status: task.status === 'executed' ? 'executed' : 'planned',
+          starred: task.starred || false,
+          scheduledDate: task.scheduled_date || '',
+          label: task.label || ''
+        }))
+
+      setTasks(formattedTasks)
+    } catch (error) {
+      console.error('今日のタスクの取得に失敗しました:', error)
+    }
+  }
+
+  // タブが「今日」に変更されたときにタスクを取得
+  useEffect(() => {
+    if (activeTab === "today") {
+      fetchTodayTasks()
+    } else {
+      fetchTasksByMonth(selectedDate)
+    }
+  }, [activeTab, selectedDate])
 
   // タスクのステータスを更新
   const toggleTaskStatus = async (taskId: string) => {
