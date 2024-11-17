@@ -8,20 +8,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type AddTaskFormProps = {
   labels: string[];
-  addTask: (memo: string, scheduledDate: string, label: string) => void;
+  addTask: (title: string, memo: string, scheduledDate: string, label: string) => void;
   isToday: boolean;
   onClose: () => void;
+  addLabel: (newLabel: string) => void;
 }
 
-export function AddTaskForm({ labels, addTask, isToday, onClose }: AddTaskFormProps) {
+export function AddTaskForm({ labels, addTask, isToday, onClose, addLabel }: AddTaskFormProps) {
   const [selectedLabel, setSelectedLabel] = useState('')
   const [newLabel, setNewLabel] = useState('')
+  const [title, setTitle] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const form = e.target as HTMLFormElement
     const formData = new FormData(form)
 
+    const title = formData.get('title') as string
     const memo = formData.get('memo') as string
     const scheduledDate = isToday ? new Date().toISOString().split('T')[0] : (formData.get('scheduledDate') as string)
     let label = formData.get('label') as string
@@ -29,17 +32,26 @@ export function AddTaskForm({ labels, addTask, isToday, onClose }: AddTaskFormPr
     if (label === 'new') {
       label = formData.get('newLabel') as string
       if (label && !labels.includes(label)) {
-        // 親コンポーネントでラベルの追加を処理する必要があります
-        // 簡略化のため、外部でラベルが管理されていると仮定します
+        addLabel(label)
       }
     }
 
-    addTask(memo, scheduledDate, label)
+    addTask(title, memo, scheduledDate, label) // Supabase に挿入
     onClose()
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="title">タイトル</Label>
+        <Input 
+          id="title" 
+          name="title" 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required 
+        />
+      </div>
       <div>
         <Label htmlFor="memo">タスク内容</Label>
         <Input id="memo" name="memo" required />

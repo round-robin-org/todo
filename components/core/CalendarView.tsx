@@ -3,20 +3,32 @@
 import React from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Task } from './TaskItem'
+import { AddTaskDialog } from './AddTaskDialog'
 
 type CalendarViewProps = {
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
   tasks: Task[];
+  addTask: (task: Omit<Task, 'id'>) => void;
+  addLabel: (newLabel: string) => void;
 }
 
-export function CalendarView({ selectedDate, setSelectedDate, tasks }: CalendarViewProps) {
+export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel }: CalendarViewProps) {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  // 現在選択されている日付にタスクを追加するためのダイアログの状態管理
+  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+
+  const handleAddTask = (title: string, memo: string, label: string) => {
+    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    addTask({ title, memo, scheduledDate: formattedDate, label, status: 'planned', starred: false })
+    setIsAddDialogOpen(false);
+  }
 
   return (
     <div>
@@ -53,31 +65,78 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks }: CalendarV
           const isCurrentMonth = isSameMonth(day, selectedDate)
 
           return (
-            <Button
-              key={day.toString()}
-              variant="outline"
-              className={`h-14 p-1 flex flex-col items-center justify-start ${
-                !isCurrentMonth ? 'opacity-30' : ''
-              } ${isToday(day) ? 'border-primary' : ''}`}
-              onClick={() => setSelectedDate(day)}
-            >
-              <span className="text-sm">{format(day, 'd')}</span>
-              <div className="flex gap-1 mt-1">
-                {plannedTasks.length > 0 && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                    {plannedTasks.length}
-                  </Badge>
-                )}
-                {executedTasks.length > 0 && (
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {executedTasks.length}
-                  </Badge>
-                )}
-              </div>
-            </Button>
+            <div key={day.toString()} className="relative">
+              <Button
+                variant="outline"
+                className={`h-14 p-1 flex flex-col items-center justify-start w-full ${
+                  !isCurrentMonth ? 'opacity-30' : ''
+                } ${isToday(day) ? 'border-primary' : ''}`}
+                onClick={() => setSelectedDate(day)}
+              >
+                <span className="text-sm">{format(day, 'd')}</span>
+                <div className="flex gap-1 mt-1">
+                  {plannedTasks.length > 0 && (
+                    <div className="relative group">
+                      <Badge
+                        variant="secondary"
+                        className="badge-planned"
+                      >
+                        {plannedTasks.length}
+                      </Badge>
+                      {/* タスクリストのツールチップ */}
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                        <div className="p-2">
+                          <h4 className="text-sm font-semibold mb-1">Planned Tasks</h4>
+                          <ul className="text-xs">
+                            {plannedTasks.map(task => (
+                              <li key={task.id} className="">
+                                • {task.title}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {executedTasks.length > 0 && (
+                    <div className="relative group">
+                      <Badge
+                        variant="secondary"
+                        className="badge-executed"
+                      >
+                        {executedTasks.length}
+                      </Badge>
+                      {/* タスクリストのツールチップ */}
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                        <div className="p-2">
+                          <h4 className="text-sm font-semibold mb-1">Executed Tasks</h4>
+                          <ul className="text-xs">
+                            {executedTasks.map(task => (
+                              <li key={task.id} className="">
+                                • {task.title}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Button>
+            </div>
           )
         })}
       </div>
+
+      {/* タスク追加ダイアログ */}
+      {isAddDialogOpen && (
+        <AddTaskDialog 
+          labels={labels} 
+          addTask={handleAddTask} 
+          isToday={isToday(day)} 
+          addLabel={addLabel}
+        />
+      )}
     </div>
   )
 } 

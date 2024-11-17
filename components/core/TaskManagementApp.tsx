@@ -24,6 +24,7 @@ export function TaskManagementApp() {
   const [labels, setLabels] = useState(["健康", "仕事", "家事"])
   const newLabelRef = useRef(null)
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [error, setError] = useState<string | null>(null)
 
   const weeklyTaskData = [
     { name: '月', plannedTasks: 10, executedTasks: 8 },
@@ -55,14 +56,17 @@ export function TaskManagementApp() {
         }
 
         // データベースから取得したデータを適切な形式に変換
-        const formattedTasks: Task[] = data.map(task => ({
-          id: task.id,
-          memo: task.memo,
-          status: task.status === 'executed' ? 'executed' : 'planned',
-          starred: task.starred || false,
-          scheduledDate: task.scheduled_date,
-          label: task.label
-        }))
+        const formattedTasks: Task[] = data
+          .filter((task: any) => task !== null) // nullのタスクを除外
+          .map(task => ({
+            id: task.id,
+            title: task.title,
+            memo: task.memo,
+            status: task.status === 'executed' ? 'executed' : 'planned',
+            starred: task.starred || false,
+            scheduledDate: task.scheduled_date || '', // nullの場合は空文字に設定
+            label: task.label || ''
+          }))
 
         setTasks(formattedTasks)
       } catch (error) {
@@ -74,7 +78,7 @@ export function TaskManagementApp() {
   }, [])
 
   // タスクのステータスを更新
-  const toggleTaskStatus = async (taskId: number) => {
+  const toggleTaskStatus = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId)
     if (!task) return
 
@@ -88,7 +92,7 @@ export function TaskManagementApp() {
 
       if (error) throw error
 
-      setTasks(tasks.map(task => 
+      setTasks(prevTasks => prevTasks.map(task => 
         task.id === taskId 
           ? { ...task, status: newStatus }
           : task
@@ -99,7 +103,7 @@ export function TaskManagementApp() {
   }
 
   // スター状態を更新
-  const toggleTaskStar = async (taskId: number) => {
+  const toggleTaskStar = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId)
     if (!task) return
 
@@ -111,7 +115,7 @@ export function TaskManagementApp() {
 
       if (error) throw error
 
-      setTasks(tasks.map(task => 
+      setTasks(prevTasks => prevTasks.map(task => 
         task.id === taskId 
           ? { ...task, starred: !task.starred }
           : task
@@ -127,6 +131,7 @@ export function TaskManagementApp() {
       const { error } = await supabase
         .from('tasks')
         .update({
+          title: updatedTask.title,
           memo: updatedTask.memo,
           label: updatedTask.label,
           scheduled_date: updatedTask.scheduledDate,
@@ -137,7 +142,7 @@ export function TaskManagementApp() {
 
       if (error) throw error
 
-      setTasks(tasks.map(task => 
+      setTasks(prevTasks => prevTasks.map(task => 
         task.id === updatedTask.id ? updatedTask : task
       ))
       setEditingTask(null)
@@ -147,16 +152,44 @@ export function TaskManagementApp() {
   }
 
   // 新しいタスクを追加する
-  const addTask = (memo: string, scheduledDate: string, label: string) => {
-    const newTask: Task = {
-      id: tasks.length + 1,
-      memo,
-      status: "planned",
-      starred: false,
-      scheduledDate,
-      label,
+  const addTask = async (newTask: Omit<Task, 'id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([
+          {
+            title: newTask.title,
+            memo: newTask.memo,
+            scheduled_date: newTask.scheduledDate,
+            label: newTask.label,
+            status: newTask.status,
+            starred: newTask.starred,
+          }
+        ])
+        .single()
+
+      if (error) {
+        throw error
+      }
+
+      // dataがnullでないことを確認
+      if (data) {
+        const createdTask: Task = {
+          id: data.id,
+          title: data.title,
+          memo: data.memo,
+          status: data.status === 'executed' ? 'executed' : 'planned',
+          starred: data.starred,
+          scheduledDate: data.scheduled_date || '',
+          label: data.label || ''
+        }
+        setTasks(prevTasks => [createdTask, ...prevTasks])
+        setError(null)
+      }
+    } catch (error: any) {
+      console.error('タスクの追加に失敗しました:', error)
+      setError(error.message || 'タスクの追加に失敗しました。')
     }
-    setTasks([...tasks, newTask])
   }
 
   // ルーティンに基づいて未来のタスクを生成（メモリ問題を防ぐため1ヶ月先までに制限）
@@ -178,7 +211,7 @@ export function TaskManagementApp() {
       if (count > 0) { // 最初の発生は既に存在しているためスキップ
         const newTask: Task = {
           ...task,
-          id: tasks.length + newTasks.length + 1,
+          id: String(Date.now() + count), // 一意なIDを生成
           scheduledDate: format(currentDate, 'yyyy-MM-dd'),
           routine: undefined, // 新しいタスクにはルーティンを引き継がない
         };
@@ -214,18 +247,25 @@ export function TaskManagementApp() {
   // ドラッグ＆ドロップの終了時処理
   const onDragEnd = (result: any) => {
     if (!result.destination) {
-      return;
+      return
     }
 
-    const newTasks = Array.from(tasks);
-    const [reorderedItem] = newTasks.splice(result.source.index, 1);
-    newTasks.splice(result.destination.index, 0, reorderedItem);
+    const newTasks = Array.from(tasks)
+    const [reorderedItem] = newTasks.splice(result.source.index, 1)
+    newTasks.splice(result.destination.index, 0, reorderedItem)
 
-    setTasks(newTasks);
+    setTasks(newTasks)
+  }
+
+  const addLabel = (newLabel: string) => {
+    if (newLabel && !labels.includes(newLabel)) {
+      setLabels(prevLabels => [...prevLabels, newLabel])
+    }
   }
 
   return (
     <div className="container mx-auto p-4">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <Header />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
@@ -252,6 +292,7 @@ export function TaskManagementApp() {
                     labels={labels} 
                     addTask={addTask} 
                     isToday={true} 
+                    addLabel={addLabel}
                   />
                 </div>
               </CardTitle>
@@ -259,7 +300,7 @@ export function TaskManagementApp() {
             </CardHeader>
             <CardContent>
               <TaskList 
-                tasks={tasks.filter(task => task.scheduledDate === format(new Date(), 'yyyy-MM-dd'))}
+                tasks={tasks.filter(task => task.scheduledDate && task.scheduledDate === format(new Date(), 'yyyy-MM-dd'))}
                 toggleStatus={toggleTaskStatus}
                 toggleStar={toggleTaskStar}
                 onEdit={setEditingTask}
@@ -267,7 +308,7 @@ export function TaskManagementApp() {
               />
               {showExecutedTasks && (
                 <ExecutedTasks 
-                  tasks={tasks.filter(task => task.scheduledDate === format(new Date(), 'yyyy-MM-dd'))}
+                  tasks={tasks.filter(task => task.scheduledDate && task.scheduledDate === format(new Date(), 'yyyy-MM-dd'))}
                   toggleStatus={toggleTaskStatus}
                   toggleStar={toggleTaskStar}
                   onEdit={setEditingTask}
@@ -296,6 +337,7 @@ export function TaskManagementApp() {
                     labels={labels} 
                     addTask={addTask} 
                     isToday={false} 
+                    addLabel={addLabel}
                   />
                 </div>
               </CardTitle>
@@ -306,6 +348,7 @@ export function TaskManagementApp() {
                 selectedDate={selectedDate} 
                 setSelectedDate={setSelectedDate} 
                 tasks={tasks} 
+                addTask={addTask}
               />
               {selectedDate && (
                 <Card className="mt-4">
