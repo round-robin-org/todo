@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,15 +13,10 @@ import { AddTaskDialog } from './AddTaskDialog'
 import { EditTaskDialog } from './EditTaskDialog'
 import { CalendarView } from './CalendarView'
 import { ReviewSection } from './ReviewSection'
+import { supabase } from '@/lib/supabase'
 
 export function TaskManagementApp() {
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, memo: "朝のジョギング", status: "executed", starred: true, scheduledDate: "2023-06-15", label: "健康" },
-    { id: 2, memo: "プロジェクト会議", status: "planned", starred: false, scheduledDate: "2023-06-15", label: "仕事" },
-    { id: 3, memo: "買い物", status: "planned", starred: false, scheduledDate: "2023-06-16", label: "家事" },
-    { id: 4, memo: "朝のジョギング", status: "planned", starred: false, scheduledDate: "2023-06-16", label: "健康" },
-    { id: 5, memo: "プロジェクト会議", status: "planned", starred: false, scheduledDate: "2023-06-17", label: "仕事" },
-  ])
+  const [tasks, setTasks] = useState<Task[]>([])
 
   const [activeTab, setActiveTab] = useState("today")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -46,22 +41,109 @@ export function TaskManagementApp() {
     { name: '家事', planned: 5, executed: 3 },
   ]
 
-  // タスクのステータスを「予定」と「実行済み」で切り替える
-  const toggleTaskStatus = (taskId: number) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: task.status === "executed" ? "planned" : "executed" }
-        : task
-    ))
+  // タスクをデータベースから取得
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          throw error
+        }
+
+        // データベースから取得したデータを適切な形式に変換
+        const formattedTasks: Task[] = data.map(task => ({
+          id: task.id,
+          memo: task.memo,
+          status: task.status === 'executed' ? 'executed' : 'planned',
+          starred: task.starred || false,
+          scheduledDate: task.scheduled_date,
+          label: task.label
+        }))
+
+        setTasks(formattedTasks)
+      } catch (error) {
+        console.error('タスクの取得に失敗しました:', error)
+      }
+    }
+
+    fetchTasks()
+  }, [])
+
+  // タスクのステータスを更新
+  const toggleTaskStatus = async (taskId: number) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+
+    const newStatus = task.status === "executed" ? "planned" : "executed"
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: newStatus })
+        .eq('id', taskId)
+
+      if (error) throw error
+
+      setTasks(tasks.map(task => 
+        task.id === taskId 
+          ? { ...task, status: newStatus }
+          : task
+      ))
+    } catch (error) {
+      console.error('タスクの更新に失敗しました:', error)
+    }
   }
 
-  // タスクのスター状態を切り替える
-  const toggleTaskStar = (taskId: number) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, starred: !task.starred }
-        : task
-    ))
+  // スター状態を更新
+  const toggleTaskStar = async (taskId: number) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ starred: !task.starred })
+        .eq('id', taskId)
+
+      if (error) throw error
+
+      setTasks(tasks.map(task => 
+        task.id === taskId 
+          ? { ...task, starred: !task.starred }
+          : task
+      ))
+    } catch (error) {
+      console.error('タスクの更新に失敗しました:', error)
+    }
+  }
+
+  // タスクの更新
+  const updateTask = async (updatedTask: Task) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          memo: updatedTask.memo,
+          label: updatedTask.label,
+          scheduled_date: updatedTask.scheduledDate,
+          status: updatedTask.status,
+          starred: updatedTask.starred
+        })
+        .eq('id', updatedTask.id)
+
+      if (error) throw error
+
+      setTasks(tasks.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      ))
+      setEditingTask(null)
+    } catch (error) {
+      console.error('タスクの更新に失敗しました:', error)
+    }
   }
 
   // 新しいタスクを追加する
@@ -76,19 +158,6 @@ export function TaskManagementApp() {
     }
     setTasks([...tasks, newTask])
   }
-
-  // 既存のタスクを更新する
-  const updateTask = (updatedTask: Task) => {
-    setTasks(tasks.map(task => 
-      task.id === updatedTask.id ? updatedTask : task
-    ));
-    setEditingTask(null);
-
-    // ルーティンが設定されている場合、未来のタスクを生成
-    if (updatedTask.routine) {
-      generateFutureTasks(updatedTask);
-    }
-  };
 
   // ルーティンに基づいて未来のタスクを生成（メモリ問題を防ぐため1ヶ月先までに制限）
   const generateFutureTasks = (task: Task) => {

@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button"
 import { Plus } from 'lucide-react'
 import { AddTaskForm } from './AddTaskForm'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 type AddTaskDialogProps = {
   labels: string[];
@@ -13,6 +15,29 @@ type AddTaskDialogProps = {
 }
 
 export function AddTaskDialog({ labels, addTask, isToday }: AddTaskDialogProps) {
+  const handleAddTask = async (memo: string, scheduledDate: string, label: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([
+          {
+            memo,
+            scheduled_date: scheduledDate,
+            label,
+            status: 'pending'
+          }
+        ])
+        .select()
+
+      if (error) throw error
+
+      addTask(memo, scheduledDate, label)
+      toast.success('タスクを追加しました')
+    } catch (error) {
+      toast.error('タスクの追加に失敗しました')
+    }
+  }
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -24,10 +49,9 @@ export function AddTaskDialog({ labels, addTask, isToday }: AddTaskDialogProps) 
         </DialogHeader>
         <AddTaskForm 
           labels={labels} 
-          addTask={addTask} 
+          addTask={handleAddTask} 
           isToday={isToday} 
           onClose={() => {
-            // ダイアログを閉じる
             document.activeElement?.blur()
           }} 
         />
