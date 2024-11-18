@@ -3,7 +3,7 @@
 import React from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
 import { TaskItem } from './TaskItem'
-import { Task } from './Task'
+import { Task } from '../../lib/types'
 
 type TaskListProps = {
   tasks: Task[];

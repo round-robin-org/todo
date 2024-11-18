@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Star } from 'lucide-react'
-import { Task } from './Task' // `Task` 型をインポート
+import { Task } from '../../lib/types' // `Task` 型をインポート
 
 type TaskItemProps = {
   task: Task;

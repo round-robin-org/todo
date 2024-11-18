@@ -13,7 +13,7 @@ import { TaskDialog } from './TaskDialog'
 import { CalendarView } from './CalendarView'
 import { ChartView } from './ChartView'
 import { supabase } from '@/lib/supabase'
-import { Task } from './Task'
+import { Task } from '../../lib/types'
 import { DropResult } from 'react-beautiful-dnd'
 
 export function TaskManagementApp() {

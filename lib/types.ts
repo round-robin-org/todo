@@ -5,7 +5,7 @@ export type Task = {
   status: "planned" | "executed";
   starred: boolean;
   scheduledDate: string;
-  label: string;
+  label?: string;
   routine?: {
     interval: { number: number; unit: 'day' | 'week' | 'month' | 'year' };
     starts: string;

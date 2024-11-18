@@ -5,7 +5,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isTod
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
-import { Task } from './Task'
+import { Task } from '../../lib/types'
 
 type CalendarViewProps = {
   selectedDate: Date;

@@ -32,7 +32,7 @@ import {
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ChartContainer, ChartLegendContent } from "@/components/ui/chart"
-import { Task } from './Task'
+import { Task } from '../../lib/types'
 
 // 集計期間の定義
 type AggregationPeriod = 'day' | 'week' | 'month' | 'year'
@@ -109,19 +109,22 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
         )
       }
     } else if (chartType === 'goal') {
-      const goalName = label as string
-      // 目標別チャートの場合はラベルと対象期間でフィルタリング
+      const goalName = label ? label.trim() : '';
+      
+      // ラベルが空の場合は除外
+      if (!goalName) {
+        return null;
+      }
+
       if (aggregationPeriod === 'day') {
-        // 日単位の場合は特定の日のみを対象とする
         filteredTasks = tasks.filter(task =>
-          task.label === goalName && task.scheduledDate === targetDateStr
-        )
+          task.label?.trim() === goalName && task.scheduledDate === targetDateStr
+        );
       } else {
-        // その他の期間の場合は範囲内のタスクを集計
         filteredTasks = tasks.filter(task =>
-          task.label === goalName &&
+          task.label?.trim() === goalName &&
           isWithinInterval(new Date(task.scheduledDate), { start: currentRange.start, end: currentRange.end })
-        )
+        );
       }
     }
 
@@ -208,11 +211,11 @@ export function ChartView({ tasks }: ChartViewProps) {
         start = startOfWeek(adjustedMonthStart, { locale: ja }) // 月初を含む週の開始日
         end = endOfWeek(endOfMonth(adjustedMonthStart), { locale: ja }) // 月末を含む週の終了日
       } else if (period === 'year') {
-        // 年単位: 指定された年を表示（前後の年の月の日付を含む）
+        // 年単位: 指定された年を表示（1月から12月まで）
         const currentYearStart = startOfYear(new Date())
         const adjustedYearStart = addYears(currentYearStart, offset)
         start = startOfMonth(adjustedYearStart) // 年初を含む月の開始日
-        end = endOfMonth(addMonths(endOfYear(adjustedYearStart), 11)) // 年末を含む月の終了日
+        end = endOfYear(adjustedYearStart) // 年末を含む月の終了日
       } else {
         // デフォルトは現在の週
         start = startOfWeek(new Date(), { locale: ja })
@@ -328,38 +331,38 @@ export function ChartView({ tasks }: ChartViewProps) {
     const targetDateStr = format(start, 'yyyy-MM-dd')
 
     tasks.forEach(task => {
-      const normalizedLabel = task.label ? task.label.trim() : ''
+      const normalizedLabel = task.label ? task.label.trim() : '';
 
-      // ラベルが空でないことを確認
-      if (normalizedLabel.length === 0) {
-        return // 空のラベルは除外
+      // ラベルが存在し、空でないことを確認
+      if (!normalizedLabel) {
+        return; // ラベルがないタスクは除外
       }
 
       if (aggregationPeriod === 'day') {
         // 日単位の場合は特定の日のみを対象とする
         if (task.scheduledDate === targetDateStr) {
           if (!labelStats[normalizedLabel]) {
-            labelStats[normalizedLabel] = { planned: 0, executed: 0 }
+            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
           }
-          labelStats[normalizedLabel].planned++
+          labelStats[normalizedLabel].planned++;
           if (task.status === 'executed') {
-            labelStats[normalizedLabel].executed++
+            labelStats[normalizedLabel].executed++;
           }
         }
       } else {
         // その他の期間の場合は範囲内のタスクを集計
-        const taskDate = new Date(task.scheduledDate)
+        const taskDate = new Date(task.scheduledDate);
         if (isWithinInterval(taskDate, { start, end })) {
           if (!labelStats[normalizedLabel]) {
-            labelStats[normalizedLabel] = { planned: 0, executed: 0 }
+            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
           }
-          labelStats[normalizedLabel].planned++
+          labelStats[normalizedLabel].planned++;
           if (task.status === 'executed') {
-            labelStats[normalizedLabel].executed++
+            labelStats[normalizedLabel].executed++;
           }
         }
       }
-    })
+    });
 
     const goalDataArray: GoalData[] = Object.entries(labelStats).map(([name, stats]) => ({
       name,
