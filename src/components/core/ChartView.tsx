@@ -31,9 +31,9 @@ import {
   endOfYear,
 } from 'date-fns'
 import { ja, enUS } from 'date-fns/locale'
-import { ChartContainer, ChartLegendContent } from "@/components/ui/chart"
-import { Task } from '../../lib/types'
-import { Button } from "@/components/ui/button"
+import { ChartContainer, ChartLegendContent } from "@src/components/ui/chart"
+import { Task } from '@src/lib/types'
+import { Button } from "@src/components/ui/button"
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Define aggregation periods

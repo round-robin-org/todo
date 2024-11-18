@@ -1,8 +1,8 @@
 "use client"
 
 import { SessionProvider, useSession } from "next-auth/react"
-import { TaskManagementApp } from "@/components/core/TaskManagementApp"
-import { Auth } from "@/components/core/Auth"
+import { TaskManagementApp } from "@src/components/core/TaskManagementApp"
+import { Auth } from "@src/components/core/Auth"
 import { Loader2 } from "lucide-react"
 function AppContent() {
   const { data: session, status } = useSession()

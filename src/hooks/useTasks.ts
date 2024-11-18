@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Task } from '../lib/types'
+import { supabase } from '@src/lib/supabase'
+import { Task } from '@src/lib/types'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 
 export function useTasks(selectedDate: Date, activeTab: string) {

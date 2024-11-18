@@ -2,11 +2,11 @@
 
 import React, { useState, useRef } from 'react'
 import { useSwipeable } from 'react-swipeable'
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Checkbox } from "@src/components/ui/checkbox"
+import { Badge } from "@src/components/ui/badge"
+import { Button } from "@src/components/ui/button"
 import { Star, Trash } from 'lucide-react'
-import { Task } from '../../lib/types'
+import { Task } from '@src/lib/types'
 
 type TaskItemProps = {
   task: Task;

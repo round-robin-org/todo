@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
-import { TaskItem } from './TaskItem'
-import { Task } from '../../lib/types'
+import { TaskItem } from '@src/components/core/TaskItem'
+import { Task } from '@src/lib/types'
 
 type TaskListProps = {
   tasks: Task[];

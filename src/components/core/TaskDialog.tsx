@@ -1,12 +1,12 @@
 'use client'
 
 import React from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@src/components/ui/dialog"
+import { Button } from "@src/components/ui/button"
 import { Plus } from 'lucide-react'
-import { TaskForm } from './TaskForm'
+import { TaskForm } from '@src/components/core/TaskForm'
 import { toast } from 'sonner'
-import { Task } from '../../lib/types'
+import { Task } from '@src/lib/types'
 
 type TaskDialogProps = {
   labels: string[];

@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react'
-import { Task } from '../../lib/types'
-import { TaskItem } from './TaskItem'
+import { Task } from '@src/lib/types'
+import { TaskItem } from '@src/components/core/TaskItem'
 
 type ExecutedTasksProps = {
   tasks: Task[];

@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
-import { Button } from "@/components/ui/button"
+import { Button } from "@src/components/ui/button"
 
 export function Header() {
   const { data: session } = useSession()

@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
-import { Button } from "@/components/ui/button"
+import { Button } from "@src/components/ui/button"
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
-import { Badge } from "@/components/ui/badge"
-import { Task } from '../../lib/types'
+import { Badge } from "@src/components/ui/badge"
+import { Task } from '@src/lib/types'
 
 type CalendarViewProps = {
   selectedDate: Date;

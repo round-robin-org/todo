@@ -1,10 +1,10 @@
 'use client'
 
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { TaskDialog } from './TaskDialog'
-import { Task } from '../../lib/types'
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
+import { TaskDialog } from '@src/components/core/TaskDialog'
+import { Task } from '@src/lib/types'
+import { Button } from "@src/components/ui/button"
 import { Eye, EyeOff } from 'lucide-react'
 
 type TabContentProps = {
