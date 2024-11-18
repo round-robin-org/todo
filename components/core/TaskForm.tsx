@@ -68,11 +68,13 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
       </div>
       <div className="grid w-full gap-1.5">
         <Label htmlFor="memo">Task Description</Label>
-        <Input 
+        <textarea 
           id="memo" 
           name="memo" 
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
+          className="border rounded p-2 w-full"
+          rows={4}
         />
       </div>
       {!isToday && (
