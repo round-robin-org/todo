@@ -5,17 +5,23 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
 import { Button } from "@src/components/ui/button"
 import { signIn } from 'next-auth/react'
-
+import { useRouter } from 'next/navigation'
 export function Auth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  const handleSignIn = async () => {
+  const handleSignIn = async (provider: string) => {
     setLoading(true)
     try {
-      await signIn('github')
+      const res = await signIn(provider, { callbackUrl: '/' })
+      if (res?.url) {
+        router.push(res.url)
+      } else if (res?.error) {
+        setError('サインインに失敗しました。')
+      }
     } catch (e) {
-      setError('Sign in failed.')
+      setError('サインインに失敗しました。')
     } finally {
       setLoading(false)
     }
@@ -26,15 +32,15 @@ export function Auth() {
       <Image src="/favicon.ico" alt="Favicon" width={64} height={64} />
       <Card className="w-96">
         <CardHeader className="text-center">
-          <CardTitle>Welcome</CardTitle>
-          <CardDescription>Please choose to sign in or sign up.</CardDescription>
+          <CardTitle>ようこそ</CardTitle>
+          <CardDescription>サインインまたはサインアップを選択してください。</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col space-y-4">
-          <Button onClick={handleSignIn} disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+          <Button onClick={() => handleSignIn('google')} disabled={loading}>
+            {loading ? "サインイン中..." : "Googleでサインイン"}
           </Button>
-          <Button variant="secondary" onClick={() => signIn('github')}>
-            Sign Up
+          <Button onClick={() => handleSignIn('github')} disabled={loading}>
+            {loading ? "サインイン中..." : "GitHubでサインイン"}
           </Button>
           {error && <p className="text-red-500">{error}</p>}
         </CardContent>

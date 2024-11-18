@@ -22,12 +22,20 @@ export function Header() {
             </Button>
           </>
         ) : (
-          <Button
-            onClick={() => signIn('github')}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Sign In
-          </Button>
+          <>
+            <Button
+              onClick={() => signIn('google')}
+              className="mr-2 px-4 py-2 bg-red-500 text-white rounded"
+            >
+              Googleでサインイン
+            </Button>
+            <Button
+              onClick={() => signIn('github')}
+              className="px-4 py-2 bg-gray-800 text-white rounded"
+            >
+              GitHubでサインイン
+            </Button>
+          </>
         )}
       </div>
     </header>

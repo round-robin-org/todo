@@ -4,6 +4,8 @@ import { SessionProvider, useSession } from "next-auth/react"
 import { TaskManagementApp } from "@src/components/core/TaskManagementApp"
 import { Auth } from "@src/components/core/Auth"
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
+
 function AppContent() {
   const { data: session, status } = useSession()
 
@@ -19,6 +21,12 @@ function AppContent() {
   return (
     <>
       {session ? <TaskManagementApp /> : <Auth />}
+      {!session && (
+        <div className="flex justify-center mt-4">
+          <Link href="/auth/signin" className="mr-4 text-blue-500">サインイン</Link>
+          <Link href="/auth/signup" className="text-green-500">サインアップ</Link>
+        </div>
+      )}
     </>
   )
 }
