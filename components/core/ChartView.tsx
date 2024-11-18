@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, TooltipProps } from 'recharts'
-import { format, startOfWeek, addDays, isWithinInterval } from 'date-fns'
+import { format, startOfWeek, addDays, isWithinInterval, addWeeks } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ChartContainer, ChartLegendContent } from "@/components/ui/chart"
 import { Task } from './Task'
@@ -27,7 +27,7 @@ interface GoalData {
 interface CustomTooltipProps extends TooltipProps<number, string> {
   tasks: Task[]
   chartType: 'weekly' | 'goal'
-  weekRange: { weekStart: Date; weekEnd: Date } | null
+  weekRange: { weekStart: Date; weekEnd: Date }
 }
 
 // カスタムツールチップコンポーネント
@@ -39,12 +39,11 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, t
 
     if (chartType === 'weekly') {
       // ツールチップのラベルから該当する日付を特定
-      const weekStart = startOfWeek(new Date(), { locale: ja })
       const dayIndex = ['日', '月', '火', '水', '木', '金', '土'].indexOf(label as string)
       if (dayIndex === -1) {
         return null
       }
-      const targetDate = addDays(weekStart, dayIndex)
+      const targetDate = addDays(weekRange.weekStart, dayIndex)
       const dateStr = format(targetDate, 'yyyy-MM-dd')
 
       // 週間チャートの場合は特定の日付でフィルタリング
@@ -61,7 +60,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, t
     return (
       <div className="custom-tooltip bg-white border border-gray-200 p-2 rounded shadow-lg">
         <p className="label font-semibold">{`${payload[0].name}: ${payload[0].value}`}</p>
-        <ul className="mt-1 text-xs">
+        <ul className="mt-1 text-xs max-h-40 overflow-y-auto">
           {filteredTasks.map(task => (
             <li key={task.id} className="flex items-center">
               {task.status === 'executed' ? (
@@ -83,62 +82,66 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, t
 export function ChartView({ tasks }: ChartViewProps) {
   const [weeklyTaskData, setWeeklyTaskData] = useState<WeeklyTaskData[]>([])
   const [goalData, setGoalData] = useState<GoalData[]>([])
-  const [weekRange, setWeekRange] = useState<{ weekStart: Date; weekEnd: Date } | null>(null)
+  const [weekOffset, setWeekOffset] = useState<number>(0)
+  const [weekRange, setWeekRange] = useState<{ weekStart: Date; weekEnd: Date }>({
+    weekStart: startOfWeek(new Date(), { locale: ja }),
+    weekEnd: addDays(startOfWeek(new Date(), { locale: ja }), 6)
+  })
 
   useEffect(() => {
-    const calculateWeeklyData = () => {
-      const weekStart = startOfWeek(new Date(), { locale: ja })
-      const weekEnd = addDays(weekStart, 6)
-      const data: WeeklyTaskData[] = []
-
-      for (let i = 0; i < 7; i++) {
-        const currentDate = addDays(weekStart, i)
-        const dateStr = format(currentDate, 'yyyy-MM-dd')
-
-        const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
-        const plannedTasks = dayTasks.length
-        const executedTasks = dayTasks.filter(t => t.status === 'executed').length
-
-        data.push({
-          name: format(currentDate, 'E', { locale: ja }),
-          plannedTasks,
-          executedTasks
-        })
-      }
-
-      setWeeklyTaskData(data)
-      setWeekRange({ weekStart, weekEnd })
-      return { weekStart, weekEnd }
+    const calculateWeekRange = (offset: number) => {
+      const currentWeekStart = startOfWeek(new Date(), { locale: ja })
+      const adjustedWeekStart = addWeeks(currentWeekStart, offset)
+      const adjustedWeekEnd = addDays(adjustedWeekStart, 6)
+      return { weekStart: adjustedWeekStart, weekEnd: adjustedWeekEnd }
     }
 
-    const calculateGoalData = (weekStart: Date, weekEnd: Date) => {
-      const labelStats: Record<string, { planned: number; executed: number }> = {}
+    const { weekStart, weekEnd } = calculateWeekRange(weekOffset)
+    setWeekRange({ weekStart, weekEnd })
 
-      tasks.forEach(task => {
-        const taskDate = new Date(task.scheduledDate)
-        if (isWithinInterval(taskDate, { start: weekStart, end: weekEnd })) {
-          if (!task.label) return
-          if (!labelStats[task.label]) {
-            labelStats[task.label] = { planned: 0, executed: 0 }
-          }
-          labelStats[task.label].planned++
-          if (task.status === 'executed') {
-            labelStats[task.label].executed++
-          }
-        }
+    const data: WeeklyTaskData[] = []
+
+    for (let i = 0; i < 7; i++) {
+      const currentDate = addDays(weekStart, i)
+      const dateStr = format(currentDate, 'yyyy-MM-dd')
+
+      const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
+      const plannedTasks = dayTasks.length
+      const executedTasks = dayTasks.filter(t => t.status === 'executed').length
+
+      data.push({
+        name: format(currentDate, 'E', { locale: ja }),
+        plannedTasks,
+        executedTasks
       })
-
-      const data: GoalData[] = Object.entries(labelStats).map(([name, stats]) => ({
-        name,
-        ...stats
-      }))
-
-      setGoalData(data)
     }
 
-    const { weekStart, weekEnd } = calculateWeeklyData()
-    calculateGoalData(weekStart, weekEnd)
-  }, [tasks])
+    setWeeklyTaskData(data)
+
+    // Calculate Goal Data based on the new week range
+    const labelStats: Record<string, { planned: number; executed: number }> = {}
+
+    tasks.forEach(task => {
+      const taskDate = new Date(task.scheduledDate)
+      if (isWithinInterval(taskDate, { start: weekStart, end: weekEnd })) {
+        if (!task.label) return
+        if (!labelStats[task.label]) {
+          labelStats[task.label] = { planned: 0, executed: 0 }
+        }
+        labelStats[task.label].planned++
+        if (task.status === 'executed') {
+          labelStats[task.label].executed++
+        }
+      }
+    })
+
+    const goalDataArray: GoalData[] = Object.entries(labelStats).map(([name, stats]) => ({
+      name,
+      ...stats
+    }))
+
+    setGoalData(goalDataArray)
+  }, [tasks, weekOffset])
 
   const chartConfigWeekly = {
     plannedTasks: {
@@ -162,9 +165,36 @@ export function ChartView({ tasks }: ChartViewProps) {
     },
   }
 
+  const handlePreviousWeek = () => {
+    setWeekOffset(prev => prev - 1)
+  }
+
+  const handleNextWeek = () => {
+    setWeekOffset(prev => prev + 1)
+  }
+
+  const formattedWeekRange = `${format(weekRange.weekStart, 'yyyy-MM-dd')} - ${format(weekRange.weekEnd, 'yyyy-MM-dd')}`
+
   return (
     <div>
-      <h3 className="font-semibold mb-2">週間タスク完了率</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold">週間タスク完了率</h3>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={handlePreviousWeek} 
+            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Back
+          </button>
+          <span className="font-medium">{formattedWeekRange}</span>
+          <button 
+            onClick={handleNextWeek} 
+            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Next
+          </button>
+        </div>
+      </div>
       <ChartContainer config={chartConfigWeekly} className="min-h-[300px] w-full">
         <AreaChart data={weeklyTaskData}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -188,7 +218,7 @@ export function ChartView({ tasks }: ChartViewProps) {
           />
         </AreaChart>
       </ChartContainer>
-      <h3 className="font-semibold mt-4 mb-2">目標別タスク数</h3>
+      <h3 className="font-semibold mt-8 mb-2">目標別タスク数</h3>
       <ChartContainer config={chartConfigGoal} className="min-h-[300px] w-full">
         <BarChart layout="vertical" data={goalData}>
           <CartesianGrid strokeDasharray="3 3" />
