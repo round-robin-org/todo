@@ -180,7 +180,7 @@ export function TaskManagementApp() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="pastfuture">Past & Future</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
           <TabsTrigger value="backlog">Backlog</TabsTrigger>
           <TabsTrigger value="review">Review</TabsTrigger>
         </TabsList>
@@ -189,7 +189,7 @@ export function TaskManagementApp() {
         <TabsContent value="today">
           <TabContent 
             title="Today's Tasks" 
-            description="Manage your tasks for today." 
+            description="Focus on your tasks for today." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -217,11 +217,11 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* Past & Future Tab */}
-        <TabsContent value="pastfuture">
+        {/* Calendar View Tab */}
+        <TabsContent value="calendar">
           <TabContent 
-            title="Past & Future Tasks" 
-            description="Tasks before today and after tomorrow." 
+            title="Calendar View" 
+            description="View tasks by date." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -302,7 +302,7 @@ export function TaskManagementApp() {
         <TabsContent value="review">
           <TabContent 
             title="Review" 
-            description="Trends in task completion rates and goal-based task counts." 
+            description="Trends in task execution rates and goal-based task counts." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}

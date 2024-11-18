@@ -30,13 +30,13 @@ import {
   endOfMonth,
   endOfYear,
 } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import { ja, enUS } from 'date-fns/locale'
 import { ChartContainer, ChartLegendContent } from "@/components/ui/chart"
 import { Task } from '../../lib/types'
 import { Button } from "@/components/ui/button"
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 
-// 集計期間の定義
+// Define aggregation periods
 type AggregationPeriod = 'day' | 'week' | 'month' | 'year'
 
 interface ChartViewProps {
@@ -56,7 +56,7 @@ interface GoalData {
   executed: number
 }
 
-// カスタムツールチップのプロパティ型
+// Custom tooltip property type
 interface CustomTooltipProps {
   active: boolean
   payload?: any
@@ -82,11 +82,11 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     const targetDateStr = format(currentRange.start, 'yyyy-MM-dd')
 
     if (chartType === 'task') {
-      // 集計期間に応じたフィルタリング
+      // Filter tasks based on aggregation period
       if (aggregationPeriod === 'day') {
         filteredTasks = tasks.filter(task => task.scheduledDate === targetDateStr)
       } else if (aggregationPeriod === 'week') {
-        const dayIndex = ['日', '月', '火', '水', '木', '金', '土'].indexOf(label as string)
+        const dayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(label as string)
         if (dayIndex === -1) return null
         const targetDate = addDays(currentRange.start, dayIndex)
         const dateStr = format(targetDate, 'yyyy-MM-dd')
@@ -113,7 +113,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     } else if (chartType === 'goal') {
       const goalName = label ? label.trim() : '';
       
-      // ラベルが空の場合は除外
+      // Exclude empty labels
       if (!goalName) {
         return null;
       }
@@ -133,7 +133,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     if (filteredTasks.length === 0) {
       return (
         <div className="custom-tooltip bg-white border border-gray-200 p-2 rounded shadow-lg">
-          <p className="label font-semibold">タスクなし</p>
+          <p className="label font-semibold">No tasks</p>
         </div>
       )
     }
@@ -255,7 +255,7 @@ export function ChartView({ tasks }: ChartViewProps) {
         const executedTasks = dayTasks.filter(t => t.status === 'executed').length
 
         data.push({
-          name: format(currentDate, 'E', { locale: ja }),
+          name: format(currentDate, 'EEE', { locale: enUS }),
           plannedTasks,
           executedTasks,
         })
@@ -295,33 +295,32 @@ export function ChartView({ tasks }: ChartViewProps) {
       // Yearly aggregation: Aggregate tasks monthly for the vertical bar chart
       const monthsInYear: { month: number; plannedTasks: number; executedTasks: number }[] = []
       let currentMonthStart = startOfMonth(start)
-      let monthNumber = 1
 
+      // 年の最初から最後まで1ヶ月ずつ処理
       while (currentMonthStart <= end) {
         const currentMonthEnd = endOfMonth(currentMonthStart)
         const monthTasks = tasks.filter(task =>
-          isWithinInterval(new Date(task.scheduledDate), { start: currentMonthStart, end: currentMonthEnd })
+          isWithinInterval(new Date(task.scheduledDate), {
+            start: currentMonthStart,
+            end: currentMonthEnd
+          })
         )
-        const plannedTasks = monthTasks.length
-        const executedTasks = monthTasks.filter(t => t.status === 'executed').length
 
         monthsInYear.push({
-          month: monthNumber,
-          plannedTasks,
-          executedTasks,
+          month: currentMonthStart.getMonth(), // 0-11の月インデックス
+          plannedTasks: monthTasks.length,
+          executedTasks: monthTasks.filter(t => t.status === 'executed').length
         })
 
         currentMonthStart = addMonths(currentMonthStart, 1)
-        monthNumber++
       }
 
-      monthsInYear.forEach(monthData => {
-        data.push({
-          name: `${monthData.month}月`,
-          plannedTasks: monthData.plannedTasks,
-          executedTasks: monthData.executedTasks,
-        })
-      })
+      // データの整形
+      data.push(...monthsInYear.map(monthData => ({
+        name: format(new Date(start.getFullYear(), monthData.month), 'MMMM'),
+        plannedTasks: monthData.plannedTasks,
+        executedTasks: monthData.executedTasks
+      })))
     }
 
     setTaskData(data)
@@ -445,7 +444,7 @@ export function ChartView({ tasks }: ChartViewProps) {
 
       {/* Navigation and range display */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold">Task Completion Rate</h3>
+        <h3 className="font-semibold">Task Execution Rate</h3>
         <div className="flex items-center space-x-2">
           <Button
             onClick={handleToday}
@@ -470,7 +469,7 @@ export function ChartView({ tasks }: ChartViewProps) {
         </div>
       </div>
 
-      {/* Task Completion Rate Chart */}
+      {/* Task Execution Rate Chart */}
       <ChartContainer config={chartConfigTask} className="min-h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           {aggregationPeriod === 'day' ? (
