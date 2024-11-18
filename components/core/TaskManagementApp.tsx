@@ -180,7 +180,7 @@ export function TaskManagementApp() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="backlog">Backlog</TabsTrigger>
           <TabsTrigger value="review">Review</TabsTrigger>
         </TabsList>

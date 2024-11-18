@@ -101,10 +101,9 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
           isWithinInterval(new Date(task.scheduledDate), { start: weekStartDate, end: weekEndDate })
         )
       } else if (aggregationPeriod === 'year') {
-        const monthMatch = label.match(/(\d+)月/)
-        if (!monthMatch) return null
-        const month = parseInt(monthMatch[1], 10)
-        const monthStartDate = startOfMonth(addMonths(startOfYear(currentRange.start), month - 1))
+        // 修正: 月名を英語で解析
+        const monthIndex = new Date(Date.parse(label + " 1, 2020")).getMonth()
+        const monthStartDate = startOfMonth(addMonths(startOfYear(currentRange.start), monthIndex))
         const monthEndDate = endOfMonth(monthStartDate)
         filteredTasks = tasks.filter(task =>
           isWithinInterval(new Date(task.scheduledDate), { start: monthStartDate, end: monthEndDate })
