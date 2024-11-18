@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Eye } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { Header } from './Header'
-import { Task } from './Task'
 import { TaskList } from './TaskList'
 import { ExecutedTasks } from './ExecutedTasks'
 import { TaskDialog } from './TaskDialog'
 import { CalendarView } from './CalendarView'
 import { ReviewSection } from './ReviewSection'
 import { supabase } from '@/lib/supabase'
+import { Task } from './Task'
+import { DropResult } from 'react-beautiful-dnd'
 
 export function TaskManagementApp() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -247,6 +248,75 @@ export function TaskManagementApp() {
     if (newLabel && !labels.includes(newLabel)) {
       setLabels(prevLabels => [...prevLabels, newLabel])
     }
+  }
+
+  // リアルタイムサブスクリプションの設定
+  useEffect(() => {
+    const channel = supabase.channel('tasks-changes')
+
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+        },
+        (payload) => {
+          console.log('受信したペイロード:', payload)
+
+          if (payload.eventType === 'INSERT') {
+            console.log('挿入イベント検出')
+            const newTask: Task = {
+              id: payload.new.id.toString(),
+              title: payload.new.title,
+              memo: payload.new.memo,
+              status: payload.new.status === 'executed' ? 'executed' : 'planned',
+              starred: payload.new.starred || false,
+              scheduledDate: payload.new.scheduled_date || '',
+              label: payload.new.label || ''
+            }
+            setTasks(prev => [newTask, ...prev])
+          } else if (payload.eventType === 'DELETE') {
+            console.log('削除イベント検出')
+            setTasks(prev => prev.filter(task => task.id !== payload.old.id))
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('更新イベント検出')
+            const updatedTask: Task = {
+              id: payload.new.id.toString(),
+              title: payload.new.title,
+              memo: payload.new.memo,
+              status: payload.new.status === 'executed' ? 'executed' : 'planned',
+              starred: payload.new.starred || false,
+              scheduledDate: payload.new.scheduled_date || '',
+              label: payload.new.label || ''
+            }
+            setTasks(prev => prev.map(task => 
+              task.id === updatedTask.id ? updatedTask : task
+            ))
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('サブスクリプションステータス:', status)
+      })
+
+    return () => {
+      console.log('チャンネルのクリーンアップ')
+      channel.unsubscribe()
+    }
+  }, [])
+
+  // ドラッグアンドドロップの完了ハンドラー
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return
+
+    const reorderedTasks = Array.from(tasks)
+    const [movedTask] = reorderedTasks.splice(result.source.index, 1)
+    reorderedTasks.splice(result.destination.index, 0, movedTask)
+
+    setTasks(reorderedTasks)
+    // 必要に応じてサーバー側に順序変更を保存する処理を追加
   }
 
   return (
