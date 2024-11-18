@@ -23,7 +23,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
       {isDraggable ? (
         <Droppable droppableId="taskList">
           {(provided) => (
-            <ul className="space-y-2" ref={provided.innerRef} {...provided.droppableProps}>
+            <ul ref={provided.innerRef} {...provided.droppableProps}>
               {plannedTasks.map((task, index) => (
                 <Draggable key={task.id} draggableId={task.id} index={index}>
                   {(provided) => (
@@ -48,7 +48,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
           )}
         </Droppable>
       ) : (
-        <ul className="space-y-2">
+        <ul>
           {plannedTasks.map((task) => (
             <TaskItem 
               key={task.id} 

@@ -36,8 +36,8 @@ export function useTasks(selectedDate: Date, activeTab: string) {
 
       setTasks(formattedTasks)
     } catch (error) {
-      console.error('タスクの取得に失敗しました:', error)
-      setError('タスクの取得に失敗しました。')
+      console.error('Failed to fetch tasks:', error)
+      setError('Failed to fetch tasks.')
     }
   }, [])
 
@@ -68,8 +68,8 @@ export function useTasks(selectedDate: Date, activeTab: string) {
 
       setTasks(formattedTasks)
     } catch (error) {
-      console.error('今日のタスクの取得に失敗しました:', error)
-      setError('今日のタスクの取得に失敗しました。')
+      console.error('Failed to fetch today\'s tasks:', error)
+      setError('Failed to fetch today\'s tasks.')
     }
   }, [])
 
@@ -81,12 +81,12 @@ export function useTasks(selectedDate: Date, activeTab: string) {
     }
   }, [activeTab, selectedDate, fetchTasksByMonth, fetchTodayTasks])
 
-  // リアルタイムサブスクリプションの設定
+  // Setting up real-time subscription
   useEffect(() => {
     const channel = supabase
       .channel('tasks-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, payload => {
-        // シンプルな再フェッチ戦略
+        // Simple refetch strategy
         if (activeTab === "today") {
           fetchTodayTasks()
         } else {

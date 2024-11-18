@@ -52,7 +52,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           checked={isExecuted ? true : task.status === "executed"}
           onCheckedChange={() => toggleStatus(task.id)}
           onClick={(e) => e.stopPropagation()}
-          aria-label={`タスク "${task.title}" を${task.status === "executed" ? "予定" : "実行済み"}としてマーク`}
+          aria-label={`Mark task "${task.title}" as ${task.status === "executed" ? "planned" : "executed"}`}
           className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
         />
         <div>
@@ -69,7 +69,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             e.stopPropagation()
             toggleStar(task.id)
           }}
-          aria-label={`${task.starred ? "スターを外す" : "スターを付ける"} タスク "${task.title}"`}
+          aria-label={`${task.starred ? "Unstar" : "Star"} task "${task.title}"`}
         >
           <Star className={task.starred ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
         </Button>
@@ -83,7 +83,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             e.stopPropagation()
             deleteTask(task.id)
           }}
-          aria-label={`タスク "${task.title}" を削除`}
+          aria-label={`Delete task "${task.title}"`}
         >
           <Trash className="h-4 w-4" />
         </Button>

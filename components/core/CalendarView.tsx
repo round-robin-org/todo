@@ -3,7 +3,7 @@
 import React from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Task } from '../../lib/types'
 
@@ -22,8 +22,13 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startWeekDay = monthStart.getDay();
 
-  // 空白セルの数を決定
+  // Determine the number of blank cells
   const blankDays = Array.from({ length: startWeekDay }, (_, i) => i);
+
+  // Add Today button
+  const handleToday = () => {
+    setSelectedDate(new Date());
+  }
 
   return (
     <div>
@@ -32,6 +37,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
           variant="outline"
           size="sm"
           onClick={() => setSelectedDate(date => new Date(date.getFullYear(), date.getMonth() - 1, 1))}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -42,12 +48,27 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
           variant="outline"
           size="sm"
           onClick={() => setSelectedDate(date => new Date(date.getFullYear(), date.getMonth() + 1, 1))}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Add Today button */}
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleToday}
+          className="px-2 py-1 bg-black text-white rounded hover:bg-gray-800 flex items-center"
+        >
+          <Calendar className="h-4 w-4 mr-1" />
+          Today
+        </Button>
+      </div>
+
       <div className="grid grid-cols-7 gap-1">
-        {['日', '月', '火', '水', '木', '金', '土'].map(day => (
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div key={day} className="text-center font-medium text-sm py-1">
             {day}
           </div>
@@ -81,7 +102,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                       >
                         {plannedTasks.length}
                       </Badge>
-                      {/* タスクリストのツールチップ */}
+                      {/* Task list tooltip */}
                       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                         <div className="p-2">
                           <h4 className="text-sm font-semibold mb-1">Planned Tasks</h4>
@@ -104,7 +125,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                       >
                         {executedTasks.length}
                       </Badge>
-                      {/* タスクリストのツールチップ */}
+                      {/* Task list tooltip */}
                       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                         <div className="p-2">
                           <h4 className="text-sm font-semibold mb-1">Executed Tasks</h4>

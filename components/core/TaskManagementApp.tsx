@@ -20,7 +20,7 @@ export function TaskManagementApp() {
   const [activeTab, setActiveTab] = useState("today")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showExecutedTasks, setShowExecutedTasks] = useState(false)
-  const [labels, setLabels] = useState(["健康", "仕事", "家事"])
+  const [labels, setLabels] = useState(["Health", "Work", "Housework"])
   const [selectedDate, setSelectedDate] = useState(new Date())
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
@@ -35,7 +35,7 @@ export function TaskManagementApp() {
     setTasks(reorderedTasks);
   };
 
-  // タスクの追加
+  // Add Task
   const addTask = async (taskData: Omit<Task, 'id'>) => {
     try {
       const { data, error } = await supabase
@@ -51,16 +51,16 @@ export function TaskManagementApp() {
         throw error
       }
 
-      // 新しいタスクをステートに追加
+      // Add new task to state
       setTasks(prevTasks => [data[0], ...prevTasks])
-      toast.success('タスクを追加しました')
+      toast.success('Task added successfully')
     } catch (error) {
-      console.error('タスクの追加に失敗しました:', error)
-      toast.error('タスクの追加に失敗しました。')
+      console.error('Failed to add task:', error)
+      toast.error('Failed to add task.')
     }
   }
 
-  // タスクの更新
+  // Update Task
   const updateTask = async (updatedTask: Task) => {
     try {
       const { error } = await supabase
@@ -77,22 +77,22 @@ export function TaskManagementApp() {
 
       if (error) throw error
 
-      // ステートを更新
+      // Update state
       setTasks(prevTasks =>
         prevTasks.map(t => t.id === updatedTask.id ? updatedTask : t)
       )
-      toast.success('タスクを更新しました')
+      toast.success('Task updated successfully')
     } catch (error) {
-      console.error('タスクの更新に失敗しました:', error)
-      toast.error('タスクの更新に失敗しました。')
+      console.error('Failed to update task:', error)
+      toast.error('Failed to update task.')
     }
   }
 
-  // ステータスをトグルする関数の追加
+  // Toggle Task Status
   const toggleTaskStatus = async (taskId: string) => {
     try {
       const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('タスクが見つかりません')
+      if (!task) throw new Error('Task not found')
 
       const updatedStatus = task.status === 'executed' ? 'planned' : 'executed'
 
@@ -103,24 +103,24 @@ export function TaskManagementApp() {
 
       if (error) throw error
 
-      // ステートを更新
+      // Update state
       setTasks(prevTasks =>
         prevTasks.map(t =>
           t.id === taskId ? { ...t, status: updatedStatus } : t
         )
       )
-      toast.success('タスクのステータスを更新しました')
+      toast.success('Task status updated successfully')
     } catch (error) {
-      console.error('ステータスの更新に失敗しました:', error)
-      toast.error('ステータスの更新に失敗しました。')
+      console.error('Failed to update status:', error)
+      toast.error('Failed to update status.')
     }
   }
 
-  // スターをトグルする関数の追加
+  // Toggle Task Star
   const toggleTaskStar = async (taskId: string) => {
     try {
       const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('タスクが見つかりません')
+      if (!task) throw new Error('Task not found')
 
       const updatedStar = !task.starred
 
@@ -136,21 +136,21 @@ export function TaskManagementApp() {
           t.id === taskId ? { ...t, starred: updatedStar } : t
         )
       )
-      toast.success('タスクのスターを更新しました')
+      toast.success('Task star updated successfully')
     } catch (error) {
-      console.error('スターの更新に失敗しました:', error)
-      toast.error('スターの更新に失敗しました。')
+      console.error('Failed to update star:', error)
+      toast.error('Failed to update star.')
     }
   }
 
-  // ラベルの追加
+  // Add Label
   const addLabel = (newLabel: string) => {
     if (newLabel && !labels.includes(newLabel)) {
       setLabels(prevLabels => [...prevLabels, newLabel])
     }
   }
 
-  // タスクの削除
+  // Delete Task
   const deleteTask = async (taskId: string) => {
     try {
       const { error } = await supabase
@@ -160,16 +160,16 @@ export function TaskManagementApp() {
 
       if (error) throw error
 
-      // ステートからタスクを削除
+      // Remove task from state
       setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId))
-      toast.success('タスクを削除しました')
+      toast.success('Task deleted successfully')
     } catch (error) {
-      console.error('タスクの削除に失敗しました:', error)
-      toast.error('タスクの削除に失敗しました。')
+      console.error('Failed to delete task:', error)
+      toast.error('Failed to delete task.')
     }
   }
 
-  // 実行済みタスクの表示・非表示を切り替える関数
+  // Toggle Executed Tasks Visibility
   const toggleExecutedTasks = () => {
     setShowExecutedTasks(prev => !prev)
   }
@@ -179,17 +179,17 @@ export function TaskManagementApp() {
       <Header />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="today">今日</TabsTrigger>
-          <TabsTrigger value="pastfuture">過去＆未来</TabsTrigger>
-          <TabsTrigger value="backlog">バックログ</TabsTrigger>
-          <TabsTrigger value="review">レビュー</TabsTrigger>
+          <TabsTrigger value="today">Today</TabsTrigger>
+          <TabsTrigger value="pastfuture">Past & Future</TabsTrigger>
+          <TabsTrigger value="backlog">Backlog</TabsTrigger>
+          <TabsTrigger value="review">Review</TabsTrigger>
         </TabsList>
 
-        {/* 今日のタブ */}
+        {/* Today Tab */}
         <TabsContent value="today">
           <TabContent 
-            title="今日のタスク" 
-            description="今日のタスクを管理します。" 
+            title="Today's Tasks" 
+            description="Manage your tasks for today." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -217,11 +217,11 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* 過去＆未来のタブ */}
+        {/* Past & Future Tab */}
         <TabsContent value="pastfuture">
           <TabContent 
-            title="過去＆未来のタスク" 
-            description="今日以前と明日以降のタスク" 
+            title="Past & Future Tasks" 
+            description="Tasks before today and after tomorrow." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -240,7 +240,7 @@ export function TaskManagementApp() {
             {selectedDate && (
               <Card className="mt-4">
                 <CardHeader>
-                  <CardTitle>{format(selectedDate, 'MMMM d, yyyy')} のタスク</CardTitle>
+                  <CardTitle>{format(selectedDate, 'MMMM d, yyyy')} Tasks</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TaskList 
@@ -266,11 +266,11 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* バックログのタブ */}
+        {/* Backlog Tab */}
         <TabsContent value="backlog">
           <TabContent 
-            title="バックログ" 
-            description="日付が設定されていないタスクのリスト" 
+            title="Backlog" 
+            description="List of tasks without a set date." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -298,11 +298,11 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* レビュータブ */}
+        {/* Review Tab */}
         <TabsContent value="review">
           <TabContent 
-            title="レビュー" 
-            description="タスク完了率の傾向と目標ベースのタスク数" 
+            title="Review" 
+            description="Trends in task completion rates and goal-based task counts." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -313,7 +313,7 @@ export function TaskManagementApp() {
         </TabsContent>
       </Tabs>
 
-      {/* タスク編集ダイアログ */}
+      {/* Task Edit Dialog */}
       {editingTask && (
         <TaskDialog 
           labels={labels}

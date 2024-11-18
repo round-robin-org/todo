@@ -39,10 +39,10 @@ export function TaskDialog({
         ...taskData
       }
       updateTask(updatedTask)
-      toast.success('タスクを更新しました')
+      toast.success('Task updated')
     } else {
       addTask(taskData)
-      toast.success('タスクを追加しました')
+      toast.success('Task added')
     }
     if (onClose) {
       onClose()
@@ -54,13 +54,13 @@ export function TaskDialog({
       {!isEdit && (
         <DialogTrigger asChild>
           <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />タスクを追加
+            <Plus className="mr-2 h-4 w-4" />Add Task
           </Button>
         </DialogTrigger>
       )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'タスクを編集' : '新しいタスクを追加'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Task' : 'Add New Task'}</DialogTitle>
         </DialogHeader>
         <TaskForm 
           initialTask={taskToEdit}

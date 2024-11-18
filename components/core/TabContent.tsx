@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { TaskDialog } from './TaskDialog'
@@ -44,7 +46,7 @@ export function TabContent({
               className="flex items-center"
             >
               {showExecutedTasks ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-              {showExecutedTasks ? "実行済みタスクを非表示" : "実行済みタスクを表示"}
+              {showExecutedTasks ? "Hide Executed Tasks" : "Show Executed Tasks"}
             </Button>
           )}
           <TaskDialog 

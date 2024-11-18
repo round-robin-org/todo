@@ -33,6 +33,8 @@ import {
 import { ja } from 'date-fns/locale'
 import { ChartContainer, ChartLegendContent } from "@/components/ui/chart"
 import { Task } from '../../lib/types'
+import { Button } from "@/components/ui/button"
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 
 // 集計期間の定義
 type AggregationPeriod = 'day' | 'week' | 'month' | 'year'
@@ -194,30 +196,30 @@ export function ChartView({ tasks }: ChartViewProps) {
       let end: Date
 
       if (period === 'day') {
-        // 日単位の場合、開始と終了を同じ日に設定
+        // For daily aggregation, set start and end to the same day
         const today = new Date()
         start = addDays(today, offset)
         end = addDays(today, offset)
       } else if (period === 'week') {
-        // 週単位: 指定された週を表示
+        // For weekly aggregation, display the specified week
         const currentWeekStart = startOfWeek(new Date(), { locale: ja })
         const adjustedWeekStart = addWeeks(currentWeekStart, offset)
         start = adjustedWeekStart
         end = endOfWeek(adjustedWeekStart, { locale: ja })
       } else if (period === 'month') {
-        // 月単位: 指定された月を表示（前後の月の日付を含む）
+        // For monthly aggregation, display the specified month (including dates of previous and next months)
         const currentMonthStart = startOfMonth(new Date())
         const adjustedMonthStart = addMonths(currentMonthStart, offset)
-        start = startOfWeek(adjustedMonthStart, { locale: ja }) // 月初を含む週の開始日
-        end = endOfWeek(endOfMonth(adjustedMonthStart), { locale: ja }) // 月末を含む週の終了日
+        start = startOfWeek(adjustedMonthStart, { locale: ja }) // Start of the week containing the start of the month
+        end = endOfWeek(endOfMonth(adjustedMonthStart), { locale: ja }) // End of the week containing the end of the month
       } else if (period === 'year') {
-        // 年単位: 指定された年を表示（1月から12月まで）
+        // For yearly aggregation, display the entire year (January to December)
         const currentYearStart = startOfYear(new Date())
         const adjustedYearStart = addYears(currentYearStart, offset)
-        start = startOfMonth(adjustedYearStart) // 年初を含む月の開始日
-        end = endOfYear(adjustedYearStart) // 年末を含む月の終了日
+        start = startOfMonth(adjustedYearStart) // Start of the first month of the year
+        end = endOfYear(adjustedYearStart) // End of the last month of the year
       } else {
-        // デフォルトは現在の週
+        // Default to the current week
         start = startOfWeek(new Date(), { locale: ja })
         end = endOfWeek(start, { locale: ja })
       }
@@ -228,11 +230,11 @@ export function ChartView({ tasks }: ChartViewProps) {
     const { start, end } = calculateRange(aggregationPeriod, navigationOffset)
     setCurrentRange({ start, end })
 
-    // データの集計
+    // Aggregate data
     const data: TaskData[] = []
 
     if (aggregationPeriod === 'day') {
-      // 日単位: パイチャート用に計画済みタスクと実行済みタスクを集計
+      // Daily aggregation: Aggregate planned and executed tasks for the pie chart
       const dateStr = format(start, 'yyyy-MM-dd')
       const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
       const plannedTasks = dayTasks.length
@@ -240,11 +242,11 @@ export function ChartView({ tasks }: ChartViewProps) {
       const remainingTasks = plannedTasks - executedTasks
 
       data.push(
-        { name: '実行済みタスク数', value: executedTasks },
-        { name: '未実行タスク数', value: remainingTasks }
+        { name: 'Executed Tasks', value: executedTasks },
+        { name: 'Remaining Tasks', value: remainingTasks }
       )
     } else if (aggregationPeriod === 'week') {
-      // 週単位: エリアチャート用に日別にタスクを集計
+      // Weekly aggregation: Aggregate tasks daily for the area chart
       for (let i = 0; i < 7; i++) {
         const currentDate = addDays(start, i)
         const dateStr = format(currentDate, 'yyyy-MM-dd')
@@ -259,7 +261,7 @@ export function ChartView({ tasks }: ChartViewProps) {
         })
       }
     } else if (aggregationPeriod === 'month') {
-      // 月単位: 垂直バーチャート用に週ごとにタスクを集計
+      // Monthly aggregation: Aggregate tasks weekly for the vertical bar chart
       const weeksInMonth: { week: number; plannedTasks: number; executedTasks: number }[] = []
       let currentWeekStart = startOfWeek(start, { locale: ja })
       let weekNumber = 1
@@ -290,7 +292,7 @@ export function ChartView({ tasks }: ChartViewProps) {
         })
       })
     } else if (aggregationPeriod === 'year') {
-      // 年単位: 垂直バーチャート用に月ごとにタスクを集計
+      // Yearly aggregation: Aggregate tasks monthly for the vertical bar chart
       const monthsInYear: { month: number; plannedTasks: number; executedTasks: number }[] = []
       let currentMonthStart = startOfMonth(start)
       let monthNumber = 1
@@ -324,22 +326,22 @@ export function ChartView({ tasks }: ChartViewProps) {
 
     setTaskData(data)
 
-    // 目標別データの集計を修正
+    // Modify goal-based data aggregation
     const labelStats: Record<string, { planned: number; executed: number }> = {}
 
-    // 日付文字列を取得
+    // Get date string
     const targetDateStr = format(start, 'yyyy-MM-dd')
 
     tasks.forEach(task => {
       const normalizedLabel = task.label ? task.label.trim() : '';
 
-      // ラベルが存在し、空でないことを確認
+      // Ensure label exists and is not empty
       if (!normalizedLabel) {
-        return; // ラベルがないタスクは除外
+        return; // Exclude tasks without labels
       }
 
       if (aggregationPeriod === 'day') {
-        // 日単位の場合は特定の日のみを対象とする
+        // For daily aggregation, only consider specific day
         if (task.scheduledDate === targetDateStr) {
           if (!labelStats[normalizedLabel]) {
             labelStats[normalizedLabel] = { planned: 0, executed: 0 };
@@ -350,7 +352,7 @@ export function ChartView({ tasks }: ChartViewProps) {
           }
         }
       } else {
-        // その他の期間の場合は範囲内のタスクを集計
+        // For other periods, aggregate tasks within range
         const taskDate = new Date(task.scheduledDate);
         if (isWithinInterval(taskDate, { start, end })) {
           if (!labelStats[normalizedLabel]) {
@@ -369,28 +371,28 @@ export function ChartView({ tasks }: ChartViewProps) {
       ...stats,
     }))
 
-    console.log('Aggregated Goal Data:', goalDataArray) // デバッグ用ログ
+    console.log('Aggregated Goal Data:', goalDataArray) // Debug log
     setGoalData(goalDataArray)
   }, [tasks, navigationOffset, aggregationPeriod])
 
   const chartConfigTask = {
     plannedTasks: {
-      label: "予定タスク数",
+      label: "Planned Tasks",
       color: colorPlanned,
     },
     executedTasks: {
-      label: "実行タスク数",
+      label: "Executed Tasks",
       color: colorExecuted,
     },
   }
 
   const chartConfigGoal = {
     planned: {
-      label: "予定",
+      label: "Planned",
       color: colorPlanned,
     },
     executed: {
-      label: "実行",
+      label: "Executed",
       color: colorExecuted,
     },
   }
@@ -406,7 +408,11 @@ export function ChartView({ tasks }: ChartViewProps) {
   const handleAggregationPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedPeriod = e.target.value as AggregationPeriod
     setAggregationPeriod(selectedPeriod)
-    setNavigationOffset(0) // 集計期間が変わったらオフセットをリセット
+    setNavigationOffset(0) // Reset offset when aggregation period changes
+  }
+
+  const handleToday = () => {
+    setNavigationOffset(0)
   }
 
   const formatRange = () => {
@@ -416,12 +422,12 @@ export function ChartView({ tasks }: ChartViewProps) {
 
   return (
     <div>
-      {/* 集計期間の選択 */}
+      {/* Aggregation period selection */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold">タスク集計</h3>
+        <h3 className="font-semibold">Task Aggregation</h3>
         <div className="flex items-center space-x-2">
           <label htmlFor="aggregationPeriod" className="font-medium">
-            集計期間:
+            Aggregation Period:
           </label>
           <select
             id="aggregationPeriod"
@@ -429,39 +435,46 @@ export function ChartView({ tasks }: ChartViewProps) {
             onChange={handleAggregationPeriodChange}
             className="px-2 py-1 border rounded"
           >
-            <option value="day">日</option>
-            <option value="week">週</option>
-            <option value="month">月</option>
-            <option value="year">年</option>
+            <option value="day">Day</option>
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
           </select>
         </div>
       </div>
 
-      {/* ナビゲーションと範囲表示 */}
+      {/* Navigation and range display */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold">タスク完了率</h3>
+        <h3 className="font-semibold">Task Completion Rate</h3>
         <div className="flex items-center space-x-2">
-          <button
+          <Button
+            onClick={handleToday}
+            className="px-2 py-1 bg-black text-white rounded hover:bg-gray-800 flex items-center"
+          >
+            <Calendar className="h-4 w-4 mr-1" />
+            Today
+          </Button>
+          <Button
             onClick={handlePrevious}
-            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
           >
-            Back
-          </button>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
           <span className="font-medium">{formatRange()}</span>
-          <button
+          <Button
             onClick={handleNext}
-            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
           >
-            Next
-          </button>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      {/* タスク完了率チャート */}
+      {/* Task Completion Rate Chart */}
       <ChartContainer config={chartConfigTask} className="min-h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           {aggregationPeriod === 'day' ? (
-            // 日単位: パイチャート
+            // Daily aggregation: Pie chart
             <PieChart>
               <Pie
                 data={taskData}
@@ -490,7 +503,7 @@ export function ChartView({ tasks }: ChartViewProps) {
               <Legend />
             </PieChart>
           ) : aggregationPeriod === 'week' ? (
-            // 週単位: エリアチャート
+            // Weekly aggregation: Area chart
             <AreaChart data={taskData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -522,7 +535,7 @@ export function ChartView({ tasks }: ChartViewProps) {
               />
             </AreaChart>
           ) : (
-            // 月単位および年単位: 垂直バーチャート
+            // Monthly and yearly aggregation: Vertical bar chart
             <BarChart data={taskData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -555,8 +568,8 @@ export function ChartView({ tasks }: ChartViewProps) {
         </ResponsiveContainer>
       </ChartContainer>
 
-      {/* 目標別タスク数チャート */}
-      <h3 className="font-semibold mt-8 mb-2">目標別タスク数</h3>
+      {/* Goal-based Task Count Chart */}
+      <h3 className="font-semibold mt-8 mb-2">Goal-based Task Count</h3>
       <ChartContainer config={chartConfigGoal} className="min-h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           {goalData.length > 0 ? (
@@ -589,7 +602,7 @@ export function ChartView({ tasks }: ChartViewProps) {
               />
             </BarChart>
           ) : (
-            <p className="text-center text-gray-500">目標別タスク数のデータがありません。</p>
+            <p className="text-center text-gray-500">No data available for goal-based task count.</p>
           )}
         </ResponsiveContainer>
       </ChartContainer>
