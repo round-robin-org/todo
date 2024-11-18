@@ -169,6 +169,11 @@ export function TaskManagementApp() {
     }
   }
 
+  // 実行済みタスクの表示・非表示を切り替える関数
+  const toggleExecutedTasks = () => {
+    setShowExecutedTasks(prev => !prev)
+  }
+
   return (
     <div>
       <Header />
@@ -188,6 +193,9 @@ export function TaskManagementApp() {
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            showToggleButton={true}
+            showExecutedTasks={showExecutedTasks}
+            toggleExecutedTasks={toggleExecutedTasks}
           >
             <TaskList 
               tasks={tasks.filter(task => task.scheduledDate === format(new Date(), 'yyyy-MM-dd'))}
@@ -217,6 +225,9 @@ export function TaskManagementApp() {
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            showToggleButton={true}
+            showExecutedTasks={showExecutedTasks}
+            toggleExecutedTasks={toggleExecutedTasks}
           >
             <CalendarView 
               selectedDate={selectedDate} 
@@ -263,6 +274,9 @@ export function TaskManagementApp() {
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            showToggleButton={true}
+            showExecutedTasks={showExecutedTasks}
+            toggleExecutedTasks={toggleExecutedTasks}
           >
             <TaskList 
               tasks={tasks.filter(task => !task.scheduledDate)}
@@ -273,6 +287,14 @@ export function TaskManagementApp() {
               deleteTask={deleteTask}
               onDragEnd={handleDragEnd}
             />
+            {showExecutedTasks && (
+              <ExecutedTasks 
+                tasks={tasks.filter(task => !task.scheduledDate)}
+                toggleStatus={toggleTaskStatus}
+                toggleStar={toggleTaskStar}
+                onEdit={setEditingTask}
+              />
+            )}
           </TabContent>
         </TabsContent>
 
@@ -284,6 +306,7 @@ export function TaskManagementApp() {
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            showToggleButton={false}
           >
             <ChartView tasks={tasks} />
           </TabContent>
