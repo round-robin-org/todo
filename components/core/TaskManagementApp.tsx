@@ -11,7 +11,7 @@ import { TaskList } from './TaskList'
 import { ExecutedTasks } from './ExecutedTasks'
 import { TaskDialog } from './TaskDialog'
 import { CalendarView } from './CalendarView'
-import { ReviewSection } from './ReviewSection'
+import { ChartView } from './ChartView'
 import { supabase } from '@/lib/supabase'
 import { Task } from './Task'
 import { DropResult } from 'react-beautiful-dnd'
@@ -441,10 +441,29 @@ export function TaskManagementApp() {
 
         {/* レビュータブ */}
         <TabsContent value="review">
-          <ReviewSection 
-            weeklyTaskData={weeklyTaskData} 
-            goalData={goalData} 
-          />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                レビュー
+                <div className="flex items-center space-x-2">
+                  <TaskDialog 
+                    labels={labels} 
+                    addTask={addTask} 
+                    isToday={false} 
+                    addLabel={addLabel}
+                    open={false} // 追加用ダイアログはボタンから開くためfalse
+                    onClose={() => {}} // 追加用は内部で閉じる
+                  />
+                </div>
+              </CardTitle>
+              <CardDescription>タスク完了率の傾向と目標ベースのタスク数</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartView 
+                tasks={tasks}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
