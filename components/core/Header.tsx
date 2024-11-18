@@ -1,39 +1,33 @@
 'use client'
 
 import React from 'react'
-import { supabase } from '@/lib/supabase'
+import { useSession, signIn, signOut } from 'next-auth/react'
+import { Button } from "@/components/ui/button"
 
 export function Header() {
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      console.error('サインアウトに失敗しました:', error)
-    }
-  }
-
-  const user = supabase.auth.getUser()
+  const { data: session } = useSession()
 
   return (
     <header className="flex justify-between items-center p-4 bg-gray-100">
       <h1 className="text-2xl font-bold">タスク管理アプリ</h1>
       <div>
-        {user ? (
+        {session ? (
           <>
-            <span className="mr-4">こんにちは, {user.user?.email}</span>
-            <button
-              onClick={handleSignOut}
+            <span className="mr-4">こんにちは, {session.user?.email}</span>
+            <Button
+              onClick={() => signOut()}
               className="px-4 py-2 bg-red-500 text-white rounded"
             >
               サインアウト
-            </button>
+            </Button>
           </>
         ) : (
-          <button
-            onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })}
+          <Button
+            onClick={() => signIn('github')}
             className="px-4 py-2 bg-blue-500 text-white rounded"
           >
             サインイン
-          </button>
+          </Button>
         )}
       </div>
     </header>

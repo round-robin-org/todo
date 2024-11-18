@@ -1,52 +1,24 @@
 "use client"
 
-import { signIn, signOut, useSession } from "next-auth/react"
-import { useState } from "react"
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card"
+import React, { useState } from 'react'
+import Image from 'next/image'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import Image from "next/image"
+import { signIn } from 'next-auth/react'
 
 export function Auth() {
-  const { data: session, status } = useSession()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSignIn = async () => {
     setLoading(true)
-    setError(null)
     try {
-      await signIn()
-    } catch (err) {
-      setError("サインインに失敗しました。再試行してください。")
+      await signIn('github')
+    } catch (e) {
+      setError('サインインに失敗しました。')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>読み込み中...</p>
-      </div>
-    )
-  }
-
-  if (session) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96 text-center">
-          <CardHeader>
-            <CardTitle>こんにちは, {session.user?.name}</CardTitle>
-            <CardDescription>あなたは現在サインインしています。</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button variant="destructive" onClick={() => signOut()}>
-              サインアウト
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    )
   }
 
   return (
@@ -61,7 +33,7 @@ export function Auth() {
           <Button onClick={handleSignIn} disabled={loading}>
             {loading ? "サインイン中..." : "サインイン"}
           </Button>
-          <Button variant="secondary" onClick={() => signIn()}>
+          <Button variant="secondary" onClick={() => signIn('github')}>
             サインアップ
           </Button>
           {error && <p className="text-red-500">{error}</p>}
