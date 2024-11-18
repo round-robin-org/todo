@@ -34,8 +34,6 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
     <div>
       <div className="flex justify-between items-center mb-4">
         <Button
-          variant="outline"
-          size="sm"
           onClick={() => setSelectedDate(date => new Date(date.getFullYear(), date.getMonth() - 1, 1))}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
         >
@@ -45,8 +43,6 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
           {format(selectedDate, 'MMMM yyyy')}
         </h2>
         <Button
-          variant="outline"
-          size="sm"
           onClick={() => setSelectedDate(date => new Date(date.getFullYear(), date.getMonth() + 1, 1))}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
         >
