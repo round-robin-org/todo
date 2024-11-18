@@ -1,10 +1,10 @@
 export type Task = {
   id: string;
   title: string;
-  memo: string;
+  memo?: string;
   status: "planned" | "executed";
   starred: boolean;
-  scheduledDate: string;
+  scheduledDate?: string;
   label?: string;
   routine?: {
     interval: { number: number; unit: 'day' | 'week' | 'month' | 'year' };

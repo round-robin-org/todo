@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Plus, Edit } from 'lucide-react'
 import { TaskForm } from './TaskForm'
 import { toast } from 'sonner'
-import { Task } from '../../lib/types' // `Task` 型を `types.ts` からインポート
+import { Task } from '../../lib/types'
 
 type TaskDialogProps = {
   labels: string[];

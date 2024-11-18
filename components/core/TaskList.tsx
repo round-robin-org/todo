@@ -12,9 +12,10 @@ type TaskListProps = {
   onEdit: (task: Task) => void;
   isDraggable: boolean;
   onDragEnd?: (result: DropResult) => void;
+  deleteTask: (id: string) => void;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask }: TaskListProps) {
   const plannedTasks = tasks.filter(task => task.status === "planned")
 
   return (
@@ -36,6 +37,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
                         toggleStatus={toggleStatus} 
                         toggleStar={toggleStar} 
                         onEdit={onEdit} 
+                        deleteTask={deleteTask}
                       />
                     </div>
                   )}
@@ -54,6 +56,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
               toggleStatus={toggleStatus} 
               toggleStar={toggleStar} 
               onEdit={onEdit} 
+              deleteTask={deleteTask}
             />
           ))}
         </ul>

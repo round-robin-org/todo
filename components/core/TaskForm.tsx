@@ -17,7 +17,7 @@ type TaskFormProps = {
 }
 
 export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: TaskFormProps) {
-  const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || '')
+  const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none')
   const [newLabel, setNewLabel] = useState('')
   const [title, setTitle] = useState(initialTask?.title || '')
   const [memo, setMemo] = useState(initialTask?.memo || '')
@@ -53,6 +53,8 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
       if (label && !labels.includes(label)) {
         addLabel(label)
       }
+    } else if (label === 'none') {
+      label = undefined
     }
 
     const routine = showRoutine ? {
@@ -78,9 +80,9 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
 
     const taskData: Omit<Task, 'id'> = {
       title,
-      memo,
-      scheduledDate,
-      label,
+      memo: memo || '',
+      scheduledDate: scheduledDate || '',
+      label: label || '',
       status: initialTask?.status || 'planned',
       starred: initialTask?.starred || false,
       routine
@@ -108,7 +110,6 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
           name="memo" 
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
-          required 
         />
       </div>
       {!isToday && (
@@ -120,7 +121,6 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
             type="date" 
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
-            required 
           />
         </div>
       )}
@@ -131,6 +131,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
             <SelectValue placeholder="ラベルを選択" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="none">選択なし</SelectItem>
             {labels.map(label => (
               <SelectItem key={label} value={label}>{label}</SelectItem>
             ))}
@@ -146,7 +147,6 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
             name="newLabel" 
             value={newLabel} 
             onChange={(e) => setNewLabel(e.target.value)} 
-            required 
           />
         </div>
       )}

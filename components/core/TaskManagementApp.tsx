@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import { ChartView } from './ChartView'
 import { supabase } from '@/lib/supabase'
 import { Task } from '../../lib/types'
 import { DropResult } from 'react-beautiful-dnd'
+import { toast } from 'sonner'
 
 export function TaskManagementApp() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -50,8 +51,7 @@ export function TaskManagementApp() {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .gte('scheduled_date', start)
-        .lte('scheduled_date', end)
+        .or(`scheduled_date.gte.${start},scheduled_date.lte.${end},scheduled_date.is.null`)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -64,10 +64,10 @@ export function TaskManagementApp() {
         .map(task => ({
           id: task.id.toString(),
           title: task.title,
-          memo: task.memo,
+          memo: task.memo || '',
           status: task.status === 'executed' ? 'executed' : 'planned',
           starred: task.starred || false,
-          scheduledDate: task.scheduled_date || '', // nullの場合は空文字に設定
+          scheduledDate: task.scheduled_date || null,
           label: task.label || ''
         }))
 
@@ -102,10 +102,10 @@ export function TaskManagementApp() {
         .map(task => ({
           id: task.id.toString(),
           title: task.title,
-          memo: task.memo,
+          memo: task.memo || '',
           status: task.status === 'executed' ? 'executed' : 'planned',
           starred: task.starred || false,
-          scheduledDate: task.scheduled_date || '',
+          scheduledDate: task.scheduled_date || null,
           label: task.label || ''
         }))
 
@@ -184,7 +184,7 @@ export function TaskManagementApp() {
           title: updatedTask.title,
           memo: updatedTask.memo,
           label: updatedTask.label,
-          scheduled_date: updatedTask.scheduledDate,
+          scheduled_date: updatedTask.scheduledDate || null,
           status: updatedTask.status,
           starred: updatedTask.starred
         })
@@ -212,7 +212,7 @@ export function TaskManagementApp() {
           {
             title: newTask.title,
             memo: newTask.memo,
-            scheduled_date: newTask.scheduledDate,
+            scheduled_date: newTask.scheduledDate || null,
             label: newTask.label,
             status: newTask.status,
             starred: newTask.starred,
@@ -224,15 +224,14 @@ export function TaskManagementApp() {
         throw error
       }
 
-      // dataがnullでないことを確認
       if (data) {
         const createdTask: Task = {
           id: data.id.toString(),
           title: data.title,
-          memo: data.memo,
+          memo: data.memo || '',
           status: data.status === 'executed' ? 'executed' : 'planned',
           starred: data.starred,
-          scheduledDate: data.scheduled_date || '',
+          scheduledDate: data.scheduled_date || null,
           label: data.label || ''
         }
         setTasks(prevTasks => [createdTask, ...prevTasks])
@@ -270,10 +269,10 @@ export function TaskManagementApp() {
             const newTask: Task = {
               id: payload.new.id.toString(),
               title: payload.new.title,
-              memo: payload.new.memo,
+              memo: payload.new.memo || '',
               status: payload.new.status === 'executed' ? 'executed' : 'planned',
               starred: payload.new.starred || false,
-              scheduledDate: payload.new.scheduled_date || '',
+              scheduledDate: payload.new.scheduled_date || null,
               label: payload.new.label || ''
             }
             setTasks(prev => [newTask, ...prev])
@@ -285,10 +284,10 @@ export function TaskManagementApp() {
             const updatedTask: Task = {
               id: payload.new.id.toString(),
               title: payload.new.title,
-              memo: payload.new.memo,
+              memo: payload.new.memo || '',
               status: payload.new.status === 'executed' ? 'executed' : 'planned',
               starred: payload.new.starred || false,
-              scheduledDate: payload.new.scheduled_date || '',
+              scheduledDate: payload.new.scheduled_date || null,
               label: payload.new.label || ''
             }
             setTasks(prev => prev.map(task => 
@@ -319,14 +318,34 @@ export function TaskManagementApp() {
     // 必要に応じてサーバー側に順序変更を保存する処理を追加
   }
 
+  const deleteTask = useCallback(async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+
+      if (error) {
+        throw error
+      }
+
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId))
+      toast.success('タスクを削除しました')
+    } catch (error) {
+      console.error('タスクの削除に失敗しました:', error)
+      setError('タスクの削除に失敗しました。')
+    }
+  }, [])
+
   return (
     <div className="container mx-auto p-4">
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <Header />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="today">今日</TabsTrigger>
           <TabsTrigger value="pastfuture">過去＆未来</TabsTrigger>
+          <TabsTrigger value="backlog">バックログ</TabsTrigger>
           <TabsTrigger value="review">レビュー</TabsTrigger>
         </TabsList>
         {/* 今日のタブ */}
@@ -362,6 +381,8 @@ export function TaskManagementApp() {
                 toggleStar={toggleTaskStar}
                 onEdit={setEditingTask}
                 isDraggable={false}
+                deleteTask={deleteTask}
+                onDragEnd={handleDragEnd}
               />
               {showExecutedTasks && (
                 <ExecutedTasks 
@@ -423,6 +444,8 @@ export function TaskManagementApp() {
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}
                       isDraggable={false}
+                      deleteTask={deleteTask}
+                      onDragEnd={handleDragEnd}
                     />
                     {showExecutedTasks && (
                       <ExecutedTasks 
@@ -435,6 +458,39 @@ export function TaskManagementApp() {
                   </CardContent>
                 </Card>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* バックログのタブ */}
+        <TabsContent value="backlog">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                バックログ
+                <div className="flex items-center space-x-2">
+                  <TaskDialog 
+                    labels={labels} 
+                    addTask={addTask} 
+                    isToday={false} 
+                    addLabel={addLabel}
+                    open={false}
+                    onClose={() => {}}
+                  />
+                </div>
+              </CardTitle>
+              <CardDescription>日付が設定されていないタスクのリスト</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TaskList 
+                tasks={tasks.filter(task => !task.scheduledDate)}
+                toggleStatus={toggleTaskStatus}
+                toggleStar={toggleTaskStar}
+                onEdit={setEditingTask}
+                isDraggable={false}
+                deleteTask={deleteTask}
+                onDragEnd={handleDragEnd}
+              />
             </CardContent>
           </Card>
         </TabsContent>
