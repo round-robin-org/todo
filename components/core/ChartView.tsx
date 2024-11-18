@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, TooltipProps } from 'recharts'
-import { format, startOfWeek, addDays } from 'date-fns'
+import { format, startOfWeek, addDays, isWithinInterval } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ChartContainer, ChartLegendContent } from "@/components/ui/chart"
 import { Task } from './Task'
@@ -27,27 +27,35 @@ interface GoalData {
 interface CustomTooltipProps extends TooltipProps<number, string> {
   tasks: Task[]
   chartType: 'weekly' | 'goal'
+  weekRange: { weekStart: Date; weekEnd: Date } | null
 }
 
 // カスタムツールチップコンポーネント
-const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, tasks, chartType }) => {
-  if (active && payload && payload.length) {
+const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, tasks, chartType, weekRange }) => {
+  if (active && payload && payload.length && weekRange) {
     const dataKey = payload[0].dataKey as string
 
     let filteredTasks: Task[] = []
 
     if (chartType === 'weekly') {
-      const dateLabel = label as string
-      // 週間チャートの場合は日付でフィルタリング
-      const dayOfWeek = format(new Date(), 'E', { locale: ja }) // 実際の日付に基づくフィルタリングに修正が必要かもしれません
-      filteredTasks = tasks.filter(task => {
-        const taskDate = format(new Date(task.scheduledDate), 'E', { locale: ja })
-        return taskDate === dateLabel
-      })
+      // ツールチップのラベルから該当する日付を特定
+      const weekStart = startOfWeek(new Date(), { locale: ja })
+      const dayIndex = ['日', '月', '火', '水', '木', '金', '土'].indexOf(label as string)
+      if (dayIndex === -1) {
+        return null
+      }
+      const targetDate = addDays(weekStart, dayIndex)
+      const dateStr = format(targetDate, 'yyyy-MM-dd')
+
+      // 週間チャートの場合は特定の日付でフィルタリング
+      filteredTasks = tasks.filter(task => task.scheduledDate === dateStr)
     } else if (chartType === 'goal') {
       const goalName = label as string
-      // 目標別チャートの場合はラベルでフィルタリング
-      filteredTasks = tasks.filter(task => task.label === goalName)
+      // 目標別チャートの場合はラベルと対象期間でフィルタリング
+      filteredTasks = tasks.filter(task => 
+        task.label === goalName &&
+        isWithinInterval(new Date(task.scheduledDate), { start: weekRange.weekStart, end: weekRange.weekEnd })
+      )
     }
 
     return (
@@ -75,10 +83,12 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, t
 export function ChartView({ tasks }: ChartViewProps) {
   const [weeklyTaskData, setWeeklyTaskData] = useState<WeeklyTaskData[]>([])
   const [goalData, setGoalData] = useState<GoalData[]>([])
+  const [weekRange, setWeekRange] = useState<{ weekStart: Date; weekEnd: Date } | null>(null)
 
   useEffect(() => {
     const calculateWeeklyData = () => {
       const weekStart = startOfWeek(new Date(), { locale: ja })
+      const weekEnd = addDays(weekStart, 6)
       const data: WeeklyTaskData[] = []
 
       for (let i = 0; i < 7; i++) {
@@ -97,19 +107,24 @@ export function ChartView({ tasks }: ChartViewProps) {
       }
 
       setWeeklyTaskData(data)
+      setWeekRange({ weekStart, weekEnd })
+      return { weekStart, weekEnd }
     }
 
-    const calculateGoalData = () => {
+    const calculateGoalData = (weekStart: Date, weekEnd: Date) => {
       const labelStats: Record<string, { planned: number; executed: number }> = {}
 
       tasks.forEach(task => {
-        if (!task.label) return
-        if (!labelStats[task.label]) {
-          labelStats[task.label] = { planned: 0, executed: 0 }
-        }
-        labelStats[task.label].planned++
-        if (task.status === 'executed') {
-          labelStats[task.label].executed++
+        const taskDate = new Date(task.scheduledDate)
+        if (isWithinInterval(taskDate, { start: weekStart, end: weekEnd })) {
+          if (!task.label) return
+          if (!labelStats[task.label]) {
+            labelStats[task.label] = { planned: 0, executed: 0 }
+          }
+          labelStats[task.label].planned++
+          if (task.status === 'executed') {
+            labelStats[task.label].executed++
+          }
         }
       })
 
@@ -121,8 +136,8 @@ export function ChartView({ tasks }: ChartViewProps) {
       setGoalData(data)
     }
 
-    calculateWeeklyData()
-    calculateGoalData()
+    const { weekStart, weekEnd } = calculateWeeklyData()
+    calculateGoalData(weekStart, weekEnd)
   }, [tasks])
 
   const chartConfigWeekly = {
@@ -155,7 +170,7 @@ export function ChartView({ tasks }: ChartViewProps) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <Tooltip content={<CustomTooltip tasks={tasks} chartType="weekly" />} />
+          <Tooltip content={<CustomTooltip tasks={tasks} chartType="weekly" weekRange={weekRange} />} />
           <Legend content={<ChartLegendContent />} />
           <Area
             type="monotone"
@@ -179,7 +194,7 @@ export function ChartView({ tasks }: ChartViewProps) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis type="number" />
           <YAxis dataKey="name" type="category" />
-          <Tooltip content={<CustomTooltip tasks={tasks} chartType="goal" />} />
+          <Tooltip content={<CustomTooltip tasks={tasks} chartType="goal" weekRange={weekRange} />} />
           <Legend content={<ChartLegendContent />} />
           <Bar dataKey="planned" stackId="a" fill="var(--badge-planned-bg)" name="予定" />
           <Bar dataKey="executed" stackId="a" fill="var(--badge-executed-bg)" name="実行" />
@@ -187,4 +202,4 @@ export function ChartView({ tasks }: ChartViewProps) {
       </ChartContainer>
     </div>
   )
-} 
+}
