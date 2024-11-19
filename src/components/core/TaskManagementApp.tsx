@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { format } from 'date-fns'
 import { Header } from '@src/components/core/Header'
@@ -14,7 +14,8 @@ import { TabContent } from '@src/components/core/TabContent'
 import { Task } from '@src/lib/types'
 import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
+import { MapView } from './MapView'
 
 export function TaskManagementApp() {
   const [activeTab, setActiveTab] = useState("today")
@@ -22,8 +23,29 @@ export function TaskManagementApp() {
   const [showExecutedTasks, setShowExecutedTasks] = useState(false)
   const [labels, setLabels] = useState(["Health", "Work", "Housework"])
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [userLocation, setUserLocation] = useState<{ longitude: number, latitude: number } | null>(null)
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            longitude: position.coords.longitude,
+            latitude: position.coords.latitude
+          })
+        },
+        (error) => {
+          console.error('ユーザーの位置情報取得に失敗しました:', error)
+          toast.error('ユーザーの位置情報を取得できませんでした。デフォルトの位置を使用します。')
+        }
+      )
+    } else {
+      console.error('このブラウザはジオロケーションをサポートしていません。')
+      toast.error('ジオロケーションがサポートされていません。デフォルトの位置を使用します。')
+    }
+  }, [])
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -53,10 +75,10 @@ export function TaskManagementApp() {
 
       // Add new task to state
       setTasks(prevTasks => [data[0], ...prevTasks])
-      toast.success('Task added successfully')
+      toast.success('タスクが正常に追加されました')
     } catch (error) {
-      console.error('Failed to add task:', error)
-      toast.error('Failed to add task.')
+      console.error('タスクの追加に失敗しました:', error)
+      toast.error('タスクの追加に失敗しました。')
     }
   }
 
@@ -81,10 +103,10 @@ export function TaskManagementApp() {
       setTasks(prevTasks =>
         prevTasks.map(t => t.id === updatedTask.id ? updatedTask : t)
       )
-      toast.success('Task updated successfully')
+      toast.success('タスクが正常に更新されました')
     } catch (error) {
-      console.error('Failed to update task:', error)
-      toast.error('Failed to update task.')
+      console.error('タスクの更新に失敗しました:', error)
+      toast.error('タスクの更新に失敗しました。')
     }
   }
 
@@ -92,7 +114,7 @@ export function TaskManagementApp() {
   const toggleTaskStatus = async (taskId: string) => {
     try {
       const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('Task not found')
+      if (!task) throw new Error('タスクが見つかりません')
 
       const updatedStatus = task.status === 'executed' ? 'planned' : 'executed'
 
@@ -109,10 +131,10 @@ export function TaskManagementApp() {
           t.id === taskId ? { ...t, status: updatedStatus } : t
         )
       )
-      toast.success('Task status updated successfully')
+      toast.success('タスクのステータスが更新されました')
     } catch (error) {
-      console.error('Failed to update status:', error)
-      toast.error('Failed to update status.')
+      console.error('ステータスの更新に失敗しました:', error)
+      toast.error('ステータスの更新に失敗しました。')
     }
   }
 
@@ -120,7 +142,7 @@ export function TaskManagementApp() {
   const toggleTaskStar = async (taskId: string) => {
     try {
       const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('Task not found')
+      if (!task) throw new Error('タスクが見つかりません')
 
       const updatedStar = !task.starred
 
@@ -136,10 +158,10 @@ export function TaskManagementApp() {
           t.id === taskId ? { ...t, starred: updatedStar } : t
         )
       )
-      toast.success('Task star updated successfully')
+      toast.success('タスクのスターが更新されました')
     } catch (error) {
-      console.error('Failed to update star:', error)
-      toast.error('Failed to update star.')
+      console.error('スターの更新に失敗しました:', error)
+      toast.error('スターの更新に失敗しました。')
     }
   }
 
@@ -162,10 +184,10 @@ export function TaskManagementApp() {
 
       // Remove task from state
       setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId))
-      toast.success('Task deleted successfully')
+      toast.success('タスクが正常に削除されました')
     } catch (error) {
-      console.error('Failed to delete task:', error)
-      toast.error('Failed to delete task.')
+      console.error('タスクの削除に失敗しました:', error)
+      toast.error('タスクの削除に失敗しました。')
     }
   }
 
@@ -173,6 +195,120 @@ export function TaskManagementApp() {
   const toggleExecutedTasks = () => {
     setShowExecutedTasks(prev => !prev)
   }
+
+  // テスト用のタスクデータを追加
+  const testTasks: Task[] = [
+    {
+      id: '1',
+      title: '会議',
+      memo: 'プロジェクトのキックオフミーティング',
+      scheduledDate: '2023-10-15',
+      label: 'Work',
+      status: 'planned',
+      starred: false,
+      longitude: 139.6917, // 東京の経度
+      latitude: 35.6895     // 東京の緯度
+    },
+    {
+      id: '2',
+      title: '買い物',
+      memo: 'スーパーで食料品を購入',
+      scheduledDate: '2023-10-16',
+      label: 'Housework',
+      status: 'executed',
+      starred: true,
+      longitude: 139.7528, // 新宿の経度
+      latitude: 35.6938     // 新宿の緯度
+    },
+    {
+      id: '3',
+      title: 'ジョギング',
+      memo: '公園で朝のジョギング',
+      scheduledDate: '2023-10-17',
+      label: 'Health',
+      status: 'planned',
+      starred: false,
+      longitude: 139.7035, // 渋谷の経度
+      latitude: 35.6581     // 渋谷の緯度
+    },
+    {
+      id: '4',
+      title: '読書',
+      memo: '新しい本を読む',
+      scheduledDate: '2023-10-18',
+      label: 'Health',
+      status: 'planned',
+      starred: true,
+      longitude: 139.7745, // 目黒の経度
+      latitude: 35.6416     // 目黒の緯度
+    },
+    {
+      id: '5',
+      title: '料理',
+      memo: '夕食の準備',
+      scheduledDate: '2023-10-19',
+      label: 'Housework',
+      status: 'executed',
+      starred: false,
+      longitude: 139.7640, // 中野の経度
+      latitude: 35.6890     // 中野の緯度
+    },
+    {
+      id: '6',
+      title: 'オンラインセミナー',
+      memo: '最新技術についてのセミナーに参加',
+      scheduledDate: '2023-10-20',
+      label: 'Work',
+      status: 'planned',
+      starred: false,
+      longitude: 139.7400, // 千代田の経度
+      latitude: 35.6938     // 千代田の緯度
+    },
+    {
+      id: '7',
+      title: '映画鑑賞',
+      memo: '新作映画を観る',
+      scheduledDate: '2023-10-21',
+      label: 'Health',
+      status: 'executed',
+      starred: true,
+      longitude: 139.7624, // 恵比寿の経度
+      latitude: 35.6470     // 恵比寿の緯度
+    },
+    {
+      id: '8',
+      title: '掃除',
+      memo: '部屋の大掃除',
+      scheduledDate: '2023-10-22',
+      label: 'Housework',
+      status: 'planned',
+      starred: false,
+      longitude: 139.7100, // 港区の経度
+      latitude: 35.6586     // 港区の緯度
+    },
+    {
+      id: '9',
+      title: 'ランチミーティング',
+      memo: 'クライアントとのランチミーティング',
+      scheduledDate: '2023-10-23',
+      label: 'Work',
+      status: 'executed',
+      starred: true,
+      longitude: 139.7060, // 中央区の経度
+      latitude: 35.6812     // 中央区の緯度
+    },
+    {
+      id: '10',
+      title: 'ヨガ',
+      memo: 'スタジオでのヨガセッション',
+      scheduledDate: '2023-10-24',
+      label: 'Health',
+      status: 'planned',
+      starred: false,
+      longitude: 139.7085, // 豊島区の経度
+      latitude: 35.7295     // 豊島区の緯度
+    },
+  ]
 
   return (
     <div>
@@ -182,7 +318,8 @@ export function TaskManagementApp() {
           <TabsTrigger value="today">Today</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="backlog">Backlog</TabsTrigger>
-          <TabsTrigger value="review">Review</TabsTrigger>
+          <TabsTrigger value="chart">Chart</TabsTrigger>
+          <TabsTrigger value="map">Map</TabsTrigger>
         </TabsList>
 
         {/* Today Tab */}
@@ -298,10 +435,10 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* Review Tab */}
-        <TabsContent value="review">
+        {/* Chart Tab */}
+        <TabsContent value="chart">
           <TabContent 
-            title="Review" 
+            title="Chart View" 
             description="Trends in task execution rates and goal-based task counts." 
             labels={labels}
             addTask={addTask}
@@ -309,6 +446,20 @@ export function TaskManagementApp() {
             showToggleButton={false}
           >
             <ChartView tasks={tasks} />
+          </TabContent>
+        </TabsContent>
+
+        {/* Map Tab */}
+        <TabsContent value="map">
+          <TabContent 
+            title="Map View" 
+            description="View tasks on a map." 
+            labels={labels}
+            addTask={addTask}
+            addLabel={addLabel}
+            showToggleButton={false}
+          >
+            <MapView tasks={testTasks} userLocation={userLocation} />
           </TabContent>
         </TabsContent>
       </Tabs>
