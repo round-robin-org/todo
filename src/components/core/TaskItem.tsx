@@ -15,9 +15,10 @@ type TaskItemProps = {
   onEdit: (task: Task) => void;
   deleteTask: (id: string) => void;
   isExecuted?: boolean;
+  isDragging?: boolean;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, isDragging }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
 
@@ -44,8 +45,14 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   return (
     <li
       {...handlers}
-      className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50`}
+      className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-transform duration-200 ${
+        isDragging ? 'transform scale-50 shadow-2xl bg-gray-200 z-20' : ''
+      } ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50`}
       onClick={handleClick}
+      style={{
+        zIndex: isDragging ? 20 : 'auto',
+        pointerEvents: isDragging ? 'none' : 'auto',
+      }}
     >
       <div className="flex items-center space-x-2">
         <Checkbox 
