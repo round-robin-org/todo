@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { MapView } from './MapView'
 
 export function TaskManagementApp() {
-  const [activeTab, setActiveTab] = useState("today")
+  const [activeTab, setActiveTab] = useState("calendar")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showExecutedTasks, setShowExecutedTasks] = useState(false)
   const [labels, setLabels] = useState(["Health", "Work", "Housework"])
@@ -205,44 +205,10 @@ export function TaskManagementApp() {
       <Header />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="today">Today</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="backlog">Backlog</TabsTrigger>
-          <TabsTrigger value="chart">Chart</TabsTrigger>
           <TabsTrigger value="map">Map</TabsTrigger>
+          <TabsTrigger value="chart">Chart</TabsTrigger>
         </TabsList>
-
-        {/* Today Tab */}
-        <TabsContent value="today">
-          <TabContent 
-            title="Today's Tasks" 
-            description="Focus on your tasks for today." 
-            labels={labels}
-            addTask={addTask}
-            addLabel={addLabel}
-            showToggleButton={true}
-            showExecutedTasks={showExecutedTasks}
-            toggleExecutedTasks={toggleExecutedTasks}
-          >
-            <TaskList 
-              tasks={tasks.filter(task => task.scheduledDate === format(new Date(), 'yyyy-MM-dd'))}
-              toggleStatus={toggleTaskStatus}
-              toggleStar={toggleTaskStar}
-              onEdit={setEditingTask}
-              isDraggable={false}
-              deleteTask={deleteTask}
-              onDragEnd={handleDragEnd}
-            />
-            {showExecutedTasks && (
-              <ExecutedTasks 
-                tasks={tasks.filter(task => task.scheduledDate === format(new Date(), 'yyyy-MM-dd'))}
-                toggleStatus={toggleTaskStatus}
-                toggleStar={toggleTaskStar}
-                onEdit={setEditingTask}
-              />
-            )}
-          </TabContent>
-        </TabsContent>
 
         {/* Calendar View Tab */}
         <TabsContent value="calendar">
@@ -293,35 +259,17 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* Backlog Tab */}
-        <TabsContent value="backlog">
+        {/* Map Tab */}
+        <TabsContent value="map">
           <TabContent 
-            title="Backlog" 
-            description="List of tasks without a set date." 
+            title="Map View" 
+            description="View tasks on a map." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
-            showToggleButton={true}
-            showExecutedTasks={showExecutedTasks}
-            toggleExecutedTasks={toggleExecutedTasks}
+            showToggleButton={false}
           >
-            <TaskList 
-              tasks={tasks.filter(task => !task.scheduledDate)}
-              toggleStatus={toggleTaskStatus}
-              toggleStar={toggleTaskStar}
-              onEdit={setEditingTask}
-              isDraggable={false}
-              deleteTask={deleteTask}
-              onDragEnd={handleDragEnd}
-            />
-            {showExecutedTasks && (
-              <ExecutedTasks 
-                tasks={tasks.filter(task => !task.scheduledDate)}
-                toggleStatus={toggleTaskStatus}
-                toggleStar={toggleTaskStar}
-                onEdit={setEditingTask}
-              />
-            )}
+            <MapView tasks={tasks} userLocation={userLocation} />
           </TabContent>
         </TabsContent>
 
