@@ -14,9 +14,13 @@ type CalendarViewProps = {
   addTask: (task: Omit<Task, 'id'>) => void;
   addLabel: (newLabel: string) => void;
   labels: string[];
+  showUnplannedTasks: boolean;
+  setShowUnplannedTasks: (show: boolean) => void;
+  assignTaskToDate: (taskId: string, date: Date) => void;
+  unassignTaskFromDate: (taskId: string) => void;
 }
 
-export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel, labels }: CalendarViewProps) {
+export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel, labels, showUnplannedTasks, setShowUnplannedTasks, assignTaskToDate, unassignTaskFromDate }: CalendarViewProps) {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -25,8 +29,14 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
   // Determine the number of blank cells
   const blankDays = Array.from({ length: startWeekDay }, (_, i) => i);
 
-  // Add Today button
+  // Add Today and Unplanned buttons
   const handleToday = () => {
+    setShowUnplannedTasks(false)
+    setSelectedDate(new Date());
+  }
+
+  const handleUnplanned = () => {
+    setShowUnplannedTasks(true)
     setSelectedDate(new Date());
   }
 
@@ -50,8 +60,8 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
         </Button>
       </div>
 
-      {/* Add Today button */}
-      <div className="flex justify-end mb-4">
+      {/* Add Today and Unplanned buttons */}
+      <div className="flex justify-end mb-4 space-x-2">
         <Button
           variant="secondary"
           size="sm"
@@ -60,6 +70,15 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
         >
           <Calendar className="h-4 w-4 mr-1" />
           Today
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleUnplanned}
+          className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-700 flex items-center"
+        >
+          <Calendar className="h-4 w-4 mr-1" />
+          Unplanned
         </Button>
       </div>
 

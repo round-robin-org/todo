@@ -13,9 +13,11 @@ type TaskListProps = {
   isDraggable: boolean;
   onDragEnd?: (result: DropResult) => void;
   deleteTask: (id: string) => void;
+  assignTaskToDate?: (id: string) => void;
+  unassignTaskFromDate?: (id: string) => void;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignTaskFromDate, setTaskToSchedule }: TaskListProps) {
   const plannedTasks = tasks.filter(task => task.status === "planned")
 
   return (
@@ -38,6 +40,9 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
                         toggleStar={toggleStar} 
                         onEdit={onEdit} 
                         deleteTask={deleteTask}
+                        assignToDate={assignTaskToDate}
+                        unassignFromDate={unassignTaskFromDate}
+                        setTaskToSchedule={setTaskToSchedule}
                       />
                     </div>
                   )}
@@ -57,6 +62,9 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
               toggleStar={toggleStar} 
               onEdit={onEdit} 
               deleteTask={deleteTask}
+              assignToDate={assignTaskToDate}
+              unassignFromDate={unassignTaskFromDate}
+              setTaskToSchedule={setTaskToSchedule}
             />
           ))}
         </ul>

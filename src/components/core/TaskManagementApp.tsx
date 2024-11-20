@@ -24,6 +24,8 @@ export function TaskManagementApp() {
   const [labels, setLabels] = useState(["Health", "Work", "Housework"])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [userLocation, setUserLocation] = useState<{ longitude: number, latitude: number } | null>(null)
+  const [showUnplannedTasks, setShowUnplannedTasks] = useState(false)
+  const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
 
@@ -37,13 +39,13 @@ export function TaskManagementApp() {
           })
         },
         (error) => {
-          console.error('ユーザーの位置情報取得に失敗しました:', error)
-          toast.error('ユーザーの位置情報を取得できませんでした。デフォルトの位置を使用します。')
+          console.error('Failed to get user location:', error)
+          toast.error('Could not get user location. Using default location.')
         }
       )
     } else {
-      console.error('このブラウザはジオロケーションをサポートしていません。')
-      toast.error('ジオロケーションがサポートされていません。デフォルトの位置を使用します。')
+      console.error('This browser does not support geolocation.')
+      toast.error('Geolocation is not supported. Using default location.')
     }
   }, [])
 
@@ -56,6 +58,20 @@ export function TaskManagementApp() {
 
     setTasks(reorderedTasks);
   };
+
+  const setTaskToSchedule = (task: Task) => {
+    setSchedulingTask(task)
+    toast.info(`Task "${task.title}" is now in scheduling mode. Please select a date.`)
+  }
+
+  const handleDateClick = (date: Date) => {
+    if (schedulingTask) {
+      assignTaskToDate(schedulingTask.id, date)
+      setSchedulingTask(null)
+    } else {
+      setSelectedDate(date)
+    }
+  }
 
   // Add Task
   const addTask = async (taskData: Omit<Task, 'id'>) => {
@@ -77,10 +93,10 @@ export function TaskManagementApp() {
 
       // Add new task to state
       setTasks(prevTasks => [data[0], ...prevTasks])
-      toast.success('タスクが正常に追加されました')
+      toast.success('Task added successfully')
     } catch (error) {
-      console.error('タスクの追加に失敗しました:', error)
-      toast.error('タスクの追加に失敗しました。')
+      console.error('Failed to add task:', error)
+      toast.error('Failed to add task.')
     }
   }
 
@@ -107,10 +123,10 @@ export function TaskManagementApp() {
       setTasks(prevTasks =>
         prevTasks.map(t => t.id === updatedTask.id ? updatedTask : t)
       )
-      toast.success('タスクが正常に更新されました')
+      toast.success('Task updated successfully')
     } catch (error) {
-      console.error('タスクの更新に失敗しました:', error)
-      toast.error('タスクの更新に失敗しました。')
+      console.error('Failed to update task:', error)
+      toast.error('Failed to update task.')
     }
   }
 
@@ -118,7 +134,7 @@ export function TaskManagementApp() {
   const toggleTaskStatus = async (taskId: string) => {
     try {
       const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('タスクが見つかりません')
+      if (!task) throw new Error('Task not found')
 
       const updatedStatus = task.status === 'executed' ? 'planned' : 'executed'
 
@@ -135,10 +151,10 @@ export function TaskManagementApp() {
           t.id === taskId ? { ...t, status: updatedStatus } : t
         )
       )
-      toast.success('タスクのステータスが更新されました')
+      toast.success('Task status updated')
     } catch (error) {
-      console.error('ステータスの更新に失敗しました:', error)
-      toast.error('ステータスの更新に失敗しました。')
+      console.error('Failed to update status:', error)
+      toast.error('Failed to update status.')
     }
   }
 
@@ -146,7 +162,7 @@ export function TaskManagementApp() {
   const toggleTaskStar = async (taskId: string) => {
     try {
       const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('タスクが見つかりません')
+      if (!task) throw new Error('Task not found')
 
       const updatedStar = !task.starred
 
@@ -162,10 +178,10 @@ export function TaskManagementApp() {
           t.id === taskId ? { ...t, starred: updatedStar } : t
         )
       )
-      toast.success('タスクのスターが更新されました')
+      toast.success('Task star updated')
     } catch (error) {
-      console.error('スターの更新に失敗しました:', error)
-      toast.error('スターの更新に失敗しました。')
+      console.error('Failed to update star:', error)
+      toast.error('Failed to update star.')
     }
   }
 
@@ -188,10 +204,10 @@ export function TaskManagementApp() {
 
       // Remove task from state
       setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId))
-      toast.success('タスクが正常に削除されました')
+      toast.success('Task deleted successfully')
     } catch (error) {
-      console.error('タスクの削除に失敗しました:', error)
-      toast.error('タスクの削除に失敗しました。')
+      console.error('Failed to delete task:', error)
+      toast.error('Failed to delete task.')
     }
   }
 
@@ -199,6 +215,50 @@ export function TaskManagementApp() {
   const toggleExecutedTasks = () => {
     setShowExecutedTasks(prev => !prev)
   }
+
+  // Add: Assign task to date
+  const assignTaskToDate = async (taskId: string, date: Date) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ scheduled_date: format(date, 'yyyy-MM-dd') })
+        .eq('id', taskId)
+
+      if (error) throw error
+
+      setTasks(prevTasks =>
+        prevTasks.map(t => t.id === taskId ? { ...t, scheduledDate: format(date, 'yyyy-MM-dd') } : t)
+      )
+      toast.success('Task scheduled successfully')
+    } catch (error) {
+      console.error('Failed to schedule task:', error)
+      toast.error('Failed to schedule task.')
+    }
+  }
+
+  // Add: Unassign task from date
+  const unassignTaskFromDate = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ scheduled_date: null })
+        .eq('id', taskId)
+
+      if (error) throw error
+
+      setTasks(prevTasks =>
+        prevTasks.map(t => t.id === taskId ? { ...t, scheduledDate: null } : t)
+      )
+      toast.success('Task unscheduled successfully')
+    } catch (error) {
+      console.error('Failed to unschedule task:', error)
+      toast.error('Failed to unschedule task.')
+    }
+  }
+
+  const filteredTasks = showUnplannedTasks
+    ? tasks.filter(task => !task.scheduledDate)
+    : tasks
 
   return (
     <div>
@@ -224,30 +284,37 @@ export function TaskManagementApp() {
           >
             <CalendarView 
               selectedDate={selectedDate} 
-              setSelectedDate={setSelectedDate} 
-              tasks={tasks} 
+              setSelectedDate={handleDateClick} 
+              tasks={filteredTasks} 
               addTask={addTask}
               addLabel={addLabel}
               labels={labels}
+              showUnplannedTasks={showUnplannedTasks}
+              setShowUnplannedTasks={setShowUnplannedTasks}
+              assignTaskToDate={assignTaskToDate}
+              unassignTaskFromDate={unassignTaskFromDate}
             />
-            {selectedDate && (
+            {selectedDate && !showUnplannedTasks && (
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>{format(selectedDate, 'MMMM d, yyyy')} Tasks</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TaskList 
-                    tasks={tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")}
+                    tasks={filteredTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")}
                     toggleStatus={toggleTaskStatus}
                     toggleStar={toggleTaskStar}
                     onEdit={setEditingTask}
                     isDraggable={false}
                     deleteTask={deleteTask}
                     onDragEnd={handleDragEnd}
+                    assignTaskToDate={assignTaskToDate}
+                    unassignTaskFromDate={unassignTaskFromDate}
+                    setTaskToSchedule={setTaskToSchedule}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
-                      tasks={tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))}
+                      tasks={filteredTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))}
                       toggleStatus={toggleTaskStatus}
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}
@@ -269,7 +336,7 @@ export function TaskManagementApp() {
             addLabel={addLabel}
             showToggleButton={false}
           >
-            <MapView tasks={tasks} userLocation={userLocation} />
+            <MapView tasks={filteredTasks} userLocation={userLocation} />
           </TabContent>
         </TabsContent>
 
@@ -283,21 +350,7 @@ export function TaskManagementApp() {
             addLabel={addLabel}
             showToggleButton={false}
           >
-            <ChartView tasks={tasks} />
-          </TabContent>
-        </TabsContent>
-
-        {/* Map Tab */}
-        <TabsContent value="map">
-          <TabContent 
-            title="Map View" 
-            description="View tasks on a map." 
-            labels={labels}
-            addTask={addTask}
-            addLabel={addLabel}
-            showToggleButton={false}
-          >
-            <MapView tasks={tasks} userLocation={userLocation} />
+            <ChartView tasks={filteredTasks} />
           </TabContent>
         </TabsContent>
       </Tabs>

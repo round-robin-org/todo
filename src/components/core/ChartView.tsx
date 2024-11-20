@@ -587,16 +587,16 @@ export function ChartView({ tasks }: ChartViewProps) {
               />
               <Legend content={<ChartLegendContent />} />
               <Bar
-                dataKey="planned"
-                stackId="a"
-                fill={chartConfigGoal.planned.color}
-                name={chartConfigGoal.planned.label}
-              />
-              <Bar
                 dataKey="executed"
                 stackId="a"
                 fill={chartConfigGoal.executed.color}
                 name={chartConfigGoal.executed.label}
+              />
+              <Bar
+                dataKey="planned"
+                stackId="a"
+                fill={chartConfigGoal.planned.color}
+                name={chartConfigGoal.planned.label}
               />
             </BarChart>
           ) : (

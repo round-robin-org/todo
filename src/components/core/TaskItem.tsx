@@ -15,9 +15,12 @@ type TaskItemProps = {
   onEdit: (task: Task) => void;
   deleteTask: (id: string) => void;
   isExecuted?: boolean;
+  assignToDate?: (id: string) => void;
+  unassignFromDate?: (id: string) => void;
+  setTaskToSchedule?: (task: Task) => void;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
 
@@ -28,6 +31,18 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     },
     onSwipedRight: () => {
       setShowDelete(false)
+      interactionRef.current = true
+    },
+    onSwipedUp: () => {
+      if (setTaskToSchedule) {
+        setTaskToSchedule(task)
+      }
+      interactionRef.current = true
+    },
+    onSwipedDown: () => {
+      if (unassignFromDate) {
+        unassignFromDate(task.id)
+      }
       interactionRef.current = true
     },
     preventDefaultTouchmoveEvent: true,
