@@ -31,7 +31,9 @@ export function useTasks(selectedDate: Date, activeTab: string) {
           status: task.status === 'executed' ? 'executed' : 'planned',
           starred: task.starred || false,
           scheduledDate: task.scheduled_date || null,
-          label: task.label || ''
+          label: task.label || '',
+          longitude: task.longitude || null,
+          latitude: task.latitude || null
         }))
 
       setTasks(formattedTasks)
@@ -63,7 +65,9 @@ export function useTasks(selectedDate: Date, activeTab: string) {
           status: task.status === 'executed' ? 'executed' : 'planned',
           starred: task.starred || false,
           scheduledDate: task.scheduled_date || null,
-          label: task.label || ''
+          label: task.label || '',
+          longitude: task.longitude || null,
+          latitude: task.latitude || null
         }))
 
       setTasks(formattedTasks)

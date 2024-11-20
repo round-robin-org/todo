@@ -11,4 +11,6 @@ export type Task = {
     starts: string;
     ends: { type: 'never' | 'on' | 'after'; value?: string | number };
   };
+  longitude?: number | null;
+  latitude?: number | null;
 }; 

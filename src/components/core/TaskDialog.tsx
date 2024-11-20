@@ -18,6 +18,7 @@ type TaskDialogProps = {
   isToday: boolean;
   open?: boolean;
   onClose?: () => void;
+  userLocation: { longitude: number, latitude: number } | null;
 }
 
 export function TaskDialog({ 
@@ -29,7 +30,8 @@ export function TaskDialog({
   taskToEdit, 
   isToday, 
   open,
-  onClose
+  onClose,
+  userLocation
 }: TaskDialogProps) {
 
   const handleSubmit = (taskData: Omit<Task, 'id'>) => {
@@ -68,6 +70,7 @@ export function TaskDialog({
           onSubmit={handleSubmit} 
           isToday={isToday} 
           addLabel={addLabel} 
+          userLocation={userLocation}
         />
       </DialogContent>
     </Dialog>

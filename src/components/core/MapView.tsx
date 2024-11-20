@@ -52,7 +52,10 @@ export function MapView({ tasks, userLocation }: MapViewProps) {
       },
       geometry: {
         type: 'Point',
-        coordinates: [task.longitude, task.latitude]
+        coordinates: [
+          task.longitude ? task.longitude : 0,
+          task.latitude ? task.latitude : 0
+        ]
       }
     }))
   }
@@ -209,26 +212,35 @@ export function MapView({ tasks, userLocation }: MapViewProps) {
           type="geojson"
           data={geojson}
           cluster={true}
-          clusterMaxZoom={20} // クラスタリングを行う最大ズームレベル
-          clusterRadius={50}   // クラスタリングの半径
+          clusterMaxZoom={20}
+          clusterRadius={50}
         >
           <Layer {...clusterLayer} />
           <Layer {...clusterCountLayer} />
           <Layer {...unclusteredPointLayer} />
         </Source>
 
-        {/* ユーザーの位置にアイコンを表示 */}
+        {/* ユーザーの位置にアイコンと棒を表示 */}
         {userLocation && (
           <Marker
             longitude={userLocation.longitude}
             latitude={userLocation.latitude}
-            anchor="center"
+            anchor="bottom" // ピンの基部が位置を指すように設定
+            style={{ zIndex: 1 }}
           >
-            <img 
-              src="/round_robin.png" 
-              alt="ユーザーの現在位置" 
-              style={{ width: '30px', height: '30px' }} 
-            />
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {/* アイコン画像を上にずらす */}
+              <img 
+                src="/round_robin.png" // 既存のアイコン画像
+                alt="ユーザーの現在位置" 
+                style={{ 
+                  width: '30px', 
+                  height: '30px', 
+                  pointerEvents: 'none',
+                  transform: 'translateY(-15px)' // アイコンを上に15pxずらす
+                }} 
+              />
+            </div>
           </Marker>
         )}
 

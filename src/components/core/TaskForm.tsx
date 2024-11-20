@@ -14,9 +14,10 @@ type TaskFormProps = {
   onSubmit: (taskData: Omit<Task, 'id'>) => void;
   isToday: boolean;
   addLabel: (newLabel: string) => void;
+  userLocation: { longitude: number, latitude: number } | null;
 }
 
-export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: TaskFormProps) {
+export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, userLocation }: TaskFormProps) {
   const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none')
   const [newLabel, setNewLabel] = useState('')
   const [title, setTitle] = useState(initialTask?.title || '')
@@ -48,7 +49,9 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel }: T
         interval: initialTask?.routine?.interval || { number: 1, unit: 'day' },
         starts: initialTask?.routine?.starts || format(new Date(), 'yyyy-MM-dd'),
         ends: initialTask?.routine?.ends || { type: 'never' },
-      } : undefined
+      } : undefined,
+      longitude: userLocation ? userLocation.longitude : null,
+      latitude: userLocation ? userLocation.latitude : null,
     }
 
     onSubmit(taskData)

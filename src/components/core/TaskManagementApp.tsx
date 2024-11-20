@@ -65,6 +65,8 @@ export function TaskManagementApp() {
         .insert({
           ...taskData,
           scheduled_date: taskData.scheduledDate ? taskData.scheduledDate : null,
+          longitude: userLocation ? userLocation.longitude : null,
+          latitude: userLocation ? userLocation.latitude : null,
           scheduledDate: undefined
         })
         .select()
@@ -93,7 +95,9 @@ export function TaskManagementApp() {
           status: updatedTask.status,
           starred: updatedTask.starred,
           scheduled_date: updatedTask.scheduledDate ? updatedTask.scheduledDate : null,
-          label: updatedTask.label
+          label: updatedTask.label,
+          longitude: userLocation ? userLocation.longitude : null,
+          latitude: userLocation ? userLocation.latitude : null
         })
         .eq('id', updatedTask.id)
 
@@ -195,120 +199,6 @@ export function TaskManagementApp() {
   const toggleExecutedTasks = () => {
     setShowExecutedTasks(prev => !prev)
   }
-
-  // テスト用のタスクデータを追加
-  const testTasks: Task[] = [
-    {
-      id: '1',
-      title: '会議',
-      memo: 'プロジェクトのキックオフミーティング',
-      scheduledDate: '2023-10-15',
-      label: 'Work',
-      status: 'planned',
-      starred: false,
-      longitude: 139.6917, // 東京の経度
-      latitude: 35.6895     // 東京の緯度
-    },
-    {
-      id: '2',
-      title: '買い物',
-      memo: 'スーパーで食料品を購入',
-      scheduledDate: '2023-10-16',
-      label: 'Housework',
-      status: 'executed',
-      starred: true,
-      longitude: 139.7528, // 新宿の経度
-      latitude: 35.6938     // 新宿の緯度
-    },
-    {
-      id: '3',
-      title: 'ジョギング',
-      memo: '公園で朝のジョギング',
-      scheduledDate: '2023-10-17',
-      label: 'Health',
-      status: 'planned',
-      starred: false,
-      longitude: 139.7035, // 渋谷の経度
-      latitude: 35.6581     // 渋谷の緯度
-    },
-    {
-      id: '4',
-      title: '読書',
-      memo: '新しい本を読む',
-      scheduledDate: '2023-10-18',
-      label: 'Health',
-      status: 'planned',
-      starred: true,
-      longitude: 139.7745, // 目黒の経度
-      latitude: 35.6416     // 目黒の緯度
-    },
-    {
-      id: '5',
-      title: '料理',
-      memo: '夕食の準備',
-      scheduledDate: '2023-10-19',
-      label: 'Housework',
-      status: 'executed',
-      starred: false,
-      longitude: 139.7640, // 中野の経度
-      latitude: 35.6890     // 中野の緯度
-    },
-    {
-      id: '6',
-      title: 'オンラインセミナー',
-      memo: '最新技術についてのセミナーに参加',
-      scheduledDate: '2023-10-20',
-      label: 'Work',
-      status: 'planned',
-      starred: false,
-      longitude: 139.7400, // 千代田の経度
-      latitude: 35.6938     // 千代田の緯度
-    },
-    {
-      id: '7',
-      title: '映画鑑賞',
-      memo: '新作映画を観る',
-      scheduledDate: '2023-10-21',
-      label: 'Health',
-      status: 'executed',
-      starred: true,
-      longitude: 139.7624, // 恵比寿の経度
-      latitude: 35.6470     // 恵比寿の緯度
-    },
-    {
-      id: '8',
-      title: '掃除',
-      memo: '部屋の大掃除',
-      scheduledDate: '2023-10-22',
-      label: 'Housework',
-      status: 'planned',
-      starred: false,
-      longitude: 139.7100, // 港区の経度
-      latitude: 35.6586     // 港区の緯度
-    },
-    {
-      id: '9',
-      title: 'ランチミーティング',
-      memo: 'クライアントとのランチミーティング',
-      scheduledDate: '2023-10-23',
-      label: 'Work',
-      status: 'executed',
-      starred: true,
-      longitude: 139.7060, // 中央区の経度
-      latitude: 35.6812     // 中央区の緯度
-    },
-    {
-      id: '10',
-      title: 'ヨガ',
-      memo: 'スタジオでのヨガセッション',
-      scheduledDate: '2023-10-24',
-      label: 'Health',
-      status: 'planned',
-      starred: false,
-      longitude: 139.7085, // 豊島区の経度
-      latitude: 35.7295     // 豊島区の緯度
-    },
-  ]
 
   return (
     <div>
@@ -459,7 +349,7 @@ export function TaskManagementApp() {
             addLabel={addLabel}
             showToggleButton={false}
           >
-            <MapView tasks={testTasks} userLocation={userLocation} />
+            <MapView tasks={tasks} userLocation={userLocation} />
           </TabContent>
         </TabsContent>
       </Tabs>
@@ -476,6 +366,7 @@ export function TaskManagementApp() {
           addLabel={addLabel}
           open={true}
           onClose={() => setEditingTask(null)}
+          userLocation={userLocation}
         />
       )}
     </div>
