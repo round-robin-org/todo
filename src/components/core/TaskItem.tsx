@@ -50,7 +50,9 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   })
 
   const handleClick = () => {
-    if (!interactionRef.current) {
+    if (task.isScheduling) {
+      setTaskToSchedule && setTaskToSchedule(null)
+    } else {
       onEdit(task)
     }
     interactionRef.current = false
@@ -59,7 +61,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   return (
     <li
       {...handlers}
-      className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50`}
+      className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 ${task.isScheduling ? 'border-2 border-blue-500 bg-blue-50' : ''}`}
       onClick={handleClick}
     >
       <div className="flex items-center space-x-2">

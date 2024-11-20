@@ -24,7 +24,6 @@ export function TaskManagementApp() {
   const [labels, setLabels] = useState(["Health", "Work", "Housework"])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [userLocation, setUserLocation] = useState<{ longitude: number, latitude: number } | null>(null)
-  const [showUnplannedTasks, setShowUnplannedTasks] = useState(false)
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
@@ -60,8 +59,13 @@ export function TaskManagementApp() {
   };
 
   const setTaskToSchedule = (task: Task) => {
-    setSchedulingTask(task)
-    toast.info(`Task "${task.title}" is now in scheduling mode. Please select a date.`)
+    if (schedulingTask?.id === task.id) {
+      setSchedulingTask(null)
+      toast.info(`Scheduling mode cancelled for "${task.title}"`)
+    } else {
+      setSchedulingTask(task)
+      toast.info(`Task "${task.title}" is now in scheduling mode. Please select a date.`)
+    }
   }
 
   const handleDateClick = (date: Date) => {
@@ -256,9 +260,10 @@ export function TaskManagementApp() {
     }
   }
 
-  const filteredTasks = showUnplannedTasks
-    ? tasks.filter(task => !task.scheduledDate)
-    : tasks
+  const plannedTasks = tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")
+  const executedPlannedTasks = tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))
+  const unplannedTasks = tasks.filter(task => !task.scheduledDate && task.status === "planned")
+  const executedUnplannedTasks = tasks.filter(task => !task.scheduledDate)
 
   return (
     <div>
@@ -285,23 +290,21 @@ export function TaskManagementApp() {
             <CalendarView 
               selectedDate={selectedDate} 
               setSelectedDate={handleDateClick} 
-              tasks={filteredTasks} 
+              tasks={tasks} 
               addTask={addTask}
               addLabel={addLabel}
               labels={labels}
-              showUnplannedTasks={showUnplannedTasks}
-              setShowUnplannedTasks={setShowUnplannedTasks}
               assignTaskToDate={assignTaskToDate}
               unassignTaskFromDate={unassignTaskFromDate}
             />
-            {selectedDate && !showUnplannedTasks && (
+            {selectedDate && (
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>{format(selectedDate, 'MMMM d, yyyy')} Tasks</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TaskList 
-                    tasks={filteredTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")}
+                    tasks={plannedTasks}
                     toggleStatus={toggleTaskStatus}
                     toggleStar={toggleTaskStar}
                     onEdit={setEditingTask}
@@ -311,10 +314,11 @@ export function TaskManagementApp() {
                     assignTaskToDate={assignTaskToDate}
                     unassignTaskFromDate={unassignTaskFromDate}
                     setTaskToSchedule={setTaskToSchedule}
+                    schedulingTaskId={schedulingTask?.id}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
-                      tasks={filteredTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))}
+                      tasks={executedPlannedTasks}
                       toggleStatus={toggleTaskStatus}
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}
@@ -323,6 +327,34 @@ export function TaskManagementApp() {
                 </CardContent>
               </Card>
             )}
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Unplanned Tasks</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TaskList 
+                  tasks={unplannedTasks}
+                  toggleStatus={toggleTaskStatus}
+                  toggleStar={toggleTaskStar}
+                  onEdit={setEditingTask}
+                  isDraggable={false}
+                  deleteTask={deleteTask}
+                  onDragEnd={handleDragEnd}
+                  assignTaskToDate={assignTaskToDate}
+                  unassignTaskFromDate={unassignTaskFromDate}
+                  setTaskToSchedule={setTaskToSchedule}
+                  schedulingTaskId={schedulingTask?.id}
+                />
+                {showExecutedTasks && (
+                  <ExecutedTasks 
+                    tasks={executedUnplannedTasks}
+                    toggleStatus={toggleTaskStatus}
+                    toggleStar={toggleTaskStar}
+                    onEdit={setEditingTask}
+                  />
+                )}
+              </CardContent>
+            </Card>
           </TabContent>
         </TabsContent>
 
@@ -336,7 +368,7 @@ export function TaskManagementApp() {
             addLabel={addLabel}
             showToggleButton={false}
           >
-            <MapView tasks={filteredTasks} userLocation={userLocation} />
+            <MapView tasks={tasks} userLocation={userLocation} />
           </TabContent>
         </TabsContent>
 
@@ -350,7 +382,7 @@ export function TaskManagementApp() {
             addLabel={addLabel}
             showToggleButton={false}
           >
-            <ChartView tasks={filteredTasks} />
+            <ChartView tasks={tasks} />
           </TabContent>
         </TabsContent>
       </Tabs>
