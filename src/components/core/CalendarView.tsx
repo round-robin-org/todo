@@ -77,14 +77,14 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
         </Button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center font-medium text-sm py-1">
+          <div key={day} className="text-center font-medium text-sm py-2">
             {day}
           </div>
         ))}
         {blankDays.map((_, index) => (
-          <div key={`blank-${index}`} className="h-14"></div>
+          <div key={`blank-${index}`} className="h-20"></div>
         ))}
         {monthDays.map(day => {
           const formattedDay = format(day, 'yyyy-MM-dd')
@@ -98,7 +98,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
             <div key={day.toString()} className="relative">
               <Button
                 variant="outline"
-                className={`h-14 p-1 flex flex-col items-center justify-start w-full ${
+                className={`h-20 p-2 flex flex-col items-center justify-start w-full ${
                   !isCurrentMonth ? 'opacity-30' : ''
                 } ${isToday(day) ? 'border-primary' : ''} ${isSelected ? 'bg-blue-100 border-blue-500' : ''}`}
                 onClick={() => setSelectedDate(day)}
@@ -109,17 +109,17 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                     <div className="relative group">
                       <Badge
                         variant="secondary"
-                        className="badge-planned"
+                        className="badge-planned cursor-pointer"
                       >
                         {plannedTasks.length}
                       </Badge>
                       {/* Task list tooltip */}
-                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 pointer-events-none">
                         <div className="p-2">
                           <h4 className="text-sm font-semibold mb-1">Planned Tasks</h4>
                           <ul className="text-xs">
                             {plannedTasks.map(task => (
-                              <li key={task.id} className="">
+                              <li key={task.id}>
                                 • {task.title}
                               </li>
                             ))}
@@ -142,7 +142,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                           <h4 className="text-sm font-semibold mb-1">Executed Tasks</h4>
                           <ul className="text-xs">
                             {executedTasks.map(task => (
-                              <li key={task.id} className="">
+                              <li key={task.id}>
                                 • {task.title}
                               </li>
                             ))}

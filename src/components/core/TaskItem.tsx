@@ -5,7 +5,7 @@ import { useSwipeable } from 'react-swipeable'
 import { Checkbox } from "@src/components/ui/checkbox"
 import { Badge } from "@src/components/ui/badge"
 import { Button } from "@src/components/ui/button"
-import { Star, Trash, CalendarCheck } from 'lucide-react'
+import { Star, Trash, CalendarCheck, AlertCircle } from 'lucide-react'
 import { Task } from '@src/lib/types'
 
 type TaskItemProps = {
@@ -50,12 +50,15 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   })
 
   const handleClick = () => {
+    if (interactionRef.current) {
+      interactionRef.current = false
+      return
+    }
     if (task.isScheduling) {
       setTaskToSchedule && setTaskToSchedule(null)
     } else {
       onEdit(task)
     }
-    interactionRef.current = false
   }
 
   return (
@@ -63,7 +66,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
       {...handlers}
       className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 ${
         task.isScheduling 
-          ? 'border-2 border-blue-500 bg-blue-100 text-blue-900'
+          ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 flex items-center space-x-2'
           : 'border-transparent'
       }`}
       onClick={handleClick}
@@ -76,13 +79,13 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           aria-label={`Mark task "${task.title}" as ${task.status === "executed" ? "planned" : "executed"}`}
           className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
         />
-        <div>
+        <div className="flex items-center">
+          {task.isScheduling && (
+            <CalendarCheck className="mr-2 h-5 w-5 text-blue-500" />
+          )}
           <span className={`font-semibold ${isExecuted ? 'line-through' : ''}`}>{task.title}</span>
-          <span className="text-gray-500 text-sm block">{task.memo}</span>
         </div>
-        {task.isScheduling && (
-          <CalendarCheck className="ml-2 h-4 w-4 text-blue-500" />
-        )}
+        <span className="text-gray-500 text-sm block">{task.memo}</span>
       </div>
       <div className="flex items-center space-x-2">
         <Badge>{task.label}</Badge>
