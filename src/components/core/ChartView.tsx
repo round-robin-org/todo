@@ -254,7 +254,7 @@ export function ChartView({ tasks }: ChartViewProps) {
         const executedTasks = dayTasks.filter(t => t.status === 'executed').length
 
         data.push({
-          name: format(currentDate, 'EEE', { locale: enUS }),
+          name: dateStr,
           plannedTasks,
           executedTasks,
         })
@@ -422,23 +422,6 @@ export function ChartView({ tasks }: ChartViewProps) {
     <div>
       {/* Aggregation period selection */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold">Task Aggregation</h3>
-        <div className="flex items-center space-x-2">
-          <label htmlFor="aggregationPeriod" className="font-medium">
-            Aggregation Period:
-          </label>
-          <select
-            id="aggregationPeriod"
-            value={aggregationPeriod}
-            onChange={handleAggregationPeriodChange}
-            className="px-2 py-1 border rounded"
-          >
-            <option value="day">Day</option>
-            <option value="week">Week</option>
-            <option value="month">Month</option>
-            <option value="year">Year</option>
-          </select>
-        </div>
       </div>
 
       {/* Navigation and range display */}
@@ -452,13 +435,25 @@ export function ChartView({ tasks }: ChartViewProps) {
             <Calendar className="h-4 w-4 mr-1" />
             Today
           </Button>
+          <div className="flex items-center space-x-2">
+            <select
+              id="aggregationPeriod"
+              value={aggregationPeriod}
+              onChange={handleAggregationPeriodChange}
+              className="px-2 py-1 border rounded"
+            >
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
           <Button
             onClick={handlePrevious}
             className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="font-medium">{formatRange()}</span>
           <Button
             onClick={handleNext}
             className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
@@ -474,6 +469,15 @@ export function ChartView({ tasks }: ChartViewProps) {
           {aggregationPeriod === 'day' ? (
             // Daily aggregation: Pie chart
             <PieChart>
+              <text
+                x="50%"
+                y="10%"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="text-lg font-semibold"
+              >
+                {format(currentRange.start, 'yyyy-MM-dd')} {/* 日付を表示 */}
+              </text>
               <Pie
                 data={taskData}
                 dataKey="value"
@@ -535,6 +539,17 @@ export function ChartView({ tasks }: ChartViewProps) {
           ) : (
             // Monthly and yearly aggregation: Vertical bar chart
             <BarChart data={taskData}>
+              <text
+                x="50%"
+                y="10%"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="text-lg font-semibold"
+              >
+                {aggregationPeriod === 'month'
+                  ? format(currentRange.start, 'MMMM yyyy')
+                  : format(currentRange.start, 'yyyy')}
+              </text>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
