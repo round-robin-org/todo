@@ -64,9 +64,9 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   return (
     <li
       {...handlers}
-      className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 ${
+      className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center justify-between ${
         task.isScheduling 
-          ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 flex items-center space-x-2'
+          ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 space-x-2'
           : 'border-transparent'
       }`}
       onClick={handleClick}

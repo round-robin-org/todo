@@ -132,12 +132,12 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                     <div className="relative group">
                       <Badge
                         variant="secondary"
-                        className="badge-executed"
+                        className="badge-executed cursor-pointer"
                       >
                         {executedTasks.length}
                       </Badge>
                       {/* Task list tooltip */}
-                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 pointer-events-none">
                         <div className="p-2">
                           <h4 className="text-sm font-semibold mb-1">Executed Tasks</h4>
                           <ul className="text-xs">
