@@ -5,7 +5,7 @@ import { useSwipeable } from 'react-swipeable'
 import { Checkbox } from "@src/components/ui/checkbox"
 import { Badge } from "@src/components/ui/badge"
 import { Button } from "@src/components/ui/button"
-import { Star, Trash } from 'lucide-react'
+import { Star, Trash, CalendarCheck } from 'lucide-react'
 import { Task } from '@src/lib/types'
 
 type TaskItemProps = {
@@ -61,7 +61,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   return (
     <li
       {...handlers}
-      className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 ${task.isScheduling ? 'border-2 border-blue-500 bg-blue-50' : ''}`}
+      className={`relative flex items-center justify-between p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 ${task.isScheduling ? 'border-2 border-blue-500 bg-blue-50' : ''} ${task.isScheduling ? 'task-scheduling' : ''}`}
       onClick={handleClick}
     >
       <div className="flex items-center space-x-2">
@@ -76,6 +76,9 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           <span className={`font-semibold ${isExecuted ? 'line-through' : ''}`}>{task.title}</span>
           <span className="text-gray-500 text-sm block">{task.memo}</span>
         </div>
+        {task.isScheduling && (
+          <CalendarCheck className="ml-2 h-4 w-4 text-blue-500" />
+        )}
       </div>
       <div className="flex items-center space-x-2">
         <Badge>{task.label}</Badge>

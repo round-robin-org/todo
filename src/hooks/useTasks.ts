@@ -49,7 +49,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('scheduled_date', today)
+        .or(`scheduled_date.is.null,scheduled_date.eq.${today}`)
         .order('created_at', { ascending: false })
 
       if (error) {

@@ -16,9 +16,11 @@ type CalendarViewProps = {
   labels: string[];
   assignTaskToDate: (taskId: string, date: Date) => void;
   unassignTaskFromDate: (taskId: string) => void;
+  onUnplannedClick: () => void;
+  showUnplannedTasks: boolean;
 }
 
-export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel, labels, assignTaskToDate, unassignTaskFromDate }: CalendarViewProps) {
+export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel, labels, assignTaskToDate, unassignTaskFromDate, onUnplannedClick, showUnplannedTasks }: CalendarViewProps) {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -29,7 +31,9 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
 
   // Add Today button
   const handleToday = () => {
-    setSelectedDate(new Date());
+    setSelectedDate(new Date())
+    // 今日ボタンクリックで未予定表示を解除
+    // （必要に応じて）
   }
 
   return (
@@ -52,7 +56,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
         </Button>
       </div>
 
-      {/* Add Today button */}
+      {/* Add Today and Unplanned buttons */}
       <div className="flex justify-end mb-4 space-x-2">
         <Button
           variant="secondary"
@@ -62,6 +66,14 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
         >
           <Calendar className="h-4 w-4 mr-1" />
           Today
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onUnplannedClick}
+          className={`px-2 py-1 rounded hover:bg-gray-300 flex items-center ${showUnplannedTasks ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
+        >
+          Unplanned
         </Button>
       </div>
 
@@ -80,6 +92,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
           const plannedTasks = dayTasks.filter(task => task.status === "planned")
           const executedTasks = dayTasks.filter(task => task.status === "executed")
           const isCurrentMonth = isSameMonth(day, selectedDate)
+          const isSelected = isSameMonth(day, selectedDate) && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
 
           return (
             <div key={day.toString()} className="relative">
@@ -87,7 +100,7 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                 variant="outline"
                 className={`h-14 p-1 flex flex-col items-center justify-start w-full ${
                   !isCurrentMonth ? 'opacity-30' : ''
-                } ${isToday(day) ? 'border-primary' : ''}`}
+                } ${isToday(day) ? 'border-primary' : ''} ${isSelected ? 'bg-blue-100 border-blue-500' : ''}`}
                 onClick={() => setSelectedDate(day)}
               >
                 <span className="text-sm">{format(day, 'd')}</span>

@@ -25,6 +25,12 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
   const [scheduledDate, setScheduledDate] = useState<string>(initialTask?.scheduledDate || (isToday ? format(new Date(), 'yyyy-MM-dd') : ''))
   const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine)
 
+  useEffect(() => {
+    if (isToday && !initialTask) {
+      setScheduledDate(format(new Date(), 'yyyy-MM-dd'))
+    }
+  }, [isToday, initialTask])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 

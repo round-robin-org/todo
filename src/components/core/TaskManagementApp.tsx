@@ -21,6 +21,7 @@ export function TaskManagementApp() {
   const [activeTab, setActiveTab] = useState("calendar")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showExecutedTasks, setShowExecutedTasks] = useState(false)
+  const [showUnplannedTasks, setShowUnplannedTasks] = useState(false)
   const [labels, setLabels] = useState(["Health", "Work", "Housework"])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [userLocation, setUserLocation] = useState<{ longitude: number, latitude: number } | null>(null)
@@ -74,7 +75,13 @@ export function TaskManagementApp() {
       setSchedulingTask(null)
     } else {
       setSelectedDate(date)
+      setShowUnplannedTasks(false)
     }
+  }
+
+  const handleUnplannedClick = () => {
+    setShowUnplannedTasks(true)
+    setSelectedDate(new Date())
   }
 
   // Add Task
@@ -296,8 +303,10 @@ export function TaskManagementApp() {
               labels={labels}
               assignTaskToDate={assignTaskToDate}
               unassignTaskFromDate={unassignTaskFromDate}
+              onUnplannedClick={handleUnplannedClick}
+              showUnplannedTasks={showUnplannedTasks}
             />
-            {selectedDate && (
+            {selectedDate && !showUnplannedTasks && (
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>{format(selectedDate, 'MMMM d, yyyy')} Tasks</CardTitle>
@@ -327,34 +336,36 @@ export function TaskManagementApp() {
                 </CardContent>
               </Card>
             )}
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>Unplanned Tasks</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TaskList 
-                  tasks={unplannedTasks}
-                  toggleStatus={toggleTaskStatus}
-                  toggleStar={toggleTaskStar}
-                  onEdit={setEditingTask}
-                  isDraggable={false}
-                  deleteTask={deleteTask}
-                  onDragEnd={handleDragEnd}
-                  assignTaskToDate={assignTaskToDate}
-                  unassignTaskFromDate={unassignTaskFromDate}
-                  setTaskToSchedule={setTaskToSchedule}
-                  schedulingTaskId={schedulingTask?.id}
-                />
-                {showExecutedTasks && (
-                  <ExecutedTasks 
-                    tasks={executedUnplannedTasks}
+            {showUnplannedTasks && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>Unplanned Tasks</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TaskList 
+                    tasks={unplannedTasks}
                     toggleStatus={toggleTaskStatus}
                     toggleStar={toggleTaskStar}
                     onEdit={setEditingTask}
+                    isDraggable={false}
+                    deleteTask={deleteTask}
+                    onDragEnd={handleDragEnd}
+                    assignTaskToDate={assignTaskToDate}
+                    unassignTaskFromDate={unassignTaskFromDate}
+                    setTaskToSchedule={setTaskToSchedule}
+                    schedulingTaskId={schedulingTask?.id}
                   />
-                )}
-              </CardContent>
-            </Card>
+                  {showExecutedTasks && (
+                    <ExecutedTasks 
+                      tasks={executedUnplannedTasks}
+                      toggleStatus={toggleTaskStatus}
+                      toggleStar={toggleTaskStar}
+                      onEdit={setEditingTask}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </TabContent>
         </TabsContent>
 
