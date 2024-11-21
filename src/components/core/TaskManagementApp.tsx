@@ -293,6 +293,7 @@ export function TaskManagementApp() {
             showToggleButton={true}
             showExecutedTasks={showExecutedTasks}
             toggleExecutedTasks={toggleExecutedTasks}
+            selectedDate={selectedDate}
           >
             <CalendarView 
               selectedDate={selectedDate} 

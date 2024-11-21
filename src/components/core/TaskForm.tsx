@@ -15,21 +15,28 @@ type TaskFormProps = {
   isToday: boolean;
   addLabel: (newLabel: string) => void;
   userLocation: { longitude: number, latitude: number } | null;
+  selectedDate?: Date;
 }
 
-export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, userLocation }: TaskFormProps) {
+export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, userLocation, selectedDate }: TaskFormProps) {
   const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none')
   const [newLabel, setNewLabel] = useState('')
   const [title, setTitle] = useState(initialTask?.title || '')
   const [memo, setMemo] = useState(initialTask?.memo || '')
-  const [scheduledDate, setScheduledDate] = useState<string>(initialTask?.scheduledDate || (isToday ? format(new Date(), 'yyyy-MM-dd') : ''))
+  const [scheduledDate, setScheduledDate] = useState<string>(
+    initialTask?.scheduledDate ||
+    (isToday ? format(new Date(), 'yyyy-MM-dd') : 
+    selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '')
+  )
   const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine)
 
   useEffect(() => {
     if (isToday && !initialTask) {
       setScheduledDate(format(new Date(), 'yyyy-MM-dd'))
+    } else if (selectedDate && !initialTask) {
+      setScheduledDate(format(selectedDate, 'yyyy-MM-dd'))
     }
-  }, [isToday, initialTask])
+  }, [isToday, initialTask, selectedDate])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

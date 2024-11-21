@@ -17,6 +17,7 @@ type TabContentProps = {
   showToggleButton?: boolean;
   showExecutedTasks?: boolean;
   toggleExecutedTasks?: () => void;
+  selectedDate?: Date;
 }
 
 export function TabContent({ 
@@ -28,7 +29,8 @@ export function TabContent({
   addLabel,
   showToggleButton = false,
   showExecutedTasks = false,
-  toggleExecutedTasks = () => {}
+  toggleExecutedTasks = () => {},
+  selectedDate
 }: TabContentProps) {
   return (
     <Card>
@@ -53,7 +55,8 @@ export function TabContent({
             labels={labels}
             addTask={addTask} 
             isToday={false} 
-            addLabel={addLabel} 
+            addLabel={addLabel}
+            selectedDate={selectedDate}
           />
         </div>
       </CardHeader>
