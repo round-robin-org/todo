@@ -89,7 +89,7 @@ export function TaskManagementApp() {
 
   const handleUnplannedClick = () => {
     setShowUnplannedTasks(true)
-    setSelectedDate(new Date())
+    setSelectedDate(new Date()) // 選択されている日付を当日に設定
   }
 
   // Add Task
@@ -302,6 +302,7 @@ export function TaskManagementApp() {
             showExecutedTasks={showExecutedTasks}
             toggleExecutedTasks={toggleExecutedTasks}
             selectedDate={selectedDate}
+            showUnplannedTasks={showUnplannedTasks}
           >
             <CalendarView 
               selectedDate={selectedDate} 
@@ -420,6 +421,7 @@ export function TaskManagementApp() {
           open={true}
           onClose={() => setEditingTask(null)}
           userLocation={userLocation}
+          showUnplannedTasks={showUnplannedTasks}
         />
       )}
     </div>

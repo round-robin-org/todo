@@ -16,9 +16,10 @@ type TaskFormProps = {
   addLabel: (newLabel: string) => void;
   userLocation: { longitude: number, latitude: number } | null;
   selectedDate?: Date;
+  showUnplannedTasks: boolean;
 }
 
-export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, userLocation, selectedDate }: TaskFormProps) {
+export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, userLocation, selectedDate, showUnplannedTasks }: TaskFormProps) {
   const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none')
   const [newLabel, setNewLabel] = useState('')
   const [title, setTitle] = useState(initialTask?.title || '')
@@ -31,12 +32,14 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
   const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine)
 
   useEffect(() => {
-    if (isToday && !initialTask) {
+    if (showUnplannedTasks) {
+      setScheduledDate('')
+    } else if (isToday && !initialTask) {
       setScheduledDate(format(new Date(), 'yyyy-MM-dd'))
     } else if (selectedDate && !initialTask) {
       setScheduledDate(format(selectedDate, 'yyyy-MM-dd'))
     }
-  }, [isToday, initialTask, selectedDate])
+  }, [isToday, initialTask, selectedDate, showUnplannedTasks])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +57,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
     const taskData: Omit<Task, 'id'> = {
       title,
       memo: memo || '',
-      scheduledDate: scheduledDate || '',
+      scheduledDate: showUnplannedTasks ? '' : (scheduledDate || ''),
       label: label || '',
       status: initialTask?.status || 'planned',
       starred: initialTask?.starred || false,
