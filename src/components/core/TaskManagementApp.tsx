@@ -60,14 +60,22 @@ export function TaskManagementApp() {
   };
 
   const setTaskToSchedule = (task: Task) => {
+    setTasks(prevTasks =>
+      prevTasks.map(t =>
+        t.id === task.id
+          ? { ...t, isScheduling: !t.isScheduling }
+          : { ...t, isScheduling: false }
+      )
+    );
+
     if (schedulingTask?.id === task.id) {
-      setSchedulingTask(null)
-      toast.info(`Scheduling mode cancelled for "${task.title}"`)
+      setSchedulingTask(null);
+      toast.info(`Scheduling mode cancelled for "${task.title}"`);
     } else {
-      setSchedulingTask(task)
-      toast.info(`Task "${task.title}" is now in scheduling mode. Please select a date.`)
+      setSchedulingTask(task);
+      toast.info(`Task "${task.title}" is now in scheduling mode. Please select a date.`);
     }
-  }
+  };
 
   const handleDateClick = (date: Date) => {
     if (schedulingTask) {

@@ -15,6 +15,7 @@ type TaskListProps = {
   deleteTask: (id: string) => void;
   assignTaskToDate?: (id: string) => void;
   unassignTaskFromDate?: (id: string) => void;
+  setTaskToSchedule?: (task: Task | null) => void;
 }
 
 export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignTaskFromDate, setTaskToSchedule }: TaskListProps) {
