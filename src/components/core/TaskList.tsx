@@ -16,9 +16,11 @@ type TaskListProps = {
   assignTaskToDate?: (id: string) => void;
   unassignTaskFromDate?: (id: string) => void;
   setTaskToSchedule?: (task: Task | null) => void;
+  showExecutedTasks?: boolean;
+  executedTasks?: Task[];
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignTaskFromDate, setTaskToSchedule }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignTaskFromDate, setTaskToSchedule, showExecutedTasks, executedTasks }: TaskListProps) {
   const plannedTasks = tasks.filter(task => task.status === "planned")
 
   return (
@@ -63,6 +65,24 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
               toggleStar={toggleStar} 
               onEdit={onEdit} 
               deleteTask={deleteTask}
+              assignToDate={assignTaskToDate}
+              unassignFromDate={unassignTaskFromDate}
+              setTaskToSchedule={setTaskToSchedule}
+            />
+          ))}
+        </ul>
+      )}
+      {showExecutedTasks && executedTasks && (
+        <ul>
+          {executedTasks.map((task) => (
+            <TaskItem 
+              key={task.id} 
+              task={task} 
+              toggleStatus={toggleStatus} 
+              toggleStar={toggleStar} 
+              onEdit={onEdit} 
+              deleteTask={deleteTask}
+              isExecuted={true}
               assignToDate={assignTaskToDate}
               unassignFromDate={unassignTaskFromDate}
               setTaskToSchedule={setTaskToSchedule}

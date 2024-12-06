@@ -26,6 +26,7 @@ export function TaskManagementApp() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [userLocation, setUserLocation] = useState<{ longitude: number, latitude: number } | null>(null)
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
+  const [showExecutedTasksList, setShowExecutedTasksList] = useState(false)
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
 
@@ -59,21 +60,32 @@ export function TaskManagementApp() {
     setTasks(reorderedTasks);
   };
 
-  const setTaskToSchedule = (task: Task) => {
-    setTasks(prevTasks =>
-      prevTasks.map(t =>
-        t.id === task.id
-          ? { ...t, isScheduling: !t.isScheduling }
-          : { ...t, isScheduling: false }
-      )
-    );
+  const setTaskToSchedule = (task: Task | null) => {
+    if (task) {
+      setTasks(prevTasks =>
+        prevTasks.map(t =>
+          t.id === task.id
+            ? { ...t, isScheduling: !t.isScheduling }
+            : { ...t, isScheduling: false }
+        )
+      );
 
-    if (schedulingTask?.id === task.id) {
-      setSchedulingTask(null);
-      toast.info(`Scheduling mode cancelled for "${task.title}"`);
+      if (schedulingTask?.id === task.id) {
+        setSchedulingTask(null);
+        toast.info(`スケジューリングモードをキャンセルしました: "${task.title}"`);
+      } else {
+        setSchedulingTask(task);
+        toast.info(`タスク "${task.title}" をスケジューリングモードに設定しました。日付を選択してください。`);
+      }
     } else {
-      setSchedulingTask(task);
-      toast.info(`Task "${task.title}" is now in scheduling mode. Please select a date.`);
+      setTasks(prevTasks =>
+        prevTasks.map(t => ({
+          ...t,
+          isScheduling: false
+        }))
+      );
+      setSchedulingTask(null);
+      toast.info('スケジューリングモードをキャンセルしました。');
     }
   };
 
@@ -280,15 +292,57 @@ export function TaskManagementApp() {
   const unplannedTasks = tasks.filter(task => !task.scheduledDate && task.status === "planned")
   const executedUnplannedTasks = tasks.filter(task => !task.scheduledDate)
 
+  // 今日の日付を取得
+  const today = format(new Date(), 'yyyy-MM-dd')
+
+  // 今日の予定タスクをフィルタリング（実行済みタスクの表示設定を反映）
+  const todayTasks = tasks.filter(task => 
+    task.scheduledDate === today && 
+    (showExecutedTasksList || task.status !== 'executed')
+  )
+
+  // 今日の実行済みタスクをフィルタリング
+  const executedTodayTasks = tasks.filter(task => 
+    task.scheduledDate === today && task.status === 'executed'
+  )
+
   return (
     <div>
       <Header />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
+          <TabsTrigger value='list'>List</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="map">Map</TabsTrigger>
           <TabsTrigger value="chart">Chart</TabsTrigger>
+          <TabsTrigger value="map">Map</TabsTrigger>
         </TabsList>
+
+        {/* List Tab */}
+        <TabsContent value="list">
+          <TabContent 
+            title="List View" 
+            description="当日のタスクをリスト表示します。" 
+            labels={labels}
+            addTask={addTask}
+            addLabel={addLabel}
+            showToggleButton={true}
+            showExecutedTasks={showExecutedTasksList}
+            toggleExecutedTasks={() => setShowExecutedTasksList(prev => !prev)}
+            selectedDate={new Date()}
+            showUnplannedTasks={false}
+          >
+            <TaskList 
+              tasks={todayTasks} 
+              toggleStatus={toggleTaskStatus}
+              toggleStar={toggleTaskStar}
+              onEdit={setEditingTask}
+              isDraggable={false}
+              deleteTask={deleteTask}
+              showExecutedTasks={showExecutedTasksList}
+              executedTasks={executedTodayTasks}
+            />
+          </TabContent>
+        </TabsContent>
 
         {/* Calendar View Tab */}
         <TabsContent value="calendar">
@@ -416,12 +470,13 @@ export function TaskManagementApp() {
           updateTask={updateTask}
           isEdit={true}
           taskToEdit={editingTask}
-          isToday={false}
+          isToday={true}
           addLabel={addLabel}
           open={true}
           onClose={() => setEditingTask(null)}
           userLocation={userLocation}
-          showUnplannedTasks={showUnplannedTasks}
+          selectedDate={new Date()}
+          showUnplannedTasks={false}
         />
       )}
     </div>

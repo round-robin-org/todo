@@ -206,6 +206,7 @@ export function MapView({ tasks, userLocation }: MapViewProps) {
         interactiveLayerIds={['clusters']}
         onClick={onClick}
         ref={mapRef}
+        projection="globe"
       >
         <Source
           id="tasks"

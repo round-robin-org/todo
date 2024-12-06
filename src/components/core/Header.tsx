@@ -9,7 +9,7 @@ export function Header() {
 
   return (
     <header className="flex justify-between items-center p-4 bg-gray-100">
-      <h1 className="text-2xl font-bold">Task Management App</h1>
+      <h1 className="text-2xl font-bold">Todo</h1>
       <div>
         {session ? (
           <>
