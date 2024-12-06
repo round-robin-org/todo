@@ -5,7 +5,7 @@ import { useSwipeable } from 'react-swipeable'
 import { Checkbox } from "@src/components/ui/checkbox"
 import { Badge } from "@src/components/ui/badge"
 import { Button } from "@src/components/ui/button"
-import { Star, Trash, CalendarCheck, AlertCircle } from 'lucide-react'
+import { Star, Trash, CalendarCheck, AlertCircle, Repeat } from 'lucide-react'
 import { Task } from '@src/lib/types'
 
 type TaskItemProps = {
@@ -83,6 +83,9 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
         <div className="flex items-center">
           {task.isScheduling && (
             <CalendarCheck className="mr-2 h-5 w-5 text-blue-500" />
+          )}
+          {task.routine && (
+            <Repeat className="mr-1 h-5 w-5 text-green-500" title="Recurring Task" />
           )}
           <span className={`font-semibold ${isExecuted ? 'line-through' : ''}`}>{task.title}</span>
         </div>

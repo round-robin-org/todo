@@ -5,6 +5,8 @@ import { Button } from "@src/components/ui/button"
 import { Input } from "@src/components/ui/input"
 import { Label } from "@src/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/ui/select"
+import { Checkbox } from "@src/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@src/components/ui/radio-group"
 import { format } from 'date-fns'
 import { Task } from '../../lib/types'
 
@@ -31,6 +33,23 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
   )
   const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine)
 
+  // 繰り返しタスクの状態
+  const [intervalNumber, setIntervalNumber] = useState(initialTask?.routine?.interval.number || 1)
+  const [intervalUnit, setIntervalUnit] = useState(initialTask?.routine?.interval.unit || 'day')
+  const [routineStarts, setRoutineStarts] = useState(initialTask?.routine?.starts || format(new Date(), 'yyyy-MM-dd'))
+  const [routineEndsType, setRoutineEndsType] = useState(initialTask?.routine?.ends.type || 'never')
+  const [routineEndsValue, setRoutineEndsValue] = useState(initialTask?.routine?.ends.value || '')
+
+  // 追加仕様の状態
+  // Week Interval
+  const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>(initialTask?.routine?.weekDays || [])
+
+  // Month Interval
+  const [monthOption, setMonthOption] = useState<'day' | 'weekday'>('day')
+  const [selectedMonthDay, setSelectedMonthDay] = useState<string>(initialTask?.routine?.monthDay || '1')
+  const [selectedMonthWeek, setSelectedMonthWeek] = useState<'First' | 'Second' | 'Third' | 'Fourth' | 'Last'>(initialTask?.routine?.monthWeek || 'First')
+  const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState<'S' | 'M' | 'T' | 'W' | 'T' | 'F' | 'S'>(initialTask?.routine?.monthWeekDay || 'M')
+
   useEffect(() => {
     if (showUnplannedTasks) {
       setScheduledDate('')
@@ -54,23 +73,55 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
       label = undefined
     }
 
-    const taskData: Omit<Task, 'id'> = {
-      title,
-      memo: memo || '',
-      scheduledDate: showUnplannedTasks ? '' : (scheduledDate || ''),
-      label: label || '',
-      status: initialTask?.status || 'planned',
-      starred: initialTask?.starred || false,
-      routine: showRoutine ? {
-        interval: initialTask?.routine?.interval || { number: 1, unit: 'day' },
-        starts: initialTask?.routine?.starts || format(new Date(), 'yyyy-MM-dd'),
-        ends: initialTask?.routine?.ends || { type: 'never' },
-      } : undefined,
-      longitude: userLocation ? userLocation.longitude : null,
-      latitude: userLocation ? userLocation.latitude : null,
+    // 繰り返しタスクデータの構築
+    let routine = undefined
+    if (showRoutine) {
+      routine = {
+        interval: {
+          number: Number(intervalNumber),
+          unit: intervalUnit
+        },
+        starts: routineStarts,
+        ends: {
+          type: routineEndsType,
+          value: routineEndsType === 'after' ? Number(routineEndsValue) : routineEndsValue
+        }
+      }
+
+      // 追加仕様の処理
+      if (intervalUnit === 'week') {
+        routine.weekDays = selectedWeekDays
+      }
+
+      if (intervalUnit === 'month') {
+        routine.monthOption = monthOption
+        if (monthOption === 'day') {
+          routine.monthDay = selectedMonthDay
+        } else if (monthOption === 'weekday') {
+          routine.monthWeek = selectedMonthWeek
+          routine.monthWeekDay = selectedMonthWeekDay
+        }
+      }
     }
 
-    onSubmit(taskData)
+    onSubmit({
+      title,
+      memo,
+      status: 'planned',
+      starred: false,
+      scheduledDate: scheduledDate || undefined,
+      label: label || '',
+      longitude: userLocation?.longitude || null,
+      latitude: userLocation?.latitude || null,
+      routine: routine
+    })
+  }
+
+  // ハンドラー
+  const handleWeekDayChange = (day: string) => {
+    setSelectedWeekDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    )
   }
 
   return (
@@ -80,32 +131,24 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
         <Input 
           id="title" 
           name="title" 
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={title} 
+          onChange={(e) => setTitle(e.target.value)} 
           required 
         />
       </div>
+      
       <div className="grid w-full gap-1.5">
         <Label htmlFor="memo">Task Description</Label>
-        <Input 
-          id="memo" 
-          name="memo" 
+        <textarea
+          id="memo"
+          name="memo"
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
+          className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          rows={4}
         />
       </div>
-      {!isToday && (
-        <div className="grid w-full gap-1.5">
-          <Label htmlFor="scheduledDate">Scheduled Date</Label>
-          <Input 
-            id="scheduledDate" 
-            name="scheduledDate" 
-            type="date" 
-            value={scheduledDate}
-            onChange={(e) => setScheduledDate(e.target.value)}
-          />
-        </div>
-      )}
+      
       <div className="grid w-full gap-1.5">
         <Label htmlFor="label">Label</Label>
         <Select name="label" value={selectedLabel} onValueChange={setSelectedLabel}>
@@ -132,6 +175,187 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
           />
         </div>
       )}
+
+      <div className="flex items-center space-x-2">
+        <Checkbox 
+          checked={showRoutine}
+          onCheckedChange={() => setShowRoutine(prev => !prev)}
+          aria-label="Toggle Routine"
+        />
+        <Label htmlFor="routine">Repeat Task</Label>
+      </div>
+
+      {showRoutine && (
+        <div className="border-l-4 border-gray-300 pl-4 space-y-4">
+          <div className="grid w-full gap-1.5">
+            <Label htmlFor="intervalNumber">Every</Label>
+            <div className="flex items-center space-x-2">
+              <Input 
+                id="intervalNumber" 
+                name="intervalNumber" 
+                type="number" 
+                min="1"
+                value={intervalNumber}
+                onChange={(e) => setIntervalNumber(e.target.value)}
+                required 
+                className="w-20"
+              />
+              <Select name="intervalUnit" value={intervalUnit} onValueChange={setIntervalUnit}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Day(s)</SelectItem>
+                  <SelectItem value="week">Week(s)</SelectItem>
+                  <SelectItem value="month">Month(s)</SelectItem>
+                  <SelectItem value="year">Year(s)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Week Interval Options */}
+          {intervalUnit === 'week' && (
+            <div className="grid w-full gap-1.5">
+              <Label>Choose Days</Label>
+              <div className="flex space-x-4">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <label key={day} className="flex items-center space-x-1">
+                    <Checkbox 
+                      checked={selectedWeekDays.includes(day)}
+                      onCheckedChange={() => handleWeekDayChange(day)}
+                      aria-label={day}
+                    />
+                    <span>{day}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Month Interval Options */}
+          {intervalUnit === 'month' && (
+            <div className="grid w-full gap-1.5">
+              <Label>Month Options</Label>
+              <RadioGroup value={monthOption} onValueChange={setMonthOption} className="flex space-x-4">
+                <label className="flex items-center space-x-1">
+                  <RadioGroupItem value="day" />
+                  <span>Day</span>
+                </label>
+                <label className="flex items-center space-x-1">
+                  <RadioGroupItem value="weekday" />
+                  <span>Weekday</span>
+                </label>
+              </RadioGroup>
+
+              {monthOption === 'day' && (
+                <div className="grid w-full gap-1.5">
+                  <Label htmlFor="monthDay">Day of the Month</Label>
+                  <Select name="monthDay" value={selectedMonthDay} onValueChange={setSelectedMonthDay}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...Array(31)].map((_, i) => (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>{i + 1}</SelectItem>
+                      ))}
+                      <SelectItem value="Last">Last Day</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {monthOption === 'weekday' && (
+                <div className="grid w-full gap-1.5">
+                  <Label>Week</Label>
+                  <Select name="monthWeek" value={selectedMonthWeek} onValueChange={setSelectedMonthWeek}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select week" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="First">First</SelectItem>
+                      <SelectItem value="Second">Second</SelectItem>
+                      <SelectItem value="Third">Third</SelectItem>
+                      <SelectItem value="Fourth">Fourth</SelectItem>
+                      <SelectItem value="Last">Last</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Label>Weekday</Label>
+                  <Select name="monthWeekDay" value={selectedMonthWeekDay} onValueChange={setSelectedMonthWeekDay}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select weekday" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sun">Sun</SelectItem>
+                      <SelectItem value="Mon">Mon</SelectItem>
+                      <SelectItem value="Tue">Tue</SelectItem>
+                      <SelectItem value="Wed">Wed</SelectItem>
+                      <SelectItem value="Thu">Thu</SelectItem>
+                      <SelectItem value="Fri">Fri</SelectItem>
+                      <SelectItem value="Sat">Sat</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="grid w-full gap-1.5">
+            <Label htmlFor="routineStarts">Start Date</Label>
+            <Input 
+              id="routineStarts" 
+              name="routineStarts" 
+              type="date" 
+              value={routineStarts}
+              onChange={(e) => setRoutineStarts(e.target.value)}
+              required 
+            />
+          </div>
+          
+          <div className="grid w-full gap-1.5">
+            <Label htmlFor="routineEnds">Ends</Label>
+            <Select name="routineEndsType" value={routineEndsType} onValueChange={setRoutineEndsType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select end type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="never">Never</SelectItem>
+                <SelectItem value="on">On Date</SelectItem>
+                <SelectItem value="after">After Occurrences</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {routineEndsType === 'on' && (
+            <div className="grid w-full gap-1.5">
+              <Label htmlFor="routineEndsValue">End Date</Label>
+              <Input 
+                id="routineEndsValue" 
+                name="routineEndsValue" 
+                type="date" 
+                value={routineEndsValue}
+                onChange={(e) => setRoutineEndsValue(e.target.value)}
+                required 
+              />
+            </div>
+          )}
+          {routineEndsType === 'after' && (
+            <div className="grid w-full gap-1.5">
+              <Label htmlFor="routineEndsValue">Number of Occurrences</Label>
+              <Input 
+                id="routineEndsValue" 
+                name="routineEndsValue" 
+                type="number" 
+                min="1"
+                value={routineEndsValue}
+                onChange={(e) => setRoutineEndsValue(e.target.value)}
+                required 
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       <Button type="submit">{initialTask ? 'Update Task' : 'Add Task'}</Button>
     </form>
   )

@@ -33,7 +33,8 @@ export function useTasks(selectedDate: Date, activeTab: string) {
           scheduledDate: task.scheduled_date || null,
           label: task.label || '',
           longitude: task.longitude || null,
-          latitude: task.latitude || null
+          latitude: task.latitude || null,
+          routine: task.routine || null
         }))
 
       setTasks(formattedTasks)
@@ -67,7 +68,8 @@ export function useTasks(selectedDate: Date, activeTab: string) {
           scheduledDate: task.scheduled_date || null,
           label: task.label || '',
           longitude: task.longitude || null,
-          latitude: task.latitude || null
+          latitude: task.latitude || null,
+          routine: task.routine || null
         }))
 
       setTasks(formattedTasks)

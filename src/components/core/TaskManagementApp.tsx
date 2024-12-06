@@ -112,6 +112,7 @@ export function TaskManagementApp() {
         .insert({
           ...taskData,
           scheduled_date: taskData.scheduledDate ? taskData.scheduledDate : null,
+          routine: taskData.routine ? taskData.routine : null,
           longitude: userLocation ? userLocation.longitude : null,
           latitude: userLocation ? userLocation.latitude : null,
           scheduledDate: undefined
@@ -143,6 +144,7 @@ export function TaskManagementApp() {
           starred: updatedTask.starred,
           scheduled_date: updatedTask.scheduledDate ? updatedTask.scheduledDate : null,
           label: updatedTask.label,
+          routine: updatedTask.routine ? updatedTask.routine : null,
           longitude: userLocation ? userLocation.longitude : null,
           latitude: userLocation ? userLocation.latitude : null
         })
@@ -314,14 +316,14 @@ export function TaskManagementApp() {
           <TabsTrigger value='list'>List</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="chart">Chart</TabsTrigger>
-          <TabsTrigger value="map">Map</TabsTrigger>
+          {/* <TabsTrigger value="map">Map</TabsTrigger> */}
         </TabsList>
 
         {/* List Tab */}
         <TabsContent value="list">
           <TabContent 
             title="List View" 
-            description="当日のタスクをリスト表示します。" 
+            description="Focus on today's tasks." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -348,7 +350,7 @@ export function TaskManagementApp() {
         <TabsContent value="calendar">
           <TabContent 
             title="Calendar View" 
-            description="View tasks by date." 
+            description="Plan tasks by date." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
@@ -433,8 +435,22 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
+        {/* Chart Tab */}
+        <TabsContent value="chart">
+          <TabContent 
+            title="Chart View" 
+            description="Review task execution rates and goal-based task counts." 
+            labels={labels}
+            addTask={addTask}
+            addLabel={addLabel}
+            showToggleButton={false}
+          >
+            <ChartView tasks={tasks} />
+          </TabContent>
+        </TabsContent>
+
         {/* Map Tab */}
-        <TabsContent value="map">
+        {/* <TabsContent value="map">
           <TabContent 
             title="Map View" 
             description="View tasks on a map." 
@@ -445,21 +461,7 @@ export function TaskManagementApp() {
           >
             <MapView tasks={tasks} userLocation={userLocation} />
           </TabContent>
-        </TabsContent>
-
-        {/* Chart Tab */}
-        <TabsContent value="chart">
-          <TabContent 
-            title="Chart View" 
-            description="Trends in task execution rates and goal-based task counts." 
-            labels={labels}
-            addTask={addTask}
-            addLabel={addLabel}
-            showToggleButton={false}
-          >
-            <ChartView tasks={tasks} />
-          </TabContent>
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
 
       {/* Task Edit Dialog */}
