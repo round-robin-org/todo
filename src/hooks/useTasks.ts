@@ -9,7 +9,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async (date: Date) => {
-    // Get by month (Calendar view, etc.)
+    // Fetch tasks by month (Calendar view, etc.)
     const start = format(startOfMonth(date), 'yyyy-MM-dd')
     const end = format(endOfMonth(date), 'yyyy-MM-dd')
 
@@ -35,7 +35,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
         parentTaskId: task.parent_task_id || null
       }))
 
-      // 繰り返しタスクを展開
+      // Expand recurring tasks
       const expandedTasks = expandRecurringTasks(formattedTasks, new Date(start), new Date(end))
       setTasks(expandedTasks)
     } catch (error) {
@@ -87,7 +87,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
     const channel = supabase
       .channel('tasks-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, payload => {
-        // 変更があるたびに再取得
+        // Re-fetch tasks on any change
         if (activeTab === "today") {
           fetchTodayTasks()
         } else {

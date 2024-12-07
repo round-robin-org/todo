@@ -7,7 +7,7 @@ import { Label } from "@src/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/ui/select"
 import { Checkbox } from "@src/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@src/components/ui/radio-group"
-import { format } from 'date-fns'
+import { format, getDay, getDate, getDaysInMonth } from 'date-fns'
 import { Task } from '../../lib/types'
 
 type TaskFormProps = {
@@ -21,11 +21,32 @@ type TaskFormProps = {
   allowSelectDate?: boolean;
 }
 
-export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, selectedDate, showUnplannedTasks, allowSelectDate = false }: TaskFormProps) {
-  const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none')
-  const [newLabel, setNewLabel] = useState('')
-  const [title, setTitle] = useState(initialTask?.title || '')
-  const [memo, setMemo] = useState(initialTask?.memo || '')
+export function TaskForm({ 
+  initialTask, 
+  labels, 
+  onSubmit, 
+  isToday, 
+  addLabel, 
+  selectedDate, 
+  showUnplannedTasks, 
+  allowSelectDate = false 
+}: TaskFormProps) {
+  // Helper Function (moved to the top)
+  const getNthWeek = (date: Date | null): 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' => {
+    if (!date) return 'First';
+    const day = getDate(date);
+    if (day >= 1 && day <= 7) return 'First';
+    if (day >= 8 && day <= 14) return 'Second';
+    if (day >= 15 && day <= 21) return 'Third';
+    if (day >= 22 && day <= 28) return 'Fourth';
+    return 'Last';
+  }
+
+  // State initializations
+  const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none');
+  const [newLabel, setNewLabel] = useState('');
+  const [title, setTitle] = useState(initialTask?.title || '');
+  const [memo, setMemo] = useState(initialTask?.memo || '');
   const [scheduledDate, setScheduledDate] = useState<string>(
     initialTask?.scheduledDate ||
     (showUnplannedTasks
@@ -37,51 +58,127 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
           : selectedDate
             ? format(selectedDate, 'yyyy-MM-dd')
             : '')
-  )
-  const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine)
+  );
+  const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine);
 
-  // State for recurring tasks
-  const [intervalNumber, setIntervalNumber] = useState(initialTask?.routine?.interval.number || 1)
-  const [intervalUnit, setIntervalUnit] = useState(initialTask?.routine?.interval.unit || 'day')
-  const [routineStarts, setRoutineStarts] = useState(initialTask?.routine?.starts || format(new Date(), 'yyyy-MM-dd'))
-  const [routineEndsType, setRoutineEndsType] = useState(initialTask?.routine?.ends.type || 'never')
-  const [routineEndsValue, setRoutineEndsValue] = useState(initialTask?.routine?.ends.value || '')
+  const [intervalNumber, setIntervalNumber] = useState(initialTask?.routine?.interval.number || 1);
+  const [intervalUnit, setIntervalUnit] = useState(initialTask?.routine?.interval.unit || 'day');
+  
+  const [routineStarts, setRoutineStarts] = useState<string>(
+    initialTask?.routine?.starts || (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'))
+  );
+  const [routineEndsType, setRoutineEndsType] = useState(initialTask?.routine?.ends.type || 'never');
+  const [routineEndsValue, setRoutineEndsValue] = useState(initialTask?.routine?.ends.value || '');
 
-  // Additional specifications state
   // Week Interval
-  const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>(initialTask?.routine?.weekDays || [])
+  const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>(initialTask?.routine?.weekDays || []);
 
   // Month Interval
-  const [monthOption, setMonthOption] = useState<'day' | 'weekday'>('day')
-  const [selectedMonthDay, setSelectedMonthDay] = useState<string>(initialTask?.routine?.monthDay || '1')
-  const [selectedMonthWeek, setSelectedMonthWeek] = useState<'First' | 'Second' | 'Third' | 'Fourth' | 'Last'>(initialTask?.routine?.monthWeek || 'First')
-  const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState<'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat'>(initialTask?.routine?.monthWeekDay || 'Mon')
+  const [monthOption, setMonthOption] = useState<'day' | 'weekday'>(
+    initialTask?.routine?.monthOption || 'day'
+  );
+  const [selectedMonthDay, setSelectedMonthDay] = useState<string>(
+    initialTask?.routine?.monthDay || (selectedDate ? format(selectedDate, 'd') : '1')
+  );
+  const [selectedMonthWeek, setSelectedMonthWeek] = useState<'First' | 'Second' | 'Third' | 'Fourth' | 'Last'>(
+    initialTask?.routine?.monthWeek || getNthWeek(selectedDate)
+  );
+  const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState<'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat'>(
+    initialTask?.routine?.monthWeekDay || (selectedDate ? format(selectedDate, 'eee') : 'Mon')
+  );
 
   useEffect(() => {
     if (showUnplannedTasks) {
-      setScheduledDate('')
+      setScheduledDate('');
     } else if (isToday && !initialTask) {
-      setScheduledDate(format(new Date(), 'yyyy-MM-dd'))
+      setScheduledDate(format(new Date(), 'yyyy-MM-dd'));
     } else if (selectedDate && !initialTask) {
-      setScheduledDate(format(selectedDate, 'yyyy-MM-dd'))
+      setScheduledDate(format(selectedDate, 'yyyy-MM-dd'));
+      if (showRoutine) {
+        setRoutineStarts(format(selectedDate, 'yyyy-MM-dd'));
+
+        // Pre-fill Choose Days based on selectedDate
+        const dayOfWeek = getDay(selectedDate);
+        const dayMap: Record<number, string> = {
+          0: 'Sun',
+          1: 'Mon',
+          2: 'Tue',
+          3: 'Wed',
+          4: 'Thu',
+          5: 'Fri',
+          6: 'Sat'
+        };
+        const dayStr = dayMap[dayOfWeek];
+        if (dayStr && !selectedWeekDays.includes(dayStr)) {
+          setSelectedWeekDays([dayStr]);
+        }
+
+        // Pre-fill Month Options based on selectedDate
+        const date = getDate(selectedDate);
+        const daysInMonth = getDaysInMonth(selectedDate);
+        if (intervalUnit === 'month') {
+          if (date >= 1 && date <= 7) {
+            setSelectedMonthWeek('First');
+          } else if (date >= 8 && date <= 14) {
+            setSelectedMonthWeek('Second');
+          } else if (date >= 15 && date <= 21) {
+            setSelectedMonthWeek('Third');
+          } else if (date >= 22 && date <= 28) {
+            setSelectedMonthWeek('Fourth');
+          } else {
+            setSelectedMonthWeek('Last');
+          }
+
+          const weekdayMap: Record<number, string> = {
+            0: 'Sun',
+            1: 'Mon',
+            2: 'Tue',
+            3: 'Wed',
+            4: 'Thu',
+            5: 'Fri',
+            6: 'Sat'
+          };
+          const weekdayStr = weekdayMap[getDay(selectedDate)];
+          if (weekdayStr) {
+            setSelectedMonthWeekDay(weekdayStr as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat');
+          }
+
+          // Pre-fill Day of Month based on selectedDate
+          if (date <= daysInMonth) {
+            setSelectedMonthDay(date.toString());
+          } else {
+            setSelectedMonthDay('Last');
+          }
+        }
+      }
     }
-  }, [isToday, initialTask, selectedDate, showUnplannedTasks])
+  }, [isToday, initialTask, selectedDate, showUnplannedTasks, showRoutine, intervalUnit, selectedWeekDays]);
+
+  const handleWeekDayChange = (day: string) => {
+    setSelectedWeekDays(prev => {
+      if (prev.includes(day)) {
+        return prev.filter(d => d !== day);
+      } else {
+        return [...prev, day];
+      }
+    });
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    let label = selectedLabel
+    let label = selectedLabel;
     if (label === 'new') {
-      label = newLabel
+      label = newLabel;
       if (label && !labels.includes(label)) {
-        addLabel(label)
+        addLabel(label);
       }
     } else if (label === 'none') {
-      label = undefined
+      label = undefined;
     }
 
     // Construct recurring task data
-    let routine = undefined
+    let routine = undefined;
     if (showRoutine) {
       routine = {
         interval: {
@@ -97,14 +194,14 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
 
       // Additional specifications processing
       if (intervalUnit === 'week') {
-        routine.weekDays = selectedWeekDays
+        routine.weekDays = selectedWeekDays;
       } else if (intervalUnit === 'month') {
-        routine.monthOption = monthOption
+        routine.monthOption = monthOption;
         if (monthOption === 'day') {
-          routine.monthDay = selectedMonthDay
+          routine.monthDay = selectedMonthDay;
         } else if (monthOption === 'weekday') {
-          routine.monthWeek = selectedMonthWeek
-          routine.monthWeekDay = selectedMonthWeekDay
+          routine.monthWeek = selectedMonthWeek;
+          routine.monthWeekDay = selectedMonthWeekDay;
         }
       }
     }
@@ -113,110 +210,106 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
       title,
       memo,
       status: 'planned',
-      starred: false,
-      scheduledDate: showUnplannedTasks ? null : scheduledDate || null,
-      label: label || 'none',
-      routine
-    })
-  }
-
-  const handleWeekDayChange = (day: string) => {
-    setSelectedWeekDays(prev => 
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    )
+      starred: initialTask?.starred || false,
+      scheduledDate: showRoutine ? null : (scheduledDate || null),
+      label,
+      routine,
+      parentTaskId: initialTask?.parentTaskId || null
+    });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid w-full gap-1.5">
+    <form onSubmit={handleSubmit} className="grid gap-6">
+      <div className="grid w-full gap-2">
         <Label htmlFor="title">Title</Label>
         <Input 
           id="title" 
           name="title" 
-          value={title} 
-          onChange={(e) => setTitle(e.target.value)} 
+          type="text" 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           required 
         />
       </div>
-      
-      <div className="grid w-full gap-1.5">
-        <Label htmlFor="memo">Task Description</Label>
-        <textarea
-          id="memo"
-          name="memo"
+
+      <div className="grid w-full gap-2">
+        <Label htmlFor="memo">Memo</Label>
+        <Input 
+          id="memo" 
+          name="memo" 
+          type="text" 
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
-          className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={4}
         />
       </div>
-      
-      <div className="grid w-full gap-1.5">
+
+      <div className="grid w-full gap-2">
         <Label htmlFor="label">Label</Label>
         <Select name="label" value={selectedLabel} onValueChange={setSelectedLabel}>
           <SelectTrigger>
-            <SelectValue placeholder="Select a label" />
+            <SelectValue placeholder="Select label" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">None</SelectItem>
             {labels.map(label => (
               <SelectItem key={label} value={label}>{label}</SelectItem>
             ))}
-            <SelectItem value="new">+ Add New Label</SelectItem>
+            <SelectItem value="new">New Label</SelectItem>
+            <SelectItem value="none">None</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-      {selectedLabel === 'new' && (
-        <div className="grid w-full gap-1.5">
-          <Label htmlFor="newLabel">New Label</Label>
+        {selectedLabel === 'new' && (
           <Input 
-            id="newLabel" 
             name="newLabel" 
-            value={newLabel} 
-            onChange={(e) => setNewLabel(e.target.value)} 
+            type="text" 
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Enter new label"
+            required 
           />
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex items-center space-x-2">
         <Checkbox 
           checked={showRoutine}
-          onCheckedChange={() => setShowRoutine(prev => !prev)}
+          onCheckedChange={(checked) => setShowRoutine(checked)}
           id="showRoutine"
-          aria-label="Toggle Routine"
         />
         <Label htmlFor="showRoutine">Repeat Task</Label>
       </div>
 
       {showRoutine && (
-        <div className="border-t pt-4 space-y-4">
-          <div className="grid w-full gap-1.5">
-            <Label htmlFor="intervalNumber">Every</Label>
-            <Input 
-              id="intervalNumber" 
-              name="intervalNumber" 
-              type="number" 
-              min="1"
-              value={intervalNumber}
-              onChange={(e) => setIntervalNumber(e.target.value)}
-              required 
-            />
+        <div className="border p-6 rounded space-y-4">
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="flex-1">
+              <Label htmlFor="intervalNumber">Every</Label>
+              <Input 
+                id="intervalNumber" 
+                name="intervalNumber" 
+                type="number" 
+                min="1"
+                value={intervalNumber}
+                onChange={(e) => setIntervalNumber(e.target.value)}
+                required 
+              />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="intervalUnit">Unit</Label>
+              <Select name="intervalUnit" value={intervalUnit} onValueChange={setIntervalUnit}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Day</SelectItem>
+                  <SelectItem value="week">Week</SelectItem>
+                  <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="year">Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="grid w-full gap-1.5">
-            <Label htmlFor="intervalUnit">Unit</Label>
-            <Select name="intervalUnit" value={intervalUnit} onValueChange={setIntervalUnit}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select unit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Day(s)</SelectItem>
-                <SelectItem value="week">Week(s)</SelectItem>
-                <SelectItem value="month">Month(s)</SelectItem>
-                <SelectItem value="year">Year(s)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Remove Scheduled Date input when Repeat Task is active */}
 
           {intervalUnit === 'week' && (
             <div className="grid w-full gap-1.5">
@@ -358,7 +451,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
         </div>
       )}
 
-      {allowSelectDate && (
+      {allowSelectDate && !showRoutine && (
         <div className="grid w-full gap-1.5">
           <Label htmlFor="scheduledDate">Scheduled Date</Label>
           <Input 
