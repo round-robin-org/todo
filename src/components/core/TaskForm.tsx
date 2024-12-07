@@ -228,8 +228,7 @@ export function TaskForm({
             monthWeekDay: selectedMonthWeekDay
           })
         })
-      } : null,
-      parent_task_id: initialTask?.parentTaskId || null  // Use database column name
+      } : null
     };
 
     console.log('Submitting task data:', taskData); // Debug log

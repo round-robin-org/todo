@@ -62,6 +62,11 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     }
   }
 
+  // 繰り返しタスクで、かつ個別に削除されている場合は非表示
+  if (task.parentTaskId && task.status === 'deleted') {
+    return null;
+  }
+
   return (
     <li
       {...handlers}

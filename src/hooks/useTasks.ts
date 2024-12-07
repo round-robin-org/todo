@@ -36,7 +36,8 @@ export function useTasks(selectedDate: Date, activeTab: string) {
         scheduledDate: task.scheduled_date || null,
         label: task.label || '',
         routine: task.routine || null,
-        parentTaskId: task.parent_task_id || null
+        parentTaskId: task.parent_task_id || null,
+        exceptions: task.exceptions || {}
       }))
 
       // Expand recurring tasks
@@ -73,7 +74,8 @@ export function useTasks(selectedDate: Date, activeTab: string) {
         scheduledDate: task.scheduled_date || null,
         label: task.label || '',
         routine: task.routine || null,
-        parentTaskId: task.parent_task_id || null
+        parentTaskId: task.parent_task_id || null,
+        exceptions: task.exceptions || {}
       }))
 
       const expandedTasks = expandRecurringTasks(formattedTasks, new Date(today), new Date(today))
@@ -120,16 +122,27 @@ function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: Date): 
   const expandedTasks: Task[] = []
 
   for (const task of tasks) {
-    if (task.routine && !task.parentTaskId) {
+    if (task.routine) {
       const rule = buildRecurrenceRule(task.routine)
       const occurrences = rule.between(rangeStart, rangeEnd, true)
 
       for (const date of occurrences) {
+        const formattedDate = format(date, 'yyyy-MM-dd')
+        const exception = task.exceptions?.[formattedDate]
+
+        if (exception?.status === 'deleted') {
+          continue // Skip deleted tasks
+        }
+
         expandedTasks.push({
           ...task,
-          id: `${task.id}-${format(date, 'yyyyMMdd')}`,
-          scheduledDate: format(date, 'yyyy-MM-dd'),
-          parentTaskId: task.id
+          id: `${task.id}-${formattedDate}`,
+          scheduledDate: exception?.scheduled_date || formattedDate,
+          status: exception?.status || task.status,
+          starred: exception?.starred !== undefined ? exception.starred : task.starred,
+          memo: exception?.memo || task.memo,
+          label: exception?.label || task.label,
+          title: exception?.title || task.title,
         })
       }
     } else {

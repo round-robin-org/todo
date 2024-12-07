@@ -97,7 +97,6 @@ export function TaskManagementApp() {
           scheduled_date: taskData.scheduledDate || null,
           label: taskData.label || '',
           routine: taskData.routine || null,
-          parent_task_id: taskData.parent_task_id || null
         })
         .select()
 
@@ -115,7 +114,6 @@ export function TaskManagementApp() {
         scheduledDate: data[0].scheduled_date || null,
         label: data[0].label || '',
         routine: data[0].routine || null,
-        parentTaskId: data[0].parent_task_id || null
       }
 
       setTasks(prevTasks => [newTask, ...prevTasks])
@@ -131,47 +129,97 @@ export function TaskManagementApp() {
     try {
       console.log('Updating task with data:', updatedTask);
 
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({
-          title: updatedTask.title,
-          memo: updatedTask.memo,
+      // 繰り返しタスクの個別の変更かどうかを判定
+      if (updatedTask.scheduledDate && updatedTask.id.includes("-")) { // idにハイフンが含まれているかで判定
+        const parentTaskId = updatedTask.id.split("-")[0];
+        const parentTask = tasks.find(t => t.id.split("-")[0] === parentTaskId && !t.id.includes("-")); // ハイフンで分割したIDが一致するタスクが親タスク
+
+        if (!parentTask) throw new Error('Parent task not found');
+
+        const exceptionDate = updatedTask.scheduledDate;
+        const exceptionData = {
           status: updatedTask.status,
-          starred: updatedTask.starred,
           scheduled_date: updatedTask.scheduledDate,
-          label: updatedTask.label || null,
-          routine: updatedTask.routine || null,
-          parent_task_id: updatedTask.parentTaskId || null
-        })
-        .eq('id', updatedTask.id)
-        .select()
+          starred: updatedTask.starred,
+          memo: updatedTask.memo,
+          label: updatedTask.label,
+          title: updatedTask.title
+        };
 
-      if (error) {
-        console.error('Supabase error details:', error);
-        throw error;
+        // 既存の exceptions を取得
+        const existingExceptions = parentTask.exceptions || {};
+
+        // 新しい exception を追加
+        existingExceptions[exceptionDate] = exceptionData;
+
+        // exceptions を更新
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({
+            exceptions: existingExceptions
+          })
+          .eq('id', parentTask.id);
+
+        if (updateError) {
+          console.error('Supabase error details:', updateError);
+          throw updateError;
+        }
+
+        // フロントエンドのタスクを更新
+        setTasks(prevTasks =>
+          prevTasks.map(t => {
+            if (t.id === updatedTask.id) {
+              return { ...t, ...exceptionData };
+            } else if (t.id === parentTask.id) {
+              return { ...t, exceptions: existingExceptions };
+            }
+            return t;
+          })
+        );
+      } else {
+        // 通常のタスク更新処理
+        const { data, error } = await supabase
+          .from('tasks')
+          .update({
+            title: updatedTask.title,
+            memo: updatedTask.memo,
+            status: updatedTask.status,
+            starred: updatedTask.starred,
+            scheduled_date: updatedTask.scheduledDate,
+            label: updatedTask.label || null,
+            routine: updatedTask.routine || null,
+          })
+          .eq('id', updatedTask.id)
+          .select();
+
+        if (error) {
+          console.error('Supabase error details:', error);
+          throw error;
+        }
+
+        const mappedUpdatedTask: Task = {
+          id: data[0].id.toString(),
+          title: data[0].title,
+          memo: data[0].memo || '',
+          status: data[0].status === 'executed' ? 'executed' : 'planned',
+          starred: data[0].starred || false,
+          scheduledDate: data[0].scheduled_date || null,
+          label: data[0].label || '',
+          routine: data[0].routine || null,
+          exceptions: data[0].exceptions || {}
+        };
+
+        setTasks(prevTasks =>
+          prevTasks.map(t => t.id === updatedTask.id ? mappedUpdatedTask : t)
+        );
       }
 
-      const mappedUpdatedTask: Task = {
-        id: data[0].id.toString(),
-        title: data[0].title,
-        memo: data[0].memo || '',
-        status: data[0].status === 'executed' ? 'executed' : 'planned',
-        starred: data[0].starred || false,
-        scheduledDate: data[0].scheduled_date || null,
-        label: data[0].label || '',
-        routine: data[0].routine || null,
-        parentTaskId: data[0].parent_task_id || null
-      }
-
-      setTasks(prevTasks =>
-        prevTasks.map(t => t.id === updatedTask.id ? mappedUpdatedTask : t)
-      )
-      toast.success('Task updated successfully')
+      toast.success('Task updated successfully');
     } catch (error) {
-      console.error('Failed to update task:', error)
-      toast.error(`Failed to update task: ${error.message}`)
+      console.error('Failed to update task:', error);
+      toast.error(`Failed to update task: ${error.message}`);
     }
-  }
+  };
 
   // Toggle Task Status
   const toggleTaskStatus = async (taskId: string) => {
@@ -269,21 +317,60 @@ export function TaskManagementApp() {
   // Delete Task
   const deleteTask = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId)
+      const taskToDelete = tasks.find(t => t.id === taskId);
+      if (!taskToDelete) throw new Error('Task not found');
 
-      if (error) throw error
+      // 繰り返しタスクの個別の削除かどうかを判定
+      if (taskToDelete.scheduledDate && taskToDelete.id.includes("-")) { // idにハイフンが含まれているかで判定
+        const parentTaskId = taskToDelete.id.split("-")[0];
+        const parentTask = tasks.find(t => t.id.split("-")[0] === parentTaskId && !t.id.includes("-")); // ハイフンで分割したIDが一致するタスクが親タスク
+        if (!parentTask) throw new Error('Parent task not found');
 
-      // Remove task from state
-      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId))
-      toast.success('Task deleted successfully')
+        const exceptionDate = taskToDelete.scheduledDate;
+        const exceptionData = {
+          status: 'deleted'
+        };
+
+        // 既存の exceptions を取得
+        const existingExceptions = parentTask.exceptions || {};
+
+        // 新しい exception を追加
+        existingExceptions[exceptionDate] = exceptionData;
+
+        // exceptions を更新
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({
+            exceptions: existingExceptions
+          })
+          .eq('id', parentTask.id);
+
+        if (updateError) {
+          console.error('Supabase error details:', updateError);
+          throw updateError;
+        }
+
+        // フロントエンドのタスクを削除
+        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+      } else {
+        // 通常のタスク削除処理
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('id', taskId);
+
+        if (error) throw error;
+
+        // Remove task from state
+        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+      }
+
+      toast.success('Task deleted successfully');
     } catch (error) {
-      console.error('Failed to delete task:', error)
-      toast.error('Failed to delete task.')
+      console.error('Failed to delete task:', error);
+      toast.error('Failed to delete task.');
     }
-  }
+  };
 
   // Toggle Executed Tasks Visibility
   const toggleExecutedTasks = () => {

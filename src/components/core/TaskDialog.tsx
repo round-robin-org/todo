@@ -50,7 +50,6 @@ export function TaskDialog({
       // Ensure correct field names before sending to addTask
       const formattedData = {
         ...taskData,
-        parent_task_id: taskData.parentTaskId || null  // Convert to database column name
       };
       addTask(formattedData)
       toast.success('Task added successfully.')
