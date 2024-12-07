@@ -19,11 +19,12 @@ export type Task = {
   id: string;
   title: string;
   memo: string;
-  status: 'planned' | 'executed';
+  status: 'executed' | 'planned';
   starred: boolean;
   scheduledDate: string | null;
   label: string;
   longitude: number | null;
   latitude: number | null;
-  routine?: Routine | null;
+  routine: Routine | null;
+  parentTaskId: string | null;
 } 
