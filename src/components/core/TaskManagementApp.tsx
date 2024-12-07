@@ -336,7 +336,7 @@ export function TaskManagementApp() {
             selectedDate={selectedDate}
             showUnplannedTasks={showUnplannedTasks}
             allowSelectDate={false}
-            isToday={false}
+            isToday={showUnplannedTasks}
           >
             <CalendarView 
               selectedDate={selectedDate} 
@@ -423,10 +423,10 @@ export function TaskManagementApp() {
             addLabel={addLabel}
             showToggleButton={false}
             showExecutedTasks={false}
-            selectedDate={null}
+            selectedDate={new Date()}
             showUnplannedTasks={false}
             allowSelectDate={true}
-            isToday={false}
+            isToday={true}
           >
             <ChartView tasks={tasks} />
           </TabContent>
@@ -441,11 +441,11 @@ export function TaskManagementApp() {
           updateTask={updateTask}
           isEdit={true}
           taskToEdit={editingTask}
-          isToday={false}
+          isToday={showUnplannedTasks || true}
           addLabel={addLabel}
           open={true}
           onClose={() => setEditingTask(null)}
-          selectedDate={selectedDate || new Date()}
+          selectedDate={showUnplannedTasks ? new Date() : selectedDate || new Date()}
           showUnplannedTasks={false}
           allowSelectDate={false}
         />

@@ -50,7 +50,9 @@ export function TaskForm({
   const [scheduledDate, setScheduledDate] = useState<string>(
     initialTask?.scheduledDate ||
     (showUnplannedTasks
-      ? ''
+      ? isToday
+        ? format(new Date(), 'yyyy-MM-dd')
+        : (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '')
       : allowSelectDate
         ? ''
         : isToday
@@ -89,7 +91,7 @@ export function TaskForm({
 
   useEffect(() => {
     if (showUnplannedTasks) {
-      setScheduledDate('');
+      setScheduledDate(isToday ? format(new Date(), 'yyyy-MM-dd') : (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''))
     } else if (isToday && !initialTask) {
       setScheduledDate(format(new Date(), 'yyyy-MM-dd'));
     } else if (selectedDate && !initialTask) {
@@ -153,6 +155,26 @@ export function TaskForm({
       }
     }
   }, [isToday, initialTask, selectedDate, showUnplannedTasks, showRoutine, intervalUnit, selectedWeekDays]);
+
+  useEffect(() => {
+    if (intervalUnit === 'week' && selectedWeekDays.length === 0) {
+      const date = initialTask?.scheduledDate ? new Date(initialTask.scheduledDate) : new Date();
+      const dayOfWeek = getDay(date);
+      const dayMap: Record<number, string> = {
+        0: 'Sun',
+        1: 'Mon',
+        2: 'Tue',
+        3: 'Wed',
+        4: 'Thu',
+        5: 'Fri',
+        6: 'Sat'
+      };
+      const dayStr = dayMap[dayOfWeek];
+      if (dayStr) {
+        setSelectedWeekDays([dayStr]);
+      }
+    }
+  }, [intervalUnit, selectedWeekDays, initialTask]);
 
   const handleWeekDayChange = (day: string) => {
     setSelectedWeekDays(prev => {
@@ -242,6 +264,20 @@ export function TaskForm({
           onChange={(e) => setMemo(e.target.value)}
         />
       </div>
+
+      {!showRoutine && (
+        <div className="grid w-full gap-2">
+          <Label htmlFor="scheduledDate">Scheduled Date</Label>
+          <Input 
+            id="scheduledDate" 
+            name="scheduledDate" 
+            type="date" 
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            required={!showRoutine} // Not required when Repeat Task is enabled
+          />
+        </div>
+      )}
 
       <div className="grid w-full gap-2">
         <Label htmlFor="label">Label</Label>
@@ -448,19 +484,6 @@ export function TaskForm({
               />
             </div>
           )}
-        </div>
-      )}
-
-      {allowSelectDate && !showRoutine && (
-        <div className="grid w-full gap-1.5">
-          <Label htmlFor="scheduledDate">Scheduled Date</Label>
-          <Input 
-            id="scheduledDate" 
-            name="scheduledDate" 
-            type="date" 
-            value={scheduledDate}
-            onChange={(e) => setScheduledDate(e.target.value)}
-          />
         </div>
       )}
 
