@@ -23,31 +23,10 @@ export function TaskManagementApp() {
   const [showUnplannedTasks, setShowUnplannedTasks] = useState(false)
   const [labels, setLabels] = useState(["Health", "Work", "Housework"])
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [userLocation, setUserLocation] = useState<{ longitude: number, latitude: number } | null>(null)
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
   const [showExecutedTasksList, setShowExecutedTasksList] = useState(false)
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            longitude: position.coords.longitude,
-            latitude: position.coords.latitude
-          })
-        },
-        (error) => {
-          console.error('Failed to get user location:', error)
-          toast.error('Could not get user location. Using default location.')
-        }
-      )
-    } else {
-      console.error('This browser does not support geolocation.')
-      toast.error('Geolocation is not supported. Using default location.')
-    }
-  }, [])
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -71,10 +50,10 @@ export function TaskManagementApp() {
 
       if (schedulingTask?.id === task.id) {
         setSchedulingTask(null);
-        toast.info(`スケジューリングモードをキャンセルしました: "${task.title}"`);
+        toast.info(`Scheduling mode canceled for: "${task.title}"`);
       } else {
         setSchedulingTask(task);
-        toast.info(`タスク "${task.title}" をスケジューリングモードに設定しました。日付を選択してください。`);
+        toast.info(`Task "${task.title}" set to scheduling mode. Please select a date.`);
       }
     } else {
       setTasks(prevTasks =>
@@ -84,7 +63,7 @@ export function TaskManagementApp() {
         }))
       );
       setSchedulingTask(null);
-      toast.info('スケジューリングモードをキャンセルしました。');
+      toast.info('Scheduling mode canceled.');
     }
   };
 
@@ -100,7 +79,7 @@ export function TaskManagementApp() {
 
   const handleUnplannedClick = () => {
     setShowUnplannedTasks(true)
-    setSelectedDate(new Date()) // 選択されている日付を当日に設定
+    setSelectedDate(new Date()) // Set selected date to today
   }
 
   // Add Task
@@ -112,8 +91,6 @@ export function TaskManagementApp() {
           ...taskData,
           scheduled_date: taskData.scheduledDate ? taskData.scheduledDate : null,
           routine: taskData.routine ? taskData.routine : null,
-          longitude: userLocation ? userLocation.longitude : null,
-          latitude: userLocation ? userLocation.latitude : null,
           scheduledDate: undefined
         })
         .select()
@@ -143,9 +120,7 @@ export function TaskManagementApp() {
           starred: updatedTask.starred,
           scheduled_date: updatedTask.scheduledDate ? updatedTask.scheduledDate : null,
           label: updatedTask.label,
-          routine: updatedTask.routine ? updatedTask.routine : null,
-          longitude: userLocation ? userLocation.longitude : null,
-          latitude: userLocation ? userLocation.latitude : null
+          routine: updatedTask.routine ? updatedTask.routine : null
         })
         .eq('id', updatedTask.id)
 
@@ -293,16 +268,16 @@ export function TaskManagementApp() {
   const unplannedTasks = tasks.filter(task => !task.scheduledDate && task.status === "planned")
   const executedUnplannedTasks = tasks.filter(task => !task.scheduledDate)
 
-  // 今日の日付を取得
+  // Get today's date
   const today = format(new Date(), 'yyyy-MM-dd')
 
-  // 今日の予定タスクをフィルタリング（実行済みタスクの表示設定を反映）
+  // Filter today's scheduled tasks (reflecting the display settings for executed tasks)
   const todayTasks = tasks.filter(task => 
     task.scheduledDate === today && 
     (showExecutedTasksList || task.status !== 'executed')
   )
 
-  // 今日の実行済みタスクをフィルタリング
+  // Filter today's executed tasks
   const executedTodayTasks = tasks.filter(task => 
     task.scheduledDate === today && task.status === 'executed'
   )
@@ -331,6 +306,8 @@ export function TaskManagementApp() {
             toggleExecutedTasks={() => setShowExecutedTasksList(prev => !prev)}
             selectedDate={new Date()}
             showUnplannedTasks={false}
+            allowSelectDate={false}
+            isToday={true}
           >
             <TaskList 
               tasks={todayTasks} 
@@ -358,6 +335,8 @@ export function TaskManagementApp() {
             toggleExecutedTasks={toggleExecutedTasks}
             selectedDate={selectedDate}
             showUnplannedTasks={showUnplannedTasks}
+            allowSelectDate={false}
+            isToday={false}
           >
             <CalendarView 
               selectedDate={selectedDate} 
@@ -374,7 +353,7 @@ export function TaskManagementApp() {
             {selectedDate && !showUnplannedTasks && (
               <Card className="mt-4">
                 <CardHeader>
-                  <CardTitle>{format(selectedDate, 'MMMM d, yyyy')} Tasks</CardTitle>
+                  <CardTitle>Tasks for {format(selectedDate, 'MMMM d, yyyy')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TaskList 
@@ -438,11 +417,16 @@ export function TaskManagementApp() {
         <TabsContent value="chart">
           <TabContent 
             title="Chart View" 
-            description="Review task execution rates and goal-based task counts." 
+            description="Check task execution rates and goal-based task counts." 
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
             showToggleButton={false}
+            showExecutedTasks={false}
+            selectedDate={null}
+            showUnplannedTasks={false}
+            allowSelectDate={true}
+            isToday={false}
           >
             <ChartView tasks={tasks} />
           </TabContent>
@@ -457,14 +441,15 @@ export function TaskManagementApp() {
           updateTask={updateTask}
           isEdit={true}
           taskToEdit={editingTask}
-          isToday={true}
+          isToday={false}
           addLabel={addLabel}
           open={true}
           onClose={() => setEditingTask(null)}
-          selectedDate={new Date()}
+          selectedDate={selectedDate || new Date()}
           showUnplannedTasks={false}
+          allowSelectDate={false}
         />
       )}
     </div>
   )
-} 
+}

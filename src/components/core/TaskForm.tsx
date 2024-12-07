@@ -16,30 +16,38 @@ type TaskFormProps = {
   onSubmit: (taskData: Omit<Task, 'id'>) => void;
   isToday: boolean;
   addLabel: (newLabel: string) => void;
-  selectedDate?: Date;
+  selectedDate?: Date | null;
   showUnplannedTasks: boolean;
+  allowSelectDate?: boolean;
 }
 
-export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, selectedDate, showUnplannedTasks }: TaskFormProps) {
+export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, selectedDate, showUnplannedTasks, allowSelectDate = false }: TaskFormProps) {
   const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none')
   const [newLabel, setNewLabel] = useState('')
   const [title, setTitle] = useState(initialTask?.title || '')
   const [memo, setMemo] = useState(initialTask?.memo || '')
   const [scheduledDate, setScheduledDate] = useState<string>(
     initialTask?.scheduledDate ||
-    (isToday ? format(new Date(), 'yyyy-MM-dd') : 
-    selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '')
+    (showUnplannedTasks
+      ? ''
+      : allowSelectDate
+        ? ''
+        : isToday
+          ? format(new Date(), 'yyyy-MM-dd')
+          : selectedDate
+            ? format(selectedDate, 'yyyy-MM-dd')
+            : '')
   )
   const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine)
 
-  // 繰り返しタスクの状態
+  // State for recurring tasks
   const [intervalNumber, setIntervalNumber] = useState(initialTask?.routine?.interval.number || 1)
   const [intervalUnit, setIntervalUnit] = useState(initialTask?.routine?.interval.unit || 'day')
   const [routineStarts, setRoutineStarts] = useState(initialTask?.routine?.starts || format(new Date(), 'yyyy-MM-dd'))
   const [routineEndsType, setRoutineEndsType] = useState(initialTask?.routine?.ends.type || 'never')
   const [routineEndsValue, setRoutineEndsValue] = useState(initialTask?.routine?.ends.value || '')
 
-  // 追加仕様の状態
+  // Additional specifications state
   // Week Interval
   const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>(initialTask?.routine?.weekDays || [])
 
@@ -72,7 +80,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
       label = undefined
     }
 
-    // 繰り返しタスクデータの構築
+    // Construct recurring task data
     let routine = undefined
     if (showRoutine) {
       routine = {
@@ -87,7 +95,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
         }
       }
 
-      // 追加仕様の処理
+      // Additional specifications processing
       if (intervalUnit === 'week') {
         routine.weekDays = selectedWeekDays
       } else if (intervalUnit === 'month') {
@@ -106,7 +114,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
       memo,
       status: 'planned',
       starred: false,
-      scheduledDate: showUnplannedTasks ? null : scheduledDate,
+      scheduledDate: showUnplannedTasks ? null : scheduledDate || null,
       label: label || 'none',
       routine
     })
@@ -347,6 +355,19 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, sel
               />
             </div>
           )}
+        </div>
+      )}
+
+      {allowSelectDate && (
+        <div className="grid w-full gap-1.5">
+          <Label htmlFor="scheduledDate">Scheduled Date</Label>
+          <Input 
+            id="scheduledDate" 
+            name="scheduledDate" 
+            type="date" 
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+          />
         </div>
       )}
 

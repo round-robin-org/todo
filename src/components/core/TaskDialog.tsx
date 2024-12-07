@@ -19,6 +19,8 @@ type TaskDialogProps = {
   open?: boolean;
   onClose?: () => void;
   showUnplannedTasks: boolean;
+  allowSelectDate?: boolean;
+  selectedDate?: Date | null;
 }
 
 export function TaskDialog({ 
@@ -31,16 +33,18 @@ export function TaskDialog({
   isToday, 
   open,
   onClose,
-  showUnplannedTasks
+  showUnplannedTasks,
+  allowSelectDate = false,
+  selectedDate = null
 }: TaskDialogProps) {
 
   const handleSubmit = (taskData: Omit<Task, 'id'>) => {
     if (isEdit && taskToEdit) {
       updateTask({ ...taskToEdit, ...taskData })
-      toast.success('タスクが更新されました。')
+      toast.success('Task updated successfully.')
     } else {
       addTask(taskData)
-      toast.success('タスクが追加されました。')
+      toast.success('Task added successfully.')
     }
     if (onClose) {
       onClose()
@@ -66,8 +70,9 @@ export function TaskDialog({
           onSubmit={handleSubmit} 
           isToday={isToday} 
           addLabel={addLabel}
-          selectedDate={null}
+          selectedDate={selectedDate}
           showUnplannedTasks={showUnplannedTasks}
+          allowSelectDate={allowSelectDate}
         />
       </DialogContent>
     </Dialog>

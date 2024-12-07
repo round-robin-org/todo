@@ -23,8 +23,8 @@ function AppContent() {
       {session ? <TaskManagementApp /> : <Auth />}
       {!session && (
         <div className="flex justify-center mt-4">
-          <Link href="/auth/signin" className="mr-4 text-blue-500">サインイン</Link>
-          <Link href="/auth/signup" className="text-green-500">サインアップ</Link>
+          <Link href="/auth/signin" className="mr-4 text-blue-500">Sign in</Link>
+          <Link href="/auth/signup" className="text-green-500">Sign up</Link>
         </div>
       )}
     </>

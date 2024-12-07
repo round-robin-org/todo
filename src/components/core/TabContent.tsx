@@ -19,6 +19,8 @@ type TabContentProps = {
   toggleExecutedTasks?: () => void;
   selectedDate?: Date;
   showUnplannedTasks?: boolean;
+  allowSelectDate?: boolean;
+  isToday: boolean;
 }
 
 export function TabContent({ 
@@ -33,6 +35,8 @@ export function TabContent({
   toggleExecutedTasks = () => {},
   selectedDate,
   showUnplannedTasks = false,
+  allowSelectDate = false,
+  isToday,
 }: TabContentProps) {
   return (
     <Card>
@@ -55,11 +59,12 @@ export function TabContent({
           )}
           <TaskDialog 
             labels={labels}
-            addTask={addTask} 
-            isToday={false} 
+            addTask={addTask}
             addLabel={addLabel}
+            isToday={isToday}
             selectedDate={selectedDate}
             showUnplannedTasks={showUnplannedTasks}
+            allowSelectDate={allowSelectDate}
           />
         </div>
       </CardHeader>

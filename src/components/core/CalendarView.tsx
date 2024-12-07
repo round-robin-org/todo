@@ -32,20 +32,18 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
   // Add Today button
   const handleToday = () => {
     setSelectedDate(new Date())
-    // 今日ボタンクリックで未予定表示を解除
-    // （必要に応じて）
   }
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 w-full">
         <Button
           onClick={() => setSelectedDate(date => new Date(date.getFullYear(), date.getMonth() - 1, 1))}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-lg font-semibold">
+        <h2 className="text-lg font-semibold mx-4">
           {format(selectedDate, 'MMMM yyyy')}
         </h2>
         <Button
@@ -54,11 +52,14 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
+      </div>
+      
+      <div className="flex justify-end items-center mb-4">
         <Button
           variant="secondary"
           size="sm"
           onClick={handleToday}
-          className="ml-2 flex items-center"
+          className="flex items-center mr-2"
         >
           <Calendar className="h-4 w-4 mr-1" />
           Today

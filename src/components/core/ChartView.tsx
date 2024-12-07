@@ -30,7 +30,7 @@ import {
   endOfMonth,
   endOfYear,
 } from 'date-fns'
-import { ja, enUS } from 'date-fns/locale'
+import { ja } from 'date-fns/locale'
 import { ChartContainer, ChartLegendContent } from "@src/components/ui/chart"
 import { Task } from '@src/lib/types'
 import { Button } from "@src/components/ui/button"
@@ -82,15 +82,14 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     const targetDateStr = format(currentRange.start, 'yyyy-MM-dd')
 
     if (chartType === 'task') {
-      // Filter tasks based on aggregation period
       if (aggregationPeriod === 'day') {
         filteredTasks = tasks.filter(task => task.scheduledDate === targetDateStr)
       } else if (aggregationPeriod === 'week') {
-        const dayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(label as string)
-        if (dayIndex === -1) return null
-        const targetDate = addDays(currentRange.start, dayIndex)
-        const dateStr = format(targetDate, 'yyyy-MM-dd')
-        filteredTasks = tasks.filter(task => task.scheduledDate === dateStr)
+        const targetDate = new Date(label as string)
+        if (isNaN(targetDate.getTime())) return null
+        const dayIndex = targetDate.getDay()
+        const specificDateStr = format(addDays(currentRange.start, dayIndex), 'yyyy-MM-dd')
+        filteredTasks = tasks.filter(task => task.scheduledDate === specificDateStr)
       } else if (aggregationPeriod === 'month') {
         const weekMatch = label.match(/W(\d+)/)
         if (!weekMatch) return null
@@ -101,7 +100,6 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
           isWithinInterval(new Date(task.scheduledDate), { start: weekStartDate, end: weekEndDate })
         )
       } else if (aggregationPeriod === 'year') {
-        // 修正: 月名を英語で解析
         const monthIndex = new Date(Date.parse(label + " 1, 2020")).getMonth()
         const monthStartDate = startOfMonth(addMonths(startOfYear(currentRange.start), monthIndex))
         const monthEndDate = endOfMonth(monthStartDate)
@@ -110,22 +108,21 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
         )
       }
     } else if (chartType === 'goal') {
-      const goalName = label ? label.trim() : '';
-      
-      // Exclude empty labels
+      const goalName = label ? label.trim() : ''
+
       if (!goalName) {
-        return null;
+        return null
       }
 
       if (aggregationPeriod === 'day') {
         filteredTasks = tasks.filter(task =>
           task.label?.trim() === goalName && task.scheduledDate === targetDateStr
-        );
+        )
       } else {
         filteredTasks = tasks.filter(task =>
           task.label?.trim() === goalName &&
           isWithinInterval(new Date(task.scheduledDate), { start: currentRange.start, end: currentRange.end })
-        );
+        )
       }
     }
 
@@ -139,7 +136,15 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 
     return (
       <div className="custom-tooltip bg-white border border-gray-200 p-2 rounded shadow-lg">
-        <p className="label font-semibold">{`${payload[0].name}: ${payload[0].value}`}</p>
+        {aggregationPeriod === 'week' ? (
+          <>
+            {payload.map((p: any, index: number) => (
+              <p key={index} className="label font-semibold">{`${p.name}: ${p.value}`}</p>
+            ))}
+          </>
+        ) : (
+          <p className="label font-semibold">{`${payload[0].name}: ${payload[0].value}`}</p>
+        )}
         <ul className="mt-1 text-xs max-h-40 overflow-y-auto">
           {filteredTasks.map(task => (
             <li key={task.id} className="flex items-center">
@@ -295,7 +300,7 @@ export function ChartView({ tasks }: ChartViewProps) {
       const monthsInYear: { month: number; plannedTasks: number; executedTasks: number }[] = []
       let currentMonthStart = startOfMonth(start)
 
-      // 年の最初から最後まで1ヶ月ずつ処理
+      // Process each month from the first month of the year to the last
       while (currentMonthStart <= end) {
         const currentMonthEnd = endOfMonth(currentMonthStart)
         const monthTasks = tasks.filter(task =>
@@ -306,7 +311,7 @@ export function ChartView({ tasks }: ChartViewProps) {
         )
 
         monthsInYear.push({
-          month: currentMonthStart.getMonth(), // 0-11の月インデックス
+          month: currentMonthStart.getMonth(), // 0-11 month index
           plannedTasks: monthTasks.length,
           executedTasks: monthTasks.filter(t => t.status === 'executed').length
         })
@@ -314,7 +319,7 @@ export function ChartView({ tasks }: ChartViewProps) {
         currentMonthStart = addMonths(currentMonthStart, 1)
       }
 
-      // データの整形
+      // Format data
       data.push(...monthsInYear.map(monthData => ({
         name: format(new Date(start.getFullYear(), monthData.month), 'MMMM'),
         plannedTasks: monthData.plannedTasks,
@@ -476,7 +481,7 @@ export function ChartView({ tasks }: ChartViewProps) {
                 dominantBaseline="middle"
                 className="text-lg font-semibold"
               >
-                {format(currentRange.start, 'yyyy-MM-dd')} {/* 日付を表示 */}
+                {format(currentRange.start, 'yyyy-MM-dd')} {/* Display date */}
               </text>
               <Pie
                 data={taskData}
@@ -493,49 +498,53 @@ export function ChartView({ tasks }: ChartViewProps) {
                 ))}
               </Pie>
               <Tooltip
-                content={
+                content={({ active, payload, label }) => (
                   <CustomTooltip
+                    active={active}
+                    payload={payload}
+                    label={label}
                     tasks={tasks}
                     chartType="task"
                     currentRange={currentRange}
                     aggregationPeriod={aggregationPeriod}
                   />
-                }
+                )}
               />
               <Legend />
             </PieChart>
           ) : aggregationPeriod === 'week' ? (
-            // Weekly aggregation: Area chart
-            <AreaChart data={taskData}>
+            // 週次の集計: バーチャートに変更
+            <BarChart data={taskData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip
-                content={
+                content={({ active, payload, label }) => (
                   <CustomTooltip
+                    active={active}
+                    payload={payload}
+                    label={label}
                     tasks={tasks}
                     chartType="task"
                     currentRange={currentRange}
                     aggregationPeriod={aggregationPeriod}
                   />
-                }
+                )}
               />
               <Legend content={<ChartLegendContent />} />
-              <Area
-                type="monotone"
+              <Bar
                 dataKey="plannedTasks"
-                stroke={chartConfigTask.plannedTasks.color}
+                stackId="a"
                 fill={chartConfigTask.plannedTasks.color}
                 name={chartConfigTask.plannedTasks.label}
               />
-              <Area
-                type="monotone"
+              <Bar
                 dataKey="executedTasks"
-                stroke={chartConfigTask.executedTasks.color}
+                stackId="a"
                 fill={chartConfigTask.executedTasks.color}
                 name={chartConfigTask.executedTasks.label}
               />
-            </AreaChart>
+            </BarChart>
           ) : (
             // Monthly and yearly aggregation: Vertical bar chart
             <BarChart data={taskData}>
@@ -554,14 +563,17 @@ export function ChartView({ tasks }: ChartViewProps) {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip
-                content={
+                content={({ active, payload, label }) => (
                   <CustomTooltip
+                    active={active}
+                    payload={payload}
+                    label={label}
                     tasks={tasks}
                     chartType="task"
                     currentRange={currentRange}
                     aggregationPeriod={aggregationPeriod}
                   />
-                }
+                )}
               />
               <Legend content={<ChartLegendContent />} />
               <Bar
@@ -591,14 +603,17 @@ export function ChartView({ tasks }: ChartViewProps) {
               <XAxis type="number" />
               <YAxis dataKey="name" type="category" />
               <Tooltip
-                content={
+                content={({ active, payload, label }) => (
                   <CustomTooltip
+                    active={active}
+                    payload={payload}
+                    label={label}
                     tasks={tasks}
                     chartType="goal"
                     currentRange={currentRange}
                     aggregationPeriod={aggregationPeriod}
                   />
-                }
+                )}
               />
               <Legend content={<ChartLegendContent />} />
               <Bar

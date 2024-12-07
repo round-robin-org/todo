@@ -9,7 +9,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async (date: Date) => {
-    // 月単位で取得 (Calendarビューなど)
+    // Get by month (Calendar view, etc.)
     const start = format(startOfMonth(date), 'yyyy-MM-dd')
     const end = format(endOfMonth(date), 'yyyy-MM-dd')
 
@@ -17,7 +17,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        // 非予定タスクも含め、月範囲内のタスクを取得
+        // Include unplanned tasks, and get tasks within the month range
         .or(`scheduled_date.gte.${start},scheduled_date.lte.${end},scheduled_date.is.null`)
         .order('created_at', { ascending: false })
 
@@ -105,7 +105,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
 }
 
 /**
- * 繰り返しタスクを展開する関数
+ * Function to expand recurring tasks
  */
 function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: Date): Task[] {
   const expandedTasks: Task[] = []
@@ -132,7 +132,7 @@ function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: Date): 
 }
 
 /**
- * ルールオブジェクトをrruleで構築
+ * Build recurrence rule object with rrule
  */
 function buildRecurrenceRule(routine: Routine) {
   const options: Partial<RRule.Options> = {
