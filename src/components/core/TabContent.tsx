@@ -14,6 +14,7 @@ type TabContentProps = {
   labels: string[];
   addTask: (taskData: Omit<Task, 'id'>) => void;
   addLabel: (newLabel: string) => void;
+  deleteLabel: (label: string) => void;
   showToggleButton?: boolean;
   showExecutedTasks?: boolean;
   toggleExecutedTasks?: () => void;
@@ -30,6 +31,7 @@ export function TabContent({
   labels, 
   addTask, 
   addLabel,
+  deleteLabel,
   showToggleButton = false,
   showExecutedTasks = false,
   toggleExecutedTasks = () => {},
@@ -61,6 +63,7 @@ export function TabContent({
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            deleteLabel={deleteLabel}
             isToday={isToday}
             selectedDate={selectedDate}
             showUnplannedTasks={showUnplannedTasks}
@@ -74,3 +77,4 @@ export function TabContent({
     </Card>
   )
 } 
+

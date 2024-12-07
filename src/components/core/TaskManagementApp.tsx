@@ -83,57 +83,93 @@ export function TaskManagementApp() {
   }
 
   // Add Task
-  const addTask = async (taskData: Omit<Task, 'id'>) => {
+  const addTask = async (taskData: any) => {
     try {
+      console.log('Adding task with data:', taskData);
+
       const { data, error } = await supabase
         .from('tasks')
         .insert({
-          ...taskData,
-          scheduled_date: taskData.scheduledDate ? taskData.scheduledDate : null,
-          routine: taskData.routine ? taskData.routine : null,
-          scheduledDate: undefined
+          title: taskData.title,
+          memo: taskData.memo || '',
+          status: taskData.status,
+          starred: taskData.starred || false,
+          scheduled_date: taskData.scheduledDate || null,
+          label: taskData.label || '',
+          routine: taskData.routine || null,
+          parent_task_id: taskData.parent_task_id || null
         })
         .select()
 
       if (error) {
-        throw error
+        console.error('Supabase error details:', error);
+        throw error;
       }
 
-      // Add new task to state
-      setTasks(prevTasks => [data[0], ...prevTasks])
+      const newTask: Task = {
+        id: data[0].id.toString(),
+        title: data[0].title,
+        memo: data[0].memo || '',
+        status: data[0].status === 'executed' ? 'executed' : 'planned',
+        starred: data[0].starred || false,
+        scheduledDate: data[0].scheduled_date || null,
+        label: data[0].label || '',
+        routine: data[0].routine || null,
+        parentTaskId: data[0].parent_task_id || null
+      }
+
+      setTasks(prevTasks => [newTask, ...prevTasks])
       toast.success('Task added successfully')
     } catch (error) {
       console.error('Failed to add task:', error)
-      toast.error('Failed to add task.')
+      toast.error(`Failed to add task: ${error.message}`)
     }
   }
 
   // Update Task
   const updateTask = async (updatedTask: Task) => {
     try {
-      const { error } = await supabase
+      console.log('Updating task with data:', updatedTask);
+
+      const { data, error } = await supabase
         .from('tasks')
         .update({
           title: updatedTask.title,
           memo: updatedTask.memo,
           status: updatedTask.status,
           starred: updatedTask.starred,
-          scheduled_date: updatedTask.scheduledDate ? updatedTask.scheduledDate : null,
-          label: updatedTask.label,
-          routine: updatedTask.routine ? updatedTask.routine : null
+          scheduled_date: updatedTask.scheduledDate,
+          label: updatedTask.label || null,
+          routine: updatedTask.routine || null,
+          parent_task_id: updatedTask.parentTaskId || null
         })
         .eq('id', updatedTask.id)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
 
-      // Update state
+      const mappedUpdatedTask: Task = {
+        id: data[0].id.toString(),
+        title: data[0].title,
+        memo: data[0].memo || '',
+        status: data[0].status === 'executed' ? 'executed' : 'planned',
+        starred: data[0].starred || false,
+        scheduledDate: data[0].scheduled_date || null,
+        label: data[0].label || '',
+        routine: data[0].routine || null,
+        parentTaskId: data[0].parent_task_id || null
+      }
+
       setTasks(prevTasks =>
-        prevTasks.map(t => t.id === updatedTask.id ? updatedTask : t)
+        prevTasks.map(t => t.id === updatedTask.id ? mappedUpdatedTask : t)
       )
       toast.success('Task updated successfully')
     } catch (error) {
       console.error('Failed to update task:', error)
-      toast.error('Failed to update task.')
+      toast.error(`Failed to update task: ${error.message}`)
     }
   }
 
@@ -193,11 +229,42 @@ export function TaskManagementApp() {
   }
 
   // Add Label
-  const addLabel = (newLabel: string) => {
-    if (newLabel && !labels.includes(newLabel)) {
-      setLabels(prevLabels => [...prevLabels, newLabel])
+  const addLabel = async (newLabel: string) => {
+    try {
+      const { error } = await supabase
+        .from('labels')
+        .insert({ name: newLabel })
+
+      if (error) throw error;
+
+      setLabels(prevLabels => [...prevLabels, newLabel]);
+      toast.success('Label added successfully');
+    } catch (error) {
+      console.error('Failed to add label:', error);
+      toast.error('Failed to add label');
     }
-  }
+  };
+
+  // Fetch labels on component mount
+  useEffect(() => {
+    const fetchLabels = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('labels')
+          .select('name')
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        setLabels(data.map(label => label.name));
+      } catch (error) {
+        console.error('Failed to fetch labels:', error);
+        toast.error('Failed to fetch labels');
+      }
+    };
+
+    fetchLabels();
+  }, []);
 
   // Delete Task
   const deleteTask = async (taskId: string) => {
@@ -263,6 +330,24 @@ export function TaskManagementApp() {
     }
   }
 
+  // Add deleteLabel function
+  const deleteLabel = async (labelToDelete: string) => {
+    try {
+      const { error } = await supabase
+        .from('labels')
+        .delete()
+        .eq('name', labelToDelete)
+
+      if (error) throw error;
+
+      setLabels(prevLabels => prevLabels.filter(label => label !== labelToDelete));
+      toast.success('Label deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete label:', error);
+      toast.error('Failed to delete label');
+    }
+  };
+
   const plannedTasks = tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")
   const executedPlannedTasks = tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))
   const unplannedTasks = tasks.filter(task => !task.scheduledDate && task.status === "planned")
@@ -301,6 +386,7 @@ export function TaskManagementApp() {
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            deleteLabel={deleteLabel}
             showToggleButton={true}
             showExecutedTasks={showExecutedTasksList}
             toggleExecutedTasks={() => setShowExecutedTasksList(prev => !prev)}
@@ -330,6 +416,7 @@ export function TaskManagementApp() {
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            deleteLabel={deleteLabel}
             showToggleButton={true}
             showExecutedTasks={showExecutedTasks}
             toggleExecutedTasks={toggleExecutedTasks}
@@ -421,6 +508,7 @@ export function TaskManagementApp() {
             labels={labels}
             addTask={addTask}
             addLabel={addLabel}
+            deleteLabel={deleteLabel}
             showToggleButton={false}
             showExecutedTasks={false}
             selectedDate={new Date()}
@@ -443,6 +531,7 @@ export function TaskManagementApp() {
           taskToEdit={editingTask}
           isToday={showUnplannedTasks || true}
           addLabel={addLabel}
+          deleteLabel={deleteLabel}
           open={true}
           onClose={() => setEditingTask(null)}
           selectedDate={showUnplannedTasks ? new Date() : selectedDate || new Date()}

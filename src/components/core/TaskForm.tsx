@@ -9,6 +9,7 @@ import { Checkbox } from "@src/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@src/components/ui/radio-group"
 import { format, getDay, getDate, getDaysInMonth } from 'date-fns'
 import { Task } from '../../lib/types'
+import { Trash2 } from 'lucide-react'
 
 type TaskFormProps = {
   initialTask?: Task;
@@ -19,6 +20,7 @@ type TaskFormProps = {
   selectedDate?: Date | null;
   showUnplannedTasks: boolean;
   allowSelectDate?: boolean;
+  deleteLabel: (label: string) => void;
 }
 
 export function TaskForm({ 
@@ -29,7 +31,8 @@ export function TaskForm({
   addLabel, 
   selectedDate, 
   showUnplannedTasks, 
-  allowSelectDate = false 
+  allowSelectDate = false, 
+  deleteLabel
 }: TaskFormProps) {
   // Helper Function (moved to the top)
   const getNthWeek = (date: Date | null): 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' => {
@@ -199,10 +202,15 @@ export function TaskForm({
       label = undefined;
     }
 
-    // Construct recurring task data
-    let routine = undefined;
-    if (showRoutine) {
-      routine = {
+    // Construct task data with correct field names
+    const taskData = {
+      title,
+      memo,
+      status: 'planned' as const,
+      starred: initialTask?.starred || false,
+      scheduledDate: showRoutine ? null : (scheduledDate || null),
+      label,
+      routine: showRoutine ? {
         interval: {
           number: Number(intervalNumber),
           unit: intervalUnit
@@ -211,33 +219,21 @@ export function TaskForm({
         ends: {
           type: routineEndsType,
           value: routineEndsType === 'after' ? Number(routineEndsValue) : routineEndsValue
-        }
-      }
+        },
+        ...(intervalUnit === 'week' && { weekDays: selectedWeekDays }),
+        ...(intervalUnit === 'month' && {
+          monthOption,
+          ...(monthOption === 'day' ? { monthDay: selectedMonthDay } : {
+            monthWeek: selectedMonthWeek,
+            monthWeekDay: selectedMonthWeekDay
+          })
+        })
+      } : null,
+      parent_task_id: initialTask?.parentTaskId || null  // Use database column name
+    };
 
-      // Additional specifications processing
-      if (intervalUnit === 'week') {
-        routine.weekDays = selectedWeekDays;
-      } else if (intervalUnit === 'month') {
-        routine.monthOption = monthOption;
-        if (monthOption === 'day') {
-          routine.monthDay = selectedMonthDay;
-        } else if (monthOption === 'weekday') {
-          routine.monthWeek = selectedMonthWeek;
-          routine.monthWeekDay = selectedMonthWeekDay;
-        }
-      }
-    }
-
-    onSubmit({
-      title,
-      memo,
-      status: 'planned',
-      starred: initialTask?.starred || false,
-      scheduledDate: showRoutine ? null : (scheduledDate || null),
-      label,
-      routine,
-      parentTaskId: initialTask?.parentTaskId || null
-    });
+    console.log('Submitting task data:', taskData); // Debug log
+    onSubmit(taskData);
   }
 
   return (
@@ -281,28 +277,45 @@ export function TaskForm({
 
       <div className="grid w-full gap-2">
         <Label htmlFor="label">Label</Label>
-        <Select name="label" value={selectedLabel} onValueChange={setSelectedLabel}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select label" />
-          </SelectTrigger>
-          <SelectContent>
-            {labels.map(label => (
-              <SelectItem key={label} value={label}>{label}</SelectItem>
-            ))}
-            <SelectItem value="new">New Label</SelectItem>
-            <SelectItem value="none">None</SelectItem>
-          </SelectContent>
-        </Select>
-        {selectedLabel === 'new' && (
-          <Input 
-            name="newLabel" 
-            type="text" 
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            placeholder="Enter new label"
-            required 
-          />
-        )}
+        <div className="flex flex-col space-y-2">
+          <Select name="label" value={selectedLabel} onValueChange={setSelectedLabel}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select label" />
+            </SelectTrigger>
+            <SelectContent>
+              {labels.map(label => (
+                <div key={label} className="flex items-center justify-between px-2">
+                  <SelectItem value={label}>{label}</SelectItem>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (window.confirm(`Delete label "${label}"?`)) {
+                        deleteLabel(label);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <SelectItem value="new">New Label</SelectItem>
+              <SelectItem value="none">None</SelectItem>
+            </SelectContent>
+          </Select>
+          {selectedLabel === 'new' && (
+            <Input 
+              name="newLabel" 
+              type="text" 
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              placeholder="Enter new label"
+              required 
+            />
+          )}
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">

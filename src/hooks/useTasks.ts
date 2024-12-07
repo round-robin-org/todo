@@ -16,8 +16,12 @@ export function useTasks(selectedDate: Date, activeTab: string) {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('*')
-        // Include unplanned tasks, and get tasks within the month range
+        .select(`
+          *,
+          labels (
+            name
+          )
+        `)
         .or(`scheduled_date.gte.${start},scheduled_date.lte.${end},scheduled_date.is.null`)
         .order('created_at', { ascending: false })
 
@@ -49,7 +53,12 @@ export function useTasks(selectedDate: Date, activeTab: string) {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          labels (
+            name
+          )
+        `)
         .or(`scheduled_date.is.null,scheduled_date.eq.${today}`)
         .order('created_at', { ascending: false })
 

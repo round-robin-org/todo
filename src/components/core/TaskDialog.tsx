@@ -21,6 +21,7 @@ type TaskDialogProps = {
   showUnplannedTasks: boolean;
   allowSelectDate?: boolean;
   selectedDate?: Date | null;
+  deleteLabel: (label: string) => void;
 }
 
 export function TaskDialog({ 
@@ -35,15 +36,23 @@ export function TaskDialog({
   onClose,
   showUnplannedTasks,
   allowSelectDate = false,
-  selectedDate = null
+  selectedDate = null,
+  deleteLabel,
 }: TaskDialogProps) {
 
   const handleSubmit = (taskData: Omit<Task, 'id'>) => {
+    console.log('TaskDialog received data:', taskData); // Debug log
+    
     if (isEdit && taskToEdit) {
       updateTask({ ...taskToEdit, ...taskData })
       toast.success('Task updated successfully.')
     } else {
-      addTask(taskData)
+      // Ensure correct field names before sending to addTask
+      const formattedData = {
+        ...taskData,
+        parent_task_id: taskData.parentTaskId || null  // Convert to database column name
+      };
+      addTask(formattedData)
       toast.success('Task added successfully.')
     }
     if (onClose) {
@@ -70,6 +79,7 @@ export function TaskDialog({
           onSubmit={handleSubmit} 
           isToday={isToday} 
           addLabel={addLabel}
+          deleteLabel={deleteLabel}
           selectedDate={selectedDate}
           showUnplannedTasks={showUnplannedTasks}
           allowSelectDate={allowSelectDate}
