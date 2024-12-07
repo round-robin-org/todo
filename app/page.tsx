@@ -2,7 +2,7 @@
 
 import { SessionProvider, useSession } from "next-auth/react"
 import { TaskManagementApp } from "@src/components/core/TaskManagementApp"
-import { Auth } from "@src/components/core/Auth"
+import { Auth } from "@src/components/auth/Auth"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 

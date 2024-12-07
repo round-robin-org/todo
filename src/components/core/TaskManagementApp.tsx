@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { format } from 'date-fns'
-import { Header } from '@src/components/core/Header'
+import { Header } from '@src/components/auth/Header'
 import { TaskDialog } from '@src/components/core/TaskDialog'
 import { CalendarView } from '@src/components/core/CalendarView'
 import { ChartView } from '@src/components/core/ChartView'
