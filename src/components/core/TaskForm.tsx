@@ -51,18 +51,7 @@ export function TaskForm({
   const [title, setTitle] = useState(initialTask?.title || '');
   const [memo, setMemo] = useState(initialTask?.memo || '');
   const [scheduledDate, setScheduledDate] = useState<string>(
-    initialTask?.scheduledDate ||
-    (showUnplannedTasks
-      ? isToday
-        ? format(new Date(), 'yyyy-MM-dd')
-        : (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '')
-      : allowSelectDate
-        ? ''
-        : isToday
-          ? format(new Date(), 'yyyy-MM-dd')
-          : selectedDate
-            ? format(selectedDate, 'yyyy-MM-dd')
-            : '')
+    initialTask?.scheduledDate || ''
   );
   const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine);
 
@@ -93,8 +82,8 @@ export function TaskForm({
   );
 
   useEffect(() => {
-    if (showUnplannedTasks) {
-      setScheduledDate(isToday ? format(new Date(), 'yyyy-MM-dd') : (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''))
+    if (showUnplannedTasks && !initialTask) {
+      setScheduledDate('')
     } else if (isToday && !initialTask) {
       setScheduledDate(format(new Date(), 'yyyy-MM-dd'));
     } else if (selectedDate && !initialTask) {
@@ -199,7 +188,7 @@ export function TaskForm({
         addLabel(label);
       }
     } else if (label === 'none') {
-      label = undefined;
+      label = null;
     }
 
     // Construct task data with correct field names
@@ -269,7 +258,6 @@ export function TaskForm({
             type="date" 
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
-            required={!showRoutine} // Not required when Repeat Task is enabled
           />
         </div>
       )}

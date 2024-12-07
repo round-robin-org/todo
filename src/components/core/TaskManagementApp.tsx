@@ -95,7 +95,7 @@ export function TaskManagementApp() {
           status: taskData.status,
           starred: taskData.starred || false,
           scheduled_date: taskData.scheduledDate || null,
-          label: taskData.label || '',
+          label: taskData.label || null,
           routine: taskData.routine || null,
         })
         .select()
@@ -112,7 +112,7 @@ export function TaskManagementApp() {
         status: data[0].status === 'executed' ? 'executed' : 'planned',
         starred: data[0].starred || false,
         scheduledDate: data[0].scheduled_date || null,
-        label: data[0].label || '',
+        label: data[0].label || null,
         routine: data[0].routine || null,
       }
 
