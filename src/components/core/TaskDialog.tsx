@@ -18,8 +18,6 @@ type TaskDialogProps = {
   isToday: boolean;
   open?: boolean;
   onClose?: () => void;
-  userLocation: { longitude: number, latitude: number } | null;
-  selectedDate?: Date;
   showUnplannedTasks: boolean;
 }
 
@@ -33,22 +31,16 @@ export function TaskDialog({
   isToday, 
   open,
   onClose,
-  userLocation,
-  selectedDate,
   showUnplannedTasks
 }: TaskDialogProps) {
 
   const handleSubmit = (taskData: Omit<Task, 'id'>) => {
     if (isEdit && taskToEdit) {
-      const updatedTask: Task = {
-        ...taskToEdit,
-        ...taskData
-      }
-      updateTask(updatedTask)
-      toast.success('Task updated')
+      updateTask({ ...taskToEdit, ...taskData })
+      toast.success('タスクが更新されました。')
     } else {
       addTask(taskData)
-      toast.success('Task added')
+      toast.success('タスクが追加されました。')
     }
     if (onClose) {
       onClose()
@@ -73,9 +65,8 @@ export function TaskDialog({
           labels={labels} 
           onSubmit={handleSubmit} 
           isToday={isToday} 
-          addLabel={addLabel} 
-          userLocation={userLocation}
-          selectedDate={selectedDate}
+          addLabel={addLabel}
+          selectedDate={null}
           showUnplannedTasks={showUnplannedTasks}
         />
       </DialogContent>

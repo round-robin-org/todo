@@ -14,8 +14,7 @@ import { TabContent } from '@src/components/core/TabContent'
 import { Task } from '@src/lib/types'
 import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
-import { MapView } from './MapView'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 
 export function TaskManagementApp() {
   const [activeTab, setActiveTab] = useState("calendar")
@@ -448,20 +447,6 @@ export function TaskManagementApp() {
             <ChartView tasks={tasks} />
           </TabContent>
         </TabsContent>
-
-        {/* Map Tab */}
-        {/* <TabsContent value="map">
-          <TabContent 
-            title="Map View" 
-            description="View tasks on a map." 
-            labels={labels}
-            addTask={addTask}
-            addLabel={addLabel}
-            showToggleButton={false}
-          >
-            <MapView tasks={tasks} userLocation={userLocation} />
-          </TabContent>
-        </TabsContent> */}
       </Tabs>
 
       {/* Task Edit Dialog */}
@@ -476,7 +461,6 @@ export function TaskManagementApp() {
           addLabel={addLabel}
           open={true}
           onClose={() => setEditingTask(null)}
-          userLocation={userLocation}
           selectedDate={new Date()}
           showUnplannedTasks={false}
         />

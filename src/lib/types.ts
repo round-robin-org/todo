@@ -23,8 +23,6 @@ export type Task = {
   starred: boolean;
   scheduledDate: string | null;
   label: string;
-  longitude: number | null;
-  latitude: number | null;
   routine: Routine | null;
   parentTaskId: string | null;
 } 

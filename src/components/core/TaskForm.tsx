@@ -16,12 +16,11 @@ type TaskFormProps = {
   onSubmit: (taskData: Omit<Task, 'id'>) => void;
   isToday: boolean;
   addLabel: (newLabel: string) => void;
-  userLocation: { longitude: number, latitude: number } | null;
   selectedDate?: Date;
   showUnplannedTasks: boolean;
 }
 
-export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, userLocation, selectedDate, showUnplannedTasks }: TaskFormProps) {
+export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, selectedDate, showUnplannedTasks }: TaskFormProps) {
   const [selectedLabel, setSelectedLabel] = useState(initialTask?.label || 'none')
   const [newLabel, setNewLabel] = useState('')
   const [title, setTitle] = useState(initialTask?.title || '')
@@ -48,7 +47,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
   const [monthOption, setMonthOption] = useState<'day' | 'weekday'>('day')
   const [selectedMonthDay, setSelectedMonthDay] = useState<string>(initialTask?.routine?.monthDay || '1')
   const [selectedMonthWeek, setSelectedMonthWeek] = useState<'First' | 'Second' | 'Third' | 'Fourth' | 'Last'>(initialTask?.routine?.monthWeek || 'First')
-  const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState<'S' | 'M' | 'T' | 'W' | 'T' | 'F' | 'S'>(initialTask?.routine?.monthWeekDay || 'M')
+  const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState<'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat'>(initialTask?.routine?.monthWeekDay || 'Mon')
 
   useEffect(() => {
     if (showUnplannedTasks) {
@@ -91,9 +90,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
       // 追加仕様の処理
       if (intervalUnit === 'week') {
         routine.weekDays = selectedWeekDays
-      }
-
-      if (intervalUnit === 'month') {
+      } else if (intervalUnit === 'month') {
         routine.monthOption = monthOption
         if (monthOption === 'day') {
           routine.monthDay = selectedMonthDay
@@ -109,17 +106,14 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
       memo,
       status: 'planned',
       starred: false,
-      scheduledDate: scheduledDate || undefined,
-      label: label || '',
-      longitude: userLocation?.longitude || null,
-      latitude: userLocation?.latitude || null,
-      routine: routine
+      scheduledDate: showUnplannedTasks ? null : scheduledDate,
+      label: label || 'none',
+      routine
     })
   }
 
-  // ハンドラー
   const handleWeekDayChange = (day: string) => {
-    setSelectedWeekDays(prev =>
+    setSelectedWeekDays(prev => 
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
     )
   }
@@ -180,41 +174,42 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
         <Checkbox 
           checked={showRoutine}
           onCheckedChange={() => setShowRoutine(prev => !prev)}
+          id="showRoutine"
           aria-label="Toggle Routine"
         />
-        <Label htmlFor="routine">Repeat Task</Label>
+        <Label htmlFor="showRoutine">Repeat Task</Label>
       </div>
 
       {showRoutine && (
-        <div className="border-l-4 border-gray-300 pl-4 space-y-4">
+        <div className="border-t pt-4 space-y-4">
           <div className="grid w-full gap-1.5">
             <Label htmlFor="intervalNumber">Every</Label>
-            <div className="flex items-center space-x-2">
-              <Input 
-                id="intervalNumber" 
-                name="intervalNumber" 
-                type="number" 
-                min="1"
-                value={intervalNumber}
-                onChange={(e) => setIntervalNumber(e.target.value)}
-                required 
-                className="w-20"
-              />
-              <Select name="intervalUnit" value={intervalUnit} onValueChange={setIntervalUnit}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">Day(s)</SelectItem>
-                  <SelectItem value="week">Week(s)</SelectItem>
-                  <SelectItem value="month">Month(s)</SelectItem>
-                  <SelectItem value="year">Year(s)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Input 
+              id="intervalNumber" 
+              name="intervalNumber" 
+              type="number" 
+              min="1"
+              value={intervalNumber}
+              onChange={(e) => setIntervalNumber(e.target.value)}
+              required 
+            />
           </div>
 
-          {/* Week Interval Options */}
+          <div className="grid w-full gap-1.5">
+            <Label htmlFor="intervalUnit">Unit</Label>
+            <Select name="intervalUnit" value={intervalUnit} onValueChange={setIntervalUnit}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">Day(s)</SelectItem>
+                <SelectItem value="week">Week(s)</SelectItem>
+                <SelectItem value="month">Month(s)</SelectItem>
+                <SelectItem value="year">Year(s)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {intervalUnit === 'week' && (
             <div className="grid w-full gap-1.5">
               <Label>Choose Days</Label>
@@ -233,7 +228,6 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
             </div>
           )}
 
-          {/* Month Interval Options */}
           {intervalUnit === 'month' && (
             <div className="grid w-full gap-1.5">
               <Label>Month Options</Label>
@@ -250,7 +244,7 @@ export function TaskForm({ initialTask, labels, onSubmit, isToday, addLabel, use
 
               {monthOption === 'day' && (
                 <div className="grid w-full gap-1.5">
-                  <Label htmlFor="monthDay">Day of the Month</Label>
+                  <Label htmlFor="monthDay">Day of Month</Label>
                   <Select name="monthDay" value={selectedMonthDay} onValueChange={setSelectedMonthDay}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select day" />

@@ -54,15 +54,11 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
-      </div>
-
-      {/* Add Today and Unplanned buttons */}
-      <div className="flex justify-end mb-4 space-x-2">
         <Button
           variant="secondary"
           size="sm"
           onClick={handleToday}
-          className="px-2 py-1 bg-black text-white rounded hover:bg-gray-800 flex items-center"
+          className="ml-2 flex items-center"
         >
           <Calendar className="h-4 w-4 mr-1" />
           Today

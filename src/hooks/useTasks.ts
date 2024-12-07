@@ -31,8 +31,6 @@ export function useTasks(selectedDate: Date, activeTab: string) {
         starred: task.starred || false,
         scheduledDate: task.scheduled_date || null,
         label: task.label || '',
-        longitude: task.longitude || null,
-        latitude: task.latitude || null,
         routine: task.routine || null,
         parentTaskId: task.parent_task_id || null
       }))
@@ -65,8 +63,6 @@ export function useTasks(selectedDate: Date, activeTab: string) {
         starred: task.starred || false,
         scheduledDate: task.scheduled_date || null,
         label: task.label || '',
-        longitude: task.longitude || null,
-        latitude: task.latitude || null,
         routine: task.routine || null,
         parentTaskId: task.parent_task_id || null
       }))
@@ -139,47 +135,40 @@ function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: Date): 
  * ルールオブジェクトをrruleで構築
  */
 function buildRecurrenceRule(routine: Routine) {
-  const { interval, starts, ends, weekDays, monthOption, monthDay, monthWeek, monthWeekDay } = routine
-
-  const freqMap = {
-    'day': RRule.DAILY,
-    'week': RRule.WEEKLY,
-    'month': RRule.MONTHLY,
-    'year': RRule.YEARLY,
+  const options: Partial<RRule.Options> = {
+    freq: RRule.DAILY,
+    interval: routine.interval.number,
+    dtstart: new Date(routine.starts),
+    until: routine.ends.type === 'on' ? new Date(routine.ends.value as string) : undefined,
+    count: routine.ends.type === 'after' ? routine.ends.value as number : undefined,
   }
 
-  const options: RRule.Options = {
-    dtstart: new Date(starts),
-    freq: freqMap[interval.unit],
-    interval: interval.number || 1,
-  }
-
-  // 終了条件
-  if (ends.type === 'on') {
-    options.until = new Date(ends.value as string)
-  } else if (ends.type === 'after') {
-    options.count = ends.value as number
-  }
-
-  // 週指定
-  if (interval.unit === 'week' && weekDays) {
-    options.byweekday = weekDays.map(mapWeekday)
-  }
-
-  // 月指定
-  if (interval.unit === 'month') {
-    if (monthOption === 'day') {
-      if (monthDay === 'Last') {
-        options.bymonthday = [-1]
-      } else {
-        options.bymonthday = [Number(monthDay)]
+  switch (routine.interval.unit) {
+    case 'day':
+      options.freq = RRule.DAILY
+      break
+    case 'week':
+      options.freq = RRule.WEEKLY
+      if (routine.weekDays && routine.weekDays.length > 0) {
+        options.byweekday = routine.weekDays.map(day => mapWeekday(day))
       }
-    } else if (monthOption === 'weekday' && monthWeek && monthWeekDay) {
-      const nth = mapNthWeek(monthWeek)
-      const wd = mapWeekday(monthWeekDay)
-      // nth週目のwd曜日
-      options.byweekday = [wd.nth(nth)]
-    }
+      break
+    case 'month':
+      options.freq = RRule.MONTHLY
+      if (routine.monthOption === 'day') {
+        options.bymonthday = [parseInt(routine.monthDay || '1', 10)]
+      } else if (routine.monthOption === 'weekday') {
+        const nth = mapNthWeek(routine.monthWeek!)
+        const wd = mapWeekday(routine.monthWeekDay!)
+        options.byweekday = [wd.nth(nth)]
+      }
+      break
+    case 'year':
+      options.freq = RRule.YEARLY
+      break
+    default:
+      options.freq = RRule.DAILY
+      break
   }
 
   return new RRule(options)
