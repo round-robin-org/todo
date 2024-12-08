@@ -3,11 +3,11 @@ import { supabase } from '@src/lib/supabase'
 import { Task, Routine } from '@src/lib/types'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { RRule, RRuleSet, Weekday } from 'rrule'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@src/hooks/useAuth'
 
 export function useTasks(selectedDate: Date, activeTab: string) {
-  const { data: session } = useSession()
-  const userId = session?.user?.id
+  const { user } = useAuth()
+  const userId = user?.id
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [error, setError] = useState<string | null>(null)

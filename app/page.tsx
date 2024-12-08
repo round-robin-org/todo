@@ -1,15 +1,26 @@
 "use client"
 
-import { SessionProvider, useSession } from "next-auth/react"
+import { useAuth } from '@src/hooks/useAuth'
 import { TaskManagementApp } from "@src/components/core/TaskManagementApp"
 import { Auth } from "@src/components/auth/Auth"
 import { Loader2 } from "lucide-react"
-import Link from "next/link"
+import { useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-function AppContent() {
-  const { data: session, status } = useSession()
+export default function Page() {
+  const { user, loading } = useAuth()
+  const supabase = createClientComponentClient()
 
-  if (status === "loading") {
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log('Current session:', session)
+    }
+
+    checkAuth()
+  }, [supabase.auth])
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -18,23 +29,5 @@ function AppContent() {
     )
   }
 
-  return (
-    <>
-      {session ? <TaskManagementApp /> : <Auth />}
-      {!session && (
-        <div className="flex justify-center mt-4">
-          <Link href="/auth/signin" className="mr-4 text-blue-500">Sign in</Link>
-          <Link href="/auth/signup" className="text-green-500">Sign up</Link>
-        </div>
-      )}
-    </>
-  )
-}
-
-export default function Page() {
-  return (
-    <SessionProvider>
-      <AppContent />
-    </SessionProvider>
-  )
+  return user ? <TaskManagementApp /> : <Auth />
 }

@@ -4,28 +4,38 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
 import { Button } from "@src/components/ui/button"
-import { signIn } from 'next-auth/react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
+
 export function Auth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const supabase = createClientComponentClient()
 
-  const handleSignIn = async (provider: string) => {
-    setLoading(true)
-    console.log(`${provider} プロバイダーでサインインを試みています。`);
+  const handleSignIn = async () => {
     try {
-      const res = await signIn(provider, { callbackUrl: '/' })
-      if (res?.url) {
-        console.log(`${provider} サインイン成功。リダイレクト先:`, res.url);
-        router.push(res.url)
-      } else if (res?.error) {
-        console.error(`${provider} サインインエラー:`, res.error);
-        setError('サインインに失敗しました。')
-      }
-    } catch (e) {
-      console.error(`${provider} サインイン中に例外が発生しました:`, e);
-      setError('サインインに失敗しました。')
+      setLoading(true)
+      console.log('Signing in with redirect URL:', `${window.location.origin}/auth/callback`)
+      
+      const { error, data } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          scopes: 'email profile'
+        }
+      })
+      
+      console.log('Sign in response:', { error, data })
+      
+      if (error) throw error
+    } catch (error: any) {
+      console.error('Sign in error:', error)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -40,11 +50,8 @@ export function Auth() {
           <CardDescription>サインインまたはサインアップを選択してください。</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col space-y-4">
-          <Button onClick={() => handleSignIn('google')} disabled={loading}>
+          <Button onClick={handleSignIn} disabled={loading}>
             {loading ? "サインイン中..." : "Googleでサインイン"}
-          </Button>
-          <Button onClick={() => handleSignIn('github')} disabled={loading}>
-            {loading ? "サインイン中..." : "GitHubでサインイン"}
           </Button>
           {error && <p className="text-red-500">{error}</p>}
         </CardContent>

@@ -15,11 +15,11 @@ import { Task } from '@src/lib/types'
 import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@src/hooks/useAuth'
 
 export function TaskManagementApp() {
-  const { data: session } = useSession()
-  const userId = session?.user?.id
+  const { user } = useAuth()
+  const userId = user?.id
 
   const [activeTab, setActiveTab] = useState("calendar")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
