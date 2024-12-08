@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@src/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@src/components/ui/dialog"
 import { Button } from "@src/components/ui/button"
 import { Plus } from 'lucide-react'
 import { TaskForm } from '@src/components/core/TaskForm'
@@ -71,6 +71,9 @@ export function TaskDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+          <DialogDescription>
+            {isEdit ? 'Edit your task details below.' : 'Add a new task using the form below.'}
+          </DialogDescription>
         </DialogHeader>
         <TaskForm 
           initialTask={taskToEdit}

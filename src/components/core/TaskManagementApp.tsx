@@ -88,47 +88,44 @@ export function TaskManagementApp() {
 
   // Add Task
   const addTask = async (taskData: any) => {
-    console.log('addTask関数が呼び出されました。taskData:', taskData);
-    
     if (!userId) {
-      console.warn('ユーザーIDが取得できませんでした。ユーザーが認証されていない可能性があります。');
+      console.warn('ユーザーIDが取得できませんでした。');
       toast.error('ユーザーが認証されていません。');
       return;
     }
-    console.log('ユーザーID:', userId);
 
     try {
-      console.log('Supabase にタスクを追加中...');
+      const dbTaskData = {
+        title: taskData.title,
+        memo: taskData.memo,
+        status: taskData.status,
+        starred: taskData.starred,
+        scheduled_date: taskData.scheduledDate,
+        label: taskData.label,
+        routine: taskData.routine,
+        user_id: userId
+      };
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          title: taskData.title,
-          memo: taskData.memo || '',
-          status: taskData.status,
-          starred: taskData.starred || false,
-          scheduled_date: taskData.scheduledDate || null,
-          label: taskData.label || null,
-          routine: taskData.routine || null,
-          user_id: userId
-        })
-        .select()
+        .insert(dbTaskData)
+        .select('*')
+        .single();
 
       if (error) {
         console.error('Supabaseからのエラー:', error);
         throw error;
       }
 
-      console.log('Supabaseからの応答データ:', data);
-
       const newTask: Task = {
-        id: data[0].id.toString(),
-        title: data[0].title,
-        memo: data[0].memo || '',
-        status: data[0].status === 'executed' ? 'executed' : 'planned',
-        starred: data[0].starred || false,
-        scheduledDate: data[0].scheduled_date || null,
-        label: data[0].label || null,
-        routine: data[0].routine || null,
+        id: data.id.toString(),
+        title: data.title,
+        memo: data.memo || '',
+        status: data.status === 'executed' ? 'executed' : 'planned',
+        starred: data.starred || false,
+        scheduledDate: data.scheduled_date || null,
+        label: data.label || null,
+        routine: data.routine || null,
       }
 
       console.log('新しいタスクをステートに追加:', newTask);
