@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -7,15 +8,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// クライアントコンポーネント用のSupabaseクライアントを作成
+export const supabase = createClientComponentClient()
 
-export async function setSupabaseAuth(token: string) {
-  const { error } = await supabase.auth.setSession({
-    access_token: token,
-    refresh_token: ''
-  })
+// 認証済みセッションを使用するためのヘルパー関数
+export async function getAuthenticatedClient() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   
-  if (error) {
-    console.error('Supabase auth error:', error)
+  if (!session) {
+    throw new Error('No authenticated session')
   }
+  
+  return supabase
 } 

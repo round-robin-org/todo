@@ -146,57 +146,8 @@ export function TaskManagementApp() {
     try {
       console.log('Updating task with data:', updatedTask);
 
-      // 繰り返しタスクの個別の変更かどうかを判定
-      if (updatedTask.scheduledDate && updatedTask.id.includes("-")) {
-        const parentTaskId = updatedTask.id.split("-")[0];
-        const parentTask = tasks.find(t => t.id.split("-")[0] === parentTaskId && !t.id.includes("-"));
-
-        if (!parentTask) throw new Error('Parent task not found');
-
-        const exceptionDate = updatedTask.scheduledDate;
-        const exceptionData = {
-          status: updatedTask.status,
-          scheduled_date: updatedTask.scheduledDate,
-          starred: updatedTask.starred,
-          memo: updatedTask.memo,
-          label: updatedTask.label,
-          title: updatedTask.title
-        };
-
-        // 既存の exceptions を取得
-        const existingExceptions = parentTask.exceptions || {};
-
-        // 新しい exception を追加
-        existingExceptions[exceptionDate] = exceptionData;
-
-        // exceptions を更新
-        const { error: updateError } = await supabase
-          .from('tasks')
-          .update({
-            exceptions: existingExceptions,
-            user_id: userId
-          })
-          .eq('id', parentTask.id)
-          .eq('user_id', userId)
-
-        if (updateError) {
-          console.error('Supabase error details:', updateError);
-          throw updateError;
-        }
-
-        // フロントエンドのタスクを更新
-        setTasks(prevTasks =>
-          prevTasks.map(t => {
-            if (t.id === updatedTask.id) {
-              return { ...t, ...exceptionData };
-            } else if (t.id === parentTask.id) {
-              return { ...t, exceptions: existingExceptions };
-            }
-            return t;
-          })
-        );
-      } else {
-        // 通常のタスク更新処理
+      // 新規タスクかどうかを確認（parentTaskIdがない場合は通常の更新処理）
+      if (!updatedTask.parentTaskId) {
         const { data, error } = await supabase
           .from('tasks')
           .update({
@@ -232,6 +183,50 @@ export function TaskManagementApp() {
 
         setTasks(prevTasks =>
           prevTasks.map(t => t.id === updatedTask.id ? mappedUpdatedTask : t)
+        );
+      } else {
+        // 繰り返しタスクの個別の変更の処理
+        const parentTaskId = updatedTask.parentTaskId;
+        const parentTask = tasks.find(t => t.id === parentTaskId);
+
+        if (!parentTask) throw new Error('Parent task not found');
+
+        const exceptionDate = updatedTask.scheduledDate;
+        const exceptionData = {
+          status: updatedTask.status,
+          scheduled_date: updatedTask.scheduledDate,
+          starred: updatedTask.starred,
+          memo: updatedTask.memo,
+          label: updatedTask.label,
+          title: updatedTask.title
+        };
+
+        const existingExceptions = parentTask.exceptions || {};
+        existingExceptions[exceptionDate] = exceptionData;
+
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({
+            exceptions: existingExceptions,
+            user_id: userId
+          })
+          .eq('id', parentTask.id)
+          .eq('user_id', userId)
+
+        if (updateError) {
+          console.error('Supabase error details:', updateError);
+          throw updateError;
+        }
+
+        setTasks(prevTasks =>
+          prevTasks.map(t => {
+            if (t.id === updatedTask.id) {
+              return { ...t, ...exceptionData };
+            } else if (t.id === parentTask.id) {
+              return { ...t, exceptions: existingExceptions };
+            }
+            return t;
+          })
         );
       }
 

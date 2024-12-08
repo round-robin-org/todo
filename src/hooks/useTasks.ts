@@ -4,6 +4,7 @@ import { Task, Routine } from '@src/lib/types'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { RRule, RRuleSet, Weekday } from 'rrule'
 import { useAuth } from '@src/hooks/useAuth'
+import { getAuthenticatedClient } from '@src/lib/supabase'
 
 export function useTasks(selectedDate: Date, activeTab: string) {
   const { user } = useAuth()
@@ -16,7 +17,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
     console.log('fetchTasksが呼び出されました。選択された日付:', date);
     
     if (!userId) {
-      console.warn('ユーザーIDが取得できませんでした。ユーザーが認証されていない可能性があります。');
+      console.warn('ユーザーIDが取得できませんでした。');
       setError('ユーザーが認証されていません。')
       return
     }
@@ -27,7 +28,8 @@ export function useTasks(selectedDate: Date, activeTab: string) {
     console.log(`タスクを取得する期間: ${start} から ${end}`);
 
     try {
-      const { data, error } = await supabase
+      const authenticatedClient = await getAuthenticatedClient()
+      const { data, error } = await authenticatedClient
         .from('tasks')
         .select(`
           *,
