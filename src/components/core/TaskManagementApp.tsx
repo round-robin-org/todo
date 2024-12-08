@@ -15,8 +15,12 @@ import { Task } from '@src/lib/types'
 import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { useSession } from 'next-auth/react'
 
 export function TaskManagementApp() {
+  const { data: session } = useSession()
+  const userId = session?.user?.id
+
   const [activeTab, setActiveTab] = useState("calendar")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showExecutedTasks, setShowExecutedTasks] = useState(false)
@@ -84,9 +88,17 @@ export function TaskManagementApp() {
 
   // Add Task
   const addTask = async (taskData: any) => {
-    try {
-      console.log('Adding task with data:', taskData);
+    console.log('addTask関数が呼び出されました。taskData:', taskData);
+    
+    if (!userId) {
+      console.warn('ユーザーIDが取得できませんでした。ユーザーが認証されていない可能性があります。');
+      toast.error('ユーザーが認証されていません。');
+      return;
+    }
+    console.log('ユーザーID:', userId);
 
+    try {
+      console.log('Supabase にタスクを追加中...');
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -97,13 +109,16 @@ export function TaskManagementApp() {
           scheduled_date: taskData.scheduledDate || null,
           label: taskData.label || null,
           routine: taskData.routine || null,
+          user_id: userId
         })
         .select()
 
       if (error) {
-        console.error('Supabase error details:', error);
+        console.error('Supabaseからのエラー:', error);
         throw error;
       }
+
+      console.log('Supabaseからの応答データ:', data);
 
       const newTask: Task = {
         id: data[0].id.toString(),
@@ -116,23 +131,28 @@ export function TaskManagementApp() {
         routine: data[0].routine || null,
       }
 
+      console.log('新しいタスクをステートに追加:', newTask);
       setTasks(prevTasks => [newTask, ...prevTasks])
       toast.success('Task added successfully')
-    } catch (error) {
-      console.error('Failed to add task:', error)
+    } catch (error: any) {
+      console.error('タスクの追加に失敗しました:', error)
       toast.error(`Failed to add task: ${error.message}`)
     }
   }
 
   // Update Task
   const updateTask = async (updatedTask: Task) => {
+    if (!userId) {
+      toast.error('ユーザーが認証されていません。')
+      return
+    }
     try {
       console.log('Updating task with data:', updatedTask);
 
       // 繰り返しタスクの個別の変更かどうかを判定
-      if (updatedTask.scheduledDate && updatedTask.id.includes("-")) { // idにハイフンが含まれているかで判定
+      if (updatedTask.scheduledDate && updatedTask.id.includes("-")) {
         const parentTaskId = updatedTask.id.split("-")[0];
-        const parentTask = tasks.find(t => t.id.split("-")[0] === parentTaskId && !t.id.includes("-")); // ハイフンで分割したIDが一致するタスクが親タスク
+        const parentTask = tasks.find(t => t.id.split("-")[0] === parentTaskId && !t.id.includes("-"));
 
         if (!parentTask) throw new Error('Parent task not found');
 
@@ -156,9 +176,11 @@ export function TaskManagementApp() {
         const { error: updateError } = await supabase
           .from('tasks')
           .update({
-            exceptions: existingExceptions
+            exceptions: existingExceptions,
+            user_id: userId
           })
-          .eq('id', parentTask.id);
+          .eq('id', parentTask.id)
+          .eq('user_id', userId)
 
         if (updateError) {
           console.error('Supabase error details:', updateError);
@@ -188,8 +210,10 @@ export function TaskManagementApp() {
             scheduled_date: updatedTask.scheduledDate,
             label: updatedTask.label || null,
             routine: updatedTask.routine || null,
+            user_id: userId
           })
           .eq('id', updatedTask.id)
+          .eq('user_id', userId)
           .select();
 
         if (error) {
@@ -215,7 +239,7 @@ export function TaskManagementApp() {
       }
 
       toast.success('Task updated successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update task:', error);
       toast.error(`Failed to update task: ${error.message}`);
     }
@@ -316,14 +340,17 @@ export function TaskManagementApp() {
 
   // Delete Task
   const deleteTask = async (taskId: string) => {
+    if (!userId) {
+      toast.error('ユーザーが認証されていません。')
+      return
+    }
     try {
       const taskToDelete = tasks.find(t => t.id === taskId);
       if (!taskToDelete) throw new Error('Task not found');
 
-      // 繰り返しタスクの個別の削除かどうかを判定
-      if (taskToDelete.scheduledDate && taskToDelete.id.includes("-")) { // idにハイフンが含まれているかで判定
+      if (taskToDelete.scheduledDate && taskToDelete.id.includes("-")) {
         const parentTaskId = taskToDelete.id.split("-")[0];
-        const parentTask = tasks.find(t => t.id.split("-")[0] === parentTaskId && !t.id.includes("-")); // ハイフンで分割したIDが一致するタスクが親タスク
+        const parentTask = tasks.find(t => t.id.split("-")[0] === parentTaskId && !t.id.includes("-"));
         if (!parentTask) throw new Error('Parent task not found');
 
         const exceptionDate = taskToDelete.scheduledDate;
@@ -331,42 +358,39 @@ export function TaskManagementApp() {
           status: 'deleted'
         };
 
-        // 既存の exceptions を取得
         const existingExceptions = parentTask.exceptions || {};
 
-        // 新しい exception を追加
         existingExceptions[exceptionDate] = exceptionData;
 
-        // exceptions を更新
         const { error: updateError } = await supabase
           .from('tasks')
           .update({
-            exceptions: existingExceptions
+            exceptions: existingExceptions,
+            user_id: userId
           })
-          .eq('id', parentTask.id);
+          .eq('id', parentTask.id)
+          .eq('user_id', userId)
 
         if (updateError) {
           console.error('Supabase error details:', updateError);
           throw updateError;
         }
 
-        // フロントエンドのタスクを削除
         setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
       } else {
-        // 通常のタスク削除処理
         const { error } = await supabase
           .from('tasks')
           .delete()
-          .eq('id', taskId);
+          .eq('id', taskId)
+          .eq('user_id', userId)
 
         if (error) throw error;
 
-        // Remove task from state
         setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
       }
 
       toast.success('Task deleted successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete task:', error);
       toast.error('Failed to delete task.');
     }

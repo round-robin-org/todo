@@ -13,14 +13,18 @@ export function Auth() {
 
   const handleSignIn = async (provider: string) => {
     setLoading(true)
+    console.log(`${provider} プロバイダーでサインインを試みています。`);
     try {
       const res = await signIn(provider, { callbackUrl: '/' })
       if (res?.url) {
+        console.log(`${provider} サインイン成功。リダイレクト先:`, res.url);
         router.push(res.url)
       } else if (res?.error) {
+        console.error(`${provider} サインインエラー:`, res.error);
         setError('サインインに失敗しました。')
       }
     } catch (e) {
+      console.error(`${provider} サインイン中に例外が発生しました:`, e);
       setError('サインインに失敗しました。')
     } finally {
       setLoading(false)

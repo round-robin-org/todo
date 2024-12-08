@@ -181,10 +181,37 @@ export function TaskForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // ログ出力: 現在のステート
+    console.log('TaskFormの現在のステート:', {
+      title,
+      memo,
+      status: 'planned',
+      starred: initialTask?.starred || false,
+      scheduledDate,
+      label: selectedLabel,
+      routine: showRoutine ? {
+        interval: {
+          number: Number(intervalNumber),
+          unit: intervalUnit
+        },
+        starts: routineStarts,
+        ends: {
+          type: routineEndsType,
+          value: routineEndsType === 'after' ? Number(routineEndsValue) : routineEndsValue
+        },
+        weekDays: selectedWeekDays,
+        monthOption,
+        monthDay: selectedMonthDay,
+        monthWeek: selectedMonthWeek,
+        monthWeekDay: selectedMonthWeekDay
+      } : null
+    });
+
     let label = selectedLabel;
     if (label === 'new') {
       label = newLabel;
       if (label && !labels.includes(label)) {
+        console.log('新しいラベルを追加します:', label);
         addLabel(label);
       }
     } else if (label === 'none') {

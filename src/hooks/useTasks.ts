@@ -3,15 +3,28 @@ import { supabase } from '@src/lib/supabase'
 import { Task, Routine } from '@src/lib/types'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { RRule, RRuleSet, Weekday } from 'rrule'
+import { useSession } from 'next-auth/react'
 
 export function useTasks(selectedDate: Date, activeTab: string) {
+  const { data: session } = useSession()
+  const userId = session?.user?.id
+
   const [tasks, setTasks] = useState<Task[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async (date: Date) => {
-    // Fetch tasks by month (Calendar view, etc.)
+    console.log('fetchTasksが呼び出されました。選択された日付:', date);
+    
+    if (!userId) {
+      console.warn('ユーザーIDが取得できませんでした。ユーザーが認証されていない可能性があります。');
+      setError('ユーザーが認証されていません。')
+      return
+    }
+    console.log('ユーザーID:', userId);
+
     const start = format(startOfMonth(date), 'yyyy-MM-dd')
     const end = format(endOfMonth(date), 'yyyy-MM-dd')
+    console.log(`タスクを取得する期間: ${start} から ${end}`);
 
     try {
       const { data, error } = await supabase
@@ -22,10 +35,16 @@ export function useTasks(selectedDate: Date, activeTab: string) {
             name
           )
         `)
+        .eq('user_id', userId)
         .or(`scheduled_date.gte.${start},scheduled_date.lte.${end},scheduled_date.is.null`)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabaseからのエラー:', error);
+        throw error
+      }
+
+      console.log('取得したタスクデータ:', data);
 
       const formattedTasks: Task[] = data.map((task: any) => ({
         id: task.id.toString(),
@@ -40,16 +59,22 @@ export function useTasks(selectedDate: Date, activeTab: string) {
         exceptions: task.exceptions || {}
       }))
 
-      // Expand recurring tasks
+      console.log('フォーマット後のタスク:', formattedTasks);
+
       const expandedTasks = expandRecurringTasks(formattedTasks, new Date(start), new Date(end))
+      console.log('拡張後のタスク:', expandedTasks);
       setTasks(expandedTasks)
-    } catch (error) {
-      console.error('Failed to fetch tasks:', error)
+    } catch (error: any) {
+      console.error('タスクのフェッチに失敗しました:', error)
       setError('Failed to fetch tasks.')
     }
-  }, [])
+  }, [userId])
 
   const fetchTodayTasks = useCallback(async () => {
+    if (!userId) {
+      setError('ユーザーが認証されていません。')
+      return
+    }
     const today = format(new Date(), 'yyyy-MM-dd')
     try {
       const { data, error } = await supabase
@@ -60,6 +85,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
             name
           )
         `)
+        .eq('user_id', userId)
         .or(`scheduled_date.is.null,scheduled_date.eq.${today}`)
         .order('created_at', { ascending: false })
 
@@ -80,11 +106,11 @@ export function useTasks(selectedDate: Date, activeTab: string) {
 
       const expandedTasks = expandRecurringTasks(formattedTasks, new Date(today), new Date(today))
       setTasks(expandedTasks)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch today\'s tasks:', error)
       setError('Failed to fetch today\'s tasks.')
     }
-  }, [])
+  }, [userId])
 
   useEffect(() => {
     if (activeTab === "today") {
