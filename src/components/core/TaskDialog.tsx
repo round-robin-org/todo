@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@src/components/ui/dialog"
 import { Button } from "@src/components/ui/button"
 import { Plus } from 'lucide-react'
@@ -42,9 +42,16 @@ export function TaskDialog({
 }: TaskDialogProps) {
 
   const [formData, setFormData] = useState<Omit<Task, 'id'> & { updateType?: 'global' | 'local' }>({});
+  const [isRepeatChanged, setIsRepeatChanged] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingUpdateType, setPendingUpdateType] = useState<'single' | 'global' | null>(null);
+  const [initialRoutine, setInitialRoutine] = useState<Routine | null>(taskToEdit?.routine || null);
 
   const handleSubmit = (data: Omit<Task, 'id'> & { updateType?: 'global' | 'local' }) => {
+    const isRepeatRemoved = taskToEdit?.routine && !data.routine;
+    
     setFormData(data);
+    setIsRepeatChanged(isRepeatRemoved);
 
     if (isEdit && taskToEdit) {
       const { updateType, ...taskData } = data;
@@ -68,27 +75,16 @@ export function TaskDialog({
           JSON.stringify(taskData.routine) !== JSON.stringify(taskToEdit.routine);
 
         if (hasChanges) {
-          // DropdownMenu を使用して updateType を選択
-          // ここでは useState を使用して選択を管理
-          // UIの言語を英語に統一
-          // 以下のコードはその一例です
-
-          // ダイアログの中で DropdownMenu を表示
-          // 選択された updateType に基づいて updateTask を呼び出す
-          // ここではシンプルに updateType を選択する関数を呼び出します
-
-          // 例として、すぐに 'single' を選択
           updateTask({
             ...updatedTaskData,
             updateType: 'single'
           });
-          toast.success('Task updated for this instance.');
+          toast.success('Task updated.');
           if (onClose) onClose();
           return;
         }
       }
       
-      // 非繰り返しタスクまたは変更がない場合は直接更新
       updateTask(updatedTaskData);
       toast.success('Task updated successfully.');
     } else {
@@ -102,7 +98,14 @@ export function TaskDialog({
   };
 
   const handleUpdateType = (updateType: 'single' | 'future' | 'global') => {
-    if (isEdit && taskToEdit) {
+    if (isRepeatChanged && updateType === 'single') {
+      return;
+    }
+
+    if (updateType === 'global' && isRepeatChanged) {
+      setPendingUpdateType('global');
+      setShowConfirm(true);
+    } else {
       updateTask({
         ...formData,
         updateType
@@ -110,6 +113,24 @@ export function TaskDialog({
       toast.success('Task updated successfully.');
       if (onClose) onClose();
     }
+  }
+
+  const confirmUpdateAll = () => {
+    if (pendingUpdateType === 'global') {
+      updateTask({
+        ...formData,
+        updateType: 'global'
+      } as Task & { updateType?: 'single' | 'future' | 'global' })
+      toast.success('All recurring tasks updated successfully.');
+      setShowConfirm(false);
+      setPendingUpdateType(null);
+      if (onClose) onClose();
+    }
+  }
+
+  const cancelUpdateAll = () => {
+    setShowConfirm(false);
+    setPendingUpdateType(null);
   }
 
   return (
@@ -139,6 +160,15 @@ export function TaskDialog({
           showUnplannedTasks={showUnplannedTasks}
           allowSelectDate={allowSelectDate}
           isEdit={isEdit}
+          onRepeatChange={(changed) => {
+            if (taskToEdit?.isRecurring) {
+              const currentRoutine = formData.routine;
+              const isChanged = JSON.stringify(initialRoutine) !== JSON.stringify(currentRoutine);
+              setIsRepeatChanged(isChanged);
+            } else {
+              setIsRepeatChanged(changed);
+            }
+          }}
         />
         {isEdit && taskToEdit?.isRecurring && (
           <div className="mt-4">
@@ -147,7 +177,10 @@ export function TaskDialog({
                 <Button className="w-full">Update Method</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleUpdateType('single')}>
+                <DropdownMenuItem 
+                  onClick={() => handleUpdateType('single')}
+                  disabled={isRepeatChanged}
+                >
                   Update This Task
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateType('global')}>
@@ -158,6 +191,23 @@ export function TaskDialog({
           </div>
         )}
       </DialogContent>
+      
+      {showConfirm && (
+        <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmation</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to update all recurring tasks? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end space-x-2 mt-4">
+              <Button variant="ghost" onClick={cancelUpdateAll}>Cancel</Button>
+              <Button onClick={confirmUpdateAll}>Apply</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   )
 }

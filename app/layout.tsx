@@ -26,10 +26,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <Toaster position="top-right" />
+      <head />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Toaster position="top-right" />
         {children}
       </body>
     </html>

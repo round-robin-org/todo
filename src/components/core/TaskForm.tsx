@@ -23,6 +23,7 @@ type TaskFormProps = {
   allowSelectDate?: boolean;
   deleteLabel: (label: string) => void;
   isEdit: boolean;
+  onRepeatChange?: (changed: boolean) => void;
 }
 
 export function TaskForm({ 
@@ -35,7 +36,8 @@ export function TaskForm({
   showUnplannedTasks, 
   allowSelectDate = false, 
   deleteLabel,
-  isEdit
+  isEdit,
+  onRepeatChange
 }: TaskFormProps) {
   // Helper Function (moved to the top)
   const getNthWeek = (date: Date | null): 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' => {
@@ -91,6 +93,8 @@ export function TaskForm({
   const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState(
     initialTask?.routine?.monthWeekDay || (selectedDate ? format(selectedDate, 'EEE') : 'Sun')
   );
+
+  const [initialRoutine, setInitialRoutine] = useState<Routine | null>(initialTask?.routine || null);
 
   useEffect(() => {
     if (showUnplannedTasks && !initialTask) {
@@ -236,6 +240,51 @@ export function TaskForm({
 
     onSubmit(formData);
   };
+
+  // Detect changes in repeat settings
+  useEffect(() => {
+    if (!isEdit || !initialRoutine) return;
+
+    const currentRoutine = showRoutine ? {
+      interval: {
+        number: intervalNumber,
+        unit: intervalUnit
+      },
+      starts: routineStarts,
+      ends: {
+        type: routineEndsType,
+        value: routineEndsValue
+      },
+      weekDays: intervalUnit === 'week' ? selectedWeekDays : undefined,
+      monthOption: intervalUnit === 'month' ? monthOption : undefined,
+      monthDay: monthOption === 'day' ? selectedMonthDay : undefined,
+      monthWeek: monthOption === 'weekday' ? selectedMonthWeek : undefined,
+      monthWeekDay: monthOption === 'weekday' ? selectedMonthWeekDay : undefined
+    } : null;
+
+    // Check if repeat settings are being removed or modified
+    const isRemoved = initialRoutine && !currentRoutine;
+    const isModified = currentRoutine && JSON.stringify(initialRoutine) !== JSON.stringify(currentRoutine);
+
+    if (onRepeatChange) {
+      onRepeatChange(isRemoved || isModified);
+    }
+  }, [
+    showRoutine,
+    intervalNumber,
+    intervalUnit,
+    routineStarts,
+    routineEndsType,
+    routineEndsValue,
+    selectedWeekDays,
+    monthOption,
+    selectedMonthDay,
+    selectedMonthWeek,
+    selectedMonthWeekDay,
+    initialRoutine,
+    onRepeatChange,
+    isEdit
+  ]);
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-6">
@@ -500,6 +549,7 @@ export function TaskForm({
         </div>
       )}
 
+      {/* Display the "Update Task" button only when editing a recurring task */}
       {(!initialTask?.isRecurring || !isEdit) && (
         <Button type="submit">{initialTask ? 'Update Task' : 'Add Task'}</Button>
       )}
