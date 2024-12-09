@@ -12,7 +12,7 @@ type TaskListProps = {
   onEdit: (task: Task) => void;
   isDraggable: boolean;
   onDragEnd?: (result: DropResult) => void;
-  deleteTask: (id: string) => void;
+  deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
   assignTaskToDate?: (id: string) => void;
   unassignTaskFromDate?: (id: string) => void;
   setTaskToSchedule?: (task: Task | null) => void;

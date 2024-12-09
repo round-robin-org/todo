@@ -68,7 +68,8 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     }
   }
 
-  const handleDelete = (type: 'single' | 'all' | 'future') => {
+  const handleDelete = (e: React.MouseEvent, type?: 'single' | 'all' | 'future') => {
+    e.stopPropagation();
     deleteTask(task.id, type);
     setShowDelete(false);
   };
@@ -125,18 +126,22 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
         task.routine || task.parentTaskId ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="destructive" size="sm">
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Trash className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleDelete('single')}>
+            <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={(e) => handleDelete(e, 'single')}>
                 この予定のみ削除
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDelete('future')}>
+              <DropdownMenuItem onClick={(e) => handleDelete(e, 'future')}>
                 この予定以降を削除
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDelete('all')}>
+              <DropdownMenuItem onClick={(e) => handleDelete(e, 'all')}>
                 すべての繰り返しを削除
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -146,7 +151,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             variant="destructive"
             size="sm"
             className="absolute right-2"
-            onClick={() => deleteTask(task.id)}
+            onClick={(e) => handleDelete(e)}
           >
             <Trash className="h-4 w-4" />
           </Button>

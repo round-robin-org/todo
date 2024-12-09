@@ -9,9 +9,10 @@ type ExecutedTasksProps = {
   toggleStatus: (id: string) => void;
   toggleStar: (id: string) => void;
   onEdit: (task: Task) => void;
+  deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
 }
 
-export function ExecutedTasks({ tasks, toggleStatus, toggleStar, onEdit }: ExecutedTasksProps) {
+export function ExecutedTasks({ tasks, toggleStatus, toggleStar, onEdit, deleteTask }: ExecutedTasksProps) {
   const executedTasks = tasks.filter(task => task.status === "executed")
   
   if (executedTasks.length === 0) return null;
@@ -25,6 +26,7 @@ export function ExecutedTasks({ tasks, toggleStatus, toggleStar, onEdit }: Execu
           toggleStatus={toggleStatus}
           toggleStar={toggleStar}
           onEdit={onEdit}
+          deleteTask={deleteTask}
           isExecuted={true}
         />
       ))}

@@ -476,11 +476,14 @@ export function TaskManagementApp() {
         const { data, error } = await supabase
           .from('labels')
           .select('name')
-          .order('name', { ascending: true });
+          .order('name', { ascending: true })
+          .throwOnError();
 
         if (error) throw error;
 
-        setLabels(data.map(label => label.name));
+        // 重複を除去してラベルを設定
+        const uniqueLabels = [...new Set(data.map(label => label.name))];
+        setLabels(uniqueLabels);
       } catch (error) {
         console.error('Failed to fetch labels:', error);
         toast.error('Failed to fetch labels');
@@ -787,6 +790,7 @@ export function TaskManagementApp() {
                       toggleStatus={toggleTaskStatus}
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}
+                      deleteTask={deleteTask}
                     />
                   )}
                 </CardContent>
@@ -817,6 +821,7 @@ export function TaskManagementApp() {
                       toggleStatus={toggleTaskStatus}
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}
+                      deleteTask={deleteTask}
                     />
                   )}
                 </CardContent>
