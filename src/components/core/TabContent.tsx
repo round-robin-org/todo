@@ -7,6 +7,7 @@ import { LabelManagement } from '@src/components/core/LabelManagement'
 import { Task } from '@src/lib/types'
 import { Button } from "@src/components/ui/button"
 import { Eye, EyeOff } from 'lucide-react'
+import { toast } from 'sonner'
 
 type TabContentProps = {
   title: string;
@@ -41,6 +42,15 @@ export function TabContent({
   allowSelectDate = false,
   isToday,
 }: TabContentProps) {
+  const handleAddLabel = async (newLabel: string) => {
+    const trimmedLabel = newLabel.trim().toLowerCase();
+    if (trimmedLabel === 'new' || trimmedLabel === 'none') {
+      toast.error('"new" or "none" is reserved label name.');
+      return;
+    }
+    addLabel(newLabel);
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:justify-between md:items-start">
@@ -57,18 +67,18 @@ export function TabContent({
               className="flex items-center"
             >
               {showExecutedTasks ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-              {showExecutedTasks ? "実行済みタスクを非表示" : "実行済みタスクを表示"}
+              {showExecutedTasks ? "Hide Executed Tasks" : "Show Executed Tasks"}
             </Button>
           )}
           <LabelManagement 
             labels={labels}
-            addLabel={addLabel}
+            addLabel={handleAddLabel}
             deleteLabel={deleteLabel}
           />
           <TaskDialog 
             labels={labels}
             addTask={addTask}
-            addLabel={addLabel}
+            addLabel={handleAddLabel}
             deleteLabel={deleteLabel}
             isToday={isToday}
             selectedDate={selectedDate}

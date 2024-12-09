@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@src/components/ui/radio-group"
 import { format, getDay, getDate, getDaysInMonth } from 'date-fns'
 import { Task } from '../../lib/types'
 import { Trash2 } from 'lucide-react'
-
+import { toast } from 'sonner'
 type TaskFormProps = {
   initialTask?: Task;
   labels: string[];
@@ -24,6 +24,8 @@ type TaskFormProps = {
   isEdit: boolean;
   onRepeatChange?: (changed: boolean) => void;
 }
+
+const RESERVED_LABELS = ['new', 'none'];
 
 export function TaskForm({ 
   initialTask, 
@@ -207,6 +209,11 @@ export function TaskForm({
       }
     }
 
+    if (selectedLabel === 'new' && RESERVED_LABELS.includes(newLabel.trim().toLowerCase())) {
+      toast.error('"new" or "none" is reserved label name.')
+      return;
+    }
+
     const routine = showRoutine
       ? {
           interval: {
@@ -337,7 +344,7 @@ export function TaskForm({
               <SelectValue placeholder="Select label" />
             </SelectTrigger>
             <SelectContent>
-              {labels.map(label => (
+              {labels.filter(label => !RESERVED_LABELS.includes(label)).map(label => (
                 <div key={label} className="flex items-center justify-between px-2">
                   <SelectItem value={label}>{label}</SelectItem>
                   <Button

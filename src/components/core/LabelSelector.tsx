@@ -11,8 +11,10 @@ type LabelSelectorProps = {
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   close: () => void;
-  addLabel: (newLabel: string) => Promise<void>;
+  addLabel: (newLabel: string, taskId?: string) => Promise<void>;
 }
+
+const RESERVED_LABELS = ['new', 'none'];
 
 export function LabelSelector({ task, labels, updateTaskLabel, close, addLabel }: LabelSelectorProps) {
   const [isAddingNewLabel, setIsAddingNewLabel] = useState(false)
@@ -28,18 +30,23 @@ export function LabelSelector({ task, labels, updateTaskLabel, close, addLabel }
   }
 
   const handleAddNewLabel = async () => {
-    const trimmedLabel = newLabelValue.trim()
-    if (trimmedLabel !== '') {
-      try {
-        await addLabel(trimmedLabel)
-        updateTaskLabel(task.id, trimmedLabel)
-        setNewLabelValue('')
-        setIsAddingNewLabel(false)
-        close()
-      } catch (error) {
-        console.error('Failed to add label:', error)
-        // 必要に応じてエラーメッセージを表示
-      }
+    console.log("handleAddNewLabel called");
+    const trimmedLabel = newLabelValue.trim().toLowerCase()
+    console.log("trimmedLabel:", trimmedLabel);
+    if (trimmedLabel === '' || RESERVED_LABELS.includes(trimmedLabel)) {
+      console.log("Reserved label detected!");
+      alert('"new" or "none" is reserved label name.')
+      return
+    }
+
+    try {
+      await addLabel(trimmedLabel, task.id)
+      setNewLabelValue('')
+      setIsAddingNewLabel(false)
+      close()
+    } catch (error) {
+      console.error('Failed to add label:', error)
+      // 必要に応じてエラーメッセージを表示
     }
   }
 
@@ -65,7 +72,7 @@ export function LabelSelector({ task, labels, updateTaskLabel, close, addLabel }
             <SelectValue placeholder="Select Label" />
           </SelectTrigger>
           <SelectContent className="p-1">
-            {labels.map(label => (
+            {labels.filter(label => !RESERVED_LABELS.includes(label)).map(label => (
               <SelectItem key={label} value={label} className="px-2">
                 <span>{label}</span>
               </SelectItem>

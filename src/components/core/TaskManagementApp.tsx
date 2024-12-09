@@ -106,6 +106,12 @@ export function TaskManagementApp() {
 
       // 新しいラベルの場合は、まず labels テーブルに追加
       if (taskData.label === 'new' && taskData.newLabel) {
+        const trimmedNewLabel = taskData.newLabel.trim().toLowerCase();
+        if (trimmedNewLabel === 'new' || trimmedNewLabel === 'none') {
+          toast.error('"new" or "none" is reserved label name.');
+          return;
+        }
+        
         const { data: labelData, error: labelError } = await supabase
           .from('labels')
           .insert({ name: taskData.newLabel, user_id: userId })
@@ -161,7 +167,7 @@ export function TaskManagementApp() {
         exceptions: {}
       }
 
-      console.log('新しいタスクをステートに追加:', newTask);
+      console.log('New task added to state:', newTask);
       setTasks(prevTasks => [newTask, ...prevTasks])
       toast.success('Task added successfully')
     } catch (error: any) {
@@ -173,7 +179,7 @@ export function TaskManagementApp() {
   // Update Task
   const updateTask = async (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => {
     if (!userId) {
-      toast.error('ユーザーが認証されていません。')
+      toast.error('User not authenticated.')
       return
     }
 
@@ -184,6 +190,12 @@ export function TaskManagementApp() {
 
       // 新しいラベルの処理を先に行う
       if (updatedTask.label && !labels.includes(updatedTask.label)) {  // ラベルが存在しない場合
+        const trimmedNewLabel = updatedTask.label.trim().toLowerCase();
+        if (trimmedNewLabel === 'new' || trimmedNewLabel === 'none') {
+          toast.error('"new" or "none" is reserved label name.');
+          return;
+        }
+
         const { data: existingLabel, error: checkError } = await supabase
           .from('labels')
           .select('name')
@@ -288,10 +300,10 @@ export function TaskManagementApp() {
         ));
       }
 
-      toast.success('タスクが正常に更新されました。');
+      toast.success('Task updated successfully');
     } catch (error: any) {
       console.error('Failed to update task:', error);
-      toast.error(`タスクの更新に失敗しました: ${error.message}`);
+      toast.error(`Failed to update task: ${error.message}`);
     }
   };
 
@@ -388,7 +400,8 @@ export function TaskManagementApp() {
   };
 
   // Add Label
-  const addLabel = async (newLabel: string) => {
+  const addLabel = async (newLabel: string, taskId?: string) => {
+    console.log("addLabel called with:", newLabel);
     if (!userId) {
       console.warn('User ID not found.');
       toast.error('User not authenticated.');
@@ -405,6 +418,12 @@ export function TaskManagementApp() {
 
       // ローカルのラベルリストを更新
       setLabels(prevLabels => [...prevLabels, newLabel]);
+
+      // taskId が提供されている場合は、タスクのラベルを更新
+      if (taskId) {
+        await updateTaskLabel(taskId, newLabel);
+      }
+
       toast.success('Label added successfully');
     } catch (error) {
       console.error('Failed to add label:', error);
@@ -488,7 +507,7 @@ export function TaskManagementApp() {
 
             if (updateError) throw updateError;
 
-            // 過去の例外を保持しつつ、指定された日付以降の例外に `status: 'deleted'` を設定
+            // 過去の例外を保持しつつ、指定された日付以降の例外に `status: 'deleted'` ���設定
             newExceptions = Object.keys(taskToDelete.exceptions || {})
               .filter(date => date >= currentDate)
               .reduce((acc, date) => ({
