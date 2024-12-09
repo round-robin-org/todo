@@ -14,7 +14,7 @@ import { Trash2 } from 'lucide-react'
 type TaskFormProps = {
   initialTask?: Task;
   labels: string[];
-  onSubmit: (taskData: Omit<Task, 'id'>) => void;
+  onSubmit: (taskData: Omit<Task, 'id'> & { updateType?: 'global' | 'local' }) => void;
   isToday: boolean;
   addLabel: (newLabel: string) => void;
   selectedDate?: Date | null;
@@ -79,6 +79,11 @@ export function TaskForm({
   );
   const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState<'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat'>(
     initialTask?.routine?.monthWeekDay || (selectedDate ? format(selectedDate, 'eee') : 'Mon')
+  );
+
+  // 繰り返しタスクの編集時の更新タイプを管理
+  const [updateType, setUpdateType] = useState<'global' | 'local'>(
+    initialTask?.routine ? 'local' : 'global'
   );
 
   useEffect(() => {
@@ -181,51 +186,13 @@ export function TaskForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ログ出力: 現在のステート
-    console.log('TaskFormの現在のステート:', {
-      title,
-      memo,
-      status: 'planned',
-      starred: initialTask?.starred || false,
-      scheduledDate,
-      label: selectedLabel,
-      routine: showRoutine ? {
-        interval: {
-          number: Number(intervalNumber),
-          unit: intervalUnit
-        },
-        starts: routineStarts,
-        ends: {
-          type: routineEndsType,
-          value: routineEndsType === 'after' ? Number(routineEndsValue) : routineEndsValue
-        },
-        weekDays: selectedWeekDays,
-        monthOption,
-        monthDay: selectedMonthDay,
-        monthWeek: selectedMonthWeek,
-        monthWeekDay: selectedMonthWeekDay
-      } : null
-    });
-
-    let label = selectedLabel;
-    if (label === 'new') {
-      label = newLabel;
-      if (label && !labels.includes(label)) {
-        console.log('新しいラベルを追加します:', label);
-        addLabel(label);
-      }
-    } else if (label === 'none') {
-      label = null;
-    }
-
-    // Construct task data with correct field names
     const taskData = {
       title,
       memo,
       status: 'planned' as const,
       starred: initialTask?.starred || false,
       scheduledDate: showRoutine ? null : (scheduledDate || null),
-      label,
+      label: selectedLabel === 'none' ? null : selectedLabel === 'new' ? newLabel : selectedLabel,
       routine: showRoutine ? {
         interval: {
           number: Number(intervalNumber),
@@ -244,12 +211,12 @@ export function TaskForm({
             monthWeekDay: selectedMonthWeekDay
           })
         })
-      } : null
+      } : null,
+      updateType: initialTask?.routine ? updateType : undefined
     };
 
-    console.log('Submitting task data:', taskData); // Debug log
-    onSubmit(taskData);
-  }
+    onSubmit({ ...taskData, updateType: initialTask?.routine ? updateType : undefined });
+  };
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-6">
@@ -511,6 +478,23 @@ export function TaskForm({
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* 繰り返しタスクの編集時のみ表示 */}
+      {initialTask?.routine && (
+        <div className="grid w-full gap-2">
+          <Label>Update Type</Label>
+          <RadioGroup value={updateType} onValueChange={setUpdateType}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="local" id="local" />
+              <Label htmlFor="local">このタスクのみ変更</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="global" id="global" />
+              <Label htmlFor="global">すべての繰り返しタスクを変更</Label>
+            </div>
+          </RadioGroup>
         </div>
       )}
 

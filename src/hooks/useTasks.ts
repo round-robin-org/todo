@@ -164,7 +164,7 @@ function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: Date): 
 
         expandedTasks.push({
           ...task,
-          id: `${task.id}-${formattedDate}`,
+          parentTaskId: task.id,
           scheduledDate: exception?.scheduled_date || formattedDate,
           status: exception?.status || task.status,
           starred: exception?.starred !== undefined ? exception.starred : task.starred,

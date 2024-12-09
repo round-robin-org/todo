@@ -40,24 +40,50 @@ export function TaskDialog({
   deleteLabel,
 }: TaskDialogProps) {
 
-  const handleSubmit = (taskData: Omit<Task, 'id'>) => {
-    console.log('TaskDialog received data:', taskData); // Debug log
-    
+  const handleSubmit = (taskData: Omit<Task, 'id'> & { updateType?: 'global' | 'local' }) => {
     if (isEdit && taskToEdit) {
-      updateTask({ ...taskToEdit, ...taskData })
-      toast.success('Task updated successfully.')
+      const { updateType, ...data } = taskData;
+      
+      if (taskToEdit.routine) {
+        if (updateType === 'global') {
+          updateTask({ 
+            ...taskToEdit, 
+            ...data,
+            parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+            updateType: updateType
+          });
+        } else {
+          updateTask({ 
+            ...taskToEdit, 
+            ...data,
+            parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+            exceptions: {
+              ...(taskToEdit.exceptions || {}),
+              [taskToEdit.scheduledDate]: {
+                status: data.status,
+                starred: data.starred,
+                memo: data.memo,
+                scheduled_date: data.scheduledDate,
+                label: data.label,
+                title: data.title
+              }
+            },
+            updateType: updateType
+          });
+        }
+      } else {
+        updateTask({ ...taskToEdit, ...data });
+      }
+      toast.success('Task updated successfully.');
     } else {
-      // Ensure correct field names before sending to addTask
-      const formattedData = {
-        ...taskData,
-      };
-      addTask(formattedData)
-      toast.success('Task added successfully.')
+      addTask(taskData);
+      toast.success('Task added successfully.');
     }
+    
     if (onClose) {
-      onClose()
+      onClose();
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

@@ -7,6 +7,12 @@ import { Badge } from "@src/components/ui/badge"
 import { Button } from "@src/components/ui/button"
 import { Star, Trash, CalendarCheck, AlertCircle, Repeat } from 'lucide-react'
 import { Task } from '@src/lib/types'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@src/components/ui/dropdown-menu"
 
 type TaskItemProps = {
   task: Task;
@@ -62,6 +68,11 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     }
   }
 
+  const handleDelete = (type: 'single' | 'all' | 'future') => {
+    deleteTask(task.id, type);
+    setShowDelete(false);
+  };
+
   // 繰り返しタスクで、かつ個別に削除されている場合は非表示
   if (task.parentTaskId && task.status === 'deleted') {
     return null;
@@ -111,18 +122,35 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
         </Button>
       </div>
       {showDelete && (
-        <Button
-          variant="destructive"
-          size="sm"
-          className="absolute right-2"
-          onClick={(e) => {
-            e.stopPropagation()
-            deleteTask(task.id)
-          }}
-          aria-label={`Delete task "${task.title}"`}
-        >
-          <Trash className="h-4 w-4" />
-        </Button>
+        task.routine || task.parentTaskId ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleDelete('single')}>
+                このタスクのみを削除
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete('future')}>
+                このタスク以降を削除
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete('all')}>
+                すべての繰り返しを削除
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="absolute right-2"
+            onClick={() => deleteTask(task.id)}
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        )
       )}
     </li>
   )
