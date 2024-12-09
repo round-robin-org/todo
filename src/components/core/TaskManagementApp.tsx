@@ -16,6 +16,7 @@ import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { useAuth } from '@src/hooks/useAuth'
+import { LabelSelector } from './LabelSelector'
 
 export function TaskManagementApp() {
   const { user } = useAuth()
@@ -44,6 +45,11 @@ export function TaskManagementApp() {
 
   const setTaskToSchedule = (task: Task | null) => {
     if (task) {
+      if (task.isRecurring) {
+        toast.error('Recurring tasks cannot be set to scheduling mode.');
+        return;
+      }
+
       setTasks(prevTasks =>
         prevTasks.map(t =>
           t.id === task.id
@@ -220,7 +226,7 @@ export function TaskManagementApp() {
           JSON.stringify(updatedTask.routine) !== JSON.stringify(parentTask.routine);
 
         if (hasChangesOtherThanMemo || updatedTask.memo !== parentTask.memo) {
-          // メモ以外の変更がある場合、またはメモが変更されていてすべてに適用する場合
+          // メモ以外の変更がある場合、またはメモが変更されていすべてに適用する場合
           if (hasChangesOtherThanMemo || window.confirm('Apply changes to all recurring tasks?')) {
             const { data: parentData, error: parentError } = await supabase
               .from('tasks')
@@ -254,7 +260,7 @@ export function TaskManagementApp() {
               )
             );
           } else {
-            // メモだけが変更された場合、個別に適用
+            // メモだが変更された場合、個別に適用
             const newExceptions = {
               ...parentTask.exceptions,
               [exceptionDate]: {
@@ -695,6 +701,117 @@ export function TaskManagementApp() {
     task.scheduledDate === today && task.status === 'executed'
   )
 
+  // ラベルを更新する関数を追加
+  const updateTaskLabel = async (taskId: string, newLabel: string) => {
+    if (!userId) {
+      toast.error('ユーザーが認証されていません。')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({ label: newLabel === 'none' ? null : newLabel })
+        .eq('id', taskId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setTasks(prevTasks =>
+        prevTasks.map(t => t.id === taskId ? { ...t, label: newLabel === 'none' ? null : newLabel } : t)
+      )
+      toast.success('ラベルが更新されました。')
+    } catch (error: any) {
+      console.error('ラベルの更新に失敗しました:', error)
+      toast.error(`ラベルの更新に失敗しました: ${error.message}`)
+    }
+  }
+
+  // タイトル更新関数を追加
+  const updateTaskTitleHandler = async (taskId: string, newTitle: string, updateType: 'global' | 'single') => {
+    if (!userId) {
+      toast.error('ユーザーが認証されていません。')
+      return
+    }
+
+    try {
+      // 繰り返しタスクの場合、全ての関連タスクを更新
+      if (updateType === 'global') {
+        // オリジナルタスクを取得
+        const { data: originalTask, error: fetchError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('id', taskId)
+          .single()
+
+        if (fetchError) {
+          throw fetchError
+        }
+
+        if (!originalTask.is_recurring) {
+          // 繰り返しタスクでない場合は単一タスクとして更新
+          const { error: updateError } = await supabase
+            .from('tasks')
+            .update({ title: newTitle })
+            .eq('id', taskId)
+          
+          if (updateError) {
+            throw updateError
+          }
+
+          setTasks(prevTasks =>
+            prevTasks.map(t =>
+              t.id === taskId ? { ...t, title: newTitle } : t
+            )
+          )
+        } else {
+          // 繰り返しタスクの場合、originalIdを基に全ての関連タスクを更新
+          const parentId = originalTask.original_task_id || originalTask.id
+
+          const { data: updatedTasks, error: updateError } = await supabase
+            .from('tasks')
+            .update({ title: newTitle })
+            .eq('original_task_id', parentId)
+            .eq('user_id', userId)
+          
+          if (updateError) {
+            throw updateError
+          }
+
+          setTasks(prevTasks =>
+            prevTasks.map(t =>
+              t.originalTaskId === parentId
+                ? { ...t, title: newTitle }
+                : t
+            )
+          )
+        }
+      } else {
+        // 単一タスクの更新
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({ title: newTitle })
+          .eq('id', taskId)
+        
+        if (updateError) {
+          throw updateError
+        }
+
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.id === taskId ? { ...t, title: newTitle } : t
+          )
+        )
+      }
+
+      toast.success('タスクタイトルが更新されました。')
+    } catch (error: any) {
+      console.error('タスクタイトルの更新に失敗しました:', error)
+      toast.error(`タスクタイトルの更新に失敗しました: ${error.message}`)
+    }
+  }
+
   return (
     <div>
       <Header />
@@ -732,6 +849,9 @@ export function TaskManagementApp() {
               deleteTask={deleteTask}
               showExecutedTasks={showExecutedTasksList}
               executedTasks={executedTodayTasks}
+              labels={labels}
+              updateTaskLabel={updateTaskLabel}
+              updateTaskTitle={updateTaskTitleHandler}
             />
           </TabContent>
         </TabsContent>
@@ -783,12 +903,15 @@ export function TaskManagementApp() {
                     unassignTaskFromDate={unassignTaskFromDate}
                     setTaskToSchedule={setTaskToSchedule}
                     schedulingTaskId={schedulingTask?.id}
+                    labels={labels}
+                    updateTaskLabel={updateTaskLabel}
+                    updateTaskTitle={updateTaskTitleHandler}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
                       tasks={executedPlannedTasks}
                       toggleStatus={toggleTaskStatus}
-                      toggleStar={toggleTaskStar}
+                      toggleStar={toggleStar}
                       onEdit={setEditingTask}
                       deleteTask={deleteTask}
                     />
@@ -805,7 +928,7 @@ export function TaskManagementApp() {
                   <TaskList 
                     tasks={unplannedTasks}
                     toggleStatus={toggleTaskStatus}
-                    toggleStar={toggleTaskStar}
+                    toggleStar={toggleStar}
                     onEdit={setEditingTask}
                     isDraggable={false}
                     deleteTask={deleteTask}
@@ -814,12 +937,15 @@ export function TaskManagementApp() {
                     unassignTaskFromDate={unassignTaskFromDate}
                     setTaskToSchedule={setTaskToSchedule}
                     schedulingTaskId={schedulingTask?.id}
+                    labels={labels}
+                    updateTaskLabel={updateTaskLabel}
+                    updateTaskTitle={updateTaskTitleHandler}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
                       tasks={executedUnplannedTasks}
                       toggleStatus={toggleTaskStatus}
-                      toggleStar={toggleTaskStar}
+                      toggleStar={toggleStar}
                       onEdit={setEditingTask}
                       deleteTask={deleteTask}
                     />
@@ -867,6 +993,7 @@ export function TaskManagementApp() {
           selectedDate={showUnplannedTasks ? new Date() : selectedDate || new Date()}
           showUnplannedTasks={false}
           allowSelectDate={false}
+          disableScheduling={editingTask.isRecurring}
         />
       )}
     </div>

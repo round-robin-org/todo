@@ -13,22 +13,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@src/components/ui/dropdown-menu"
+import { LabelSelector } from './LabelSelector'
 
 type TaskItemProps = {
   task: Task;
   toggleStatus: (id: string) => void;
   toggleStar: (id: string) => void;
   onEdit: (task: Task) => void;
-  deleteTask: (id: string) => void;
+  deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
   isExecuted?: boolean;
   assignToDate?: (id: string) => void;
   unassignFromDate?: (id: string) => void;
   setTaskToSchedule?: (task: Task) => void;
+  labels: string[];
+  updateTaskLabel: (taskId: string, newLabel: string) => void;
+  updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
+  const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
 
   const handlers = useSwipeable({
     onSwipedLeft: () => {
@@ -55,17 +60,13 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     trackMouse: true
   })
 
-  const handleClick = () => {
-    if (interactionRef.current) {
-      interactionRef.current = false
-      return
-    }
-    if (task.isScheduling) {
-      // Disable click in scheduling mode
-      return
-    } else {
-      onEdit(task)
-    }
+  const handleLabelClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsLabelSelectorOpen(true)
+  }
+
+  const closeLabelSelector = () => {
+    setIsLabelSelectorOpen(false)
   }
 
   const handleDelete = (e: React.MouseEvent, type?: 'single' | 'all' | 'future') => {
@@ -74,7 +75,33 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     setShowDelete(false);
   };
 
-  // 繰り返しタスクで、かつ個別に削除されている場合は非表示
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editedTitle, setEditedTitle] = useState(task.title)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsEditingTitle(true)
+  }
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedTitle(e.target.value)
+  }
+
+  const handleTitleBlur = () => {
+    if (editedTitle.trim() !== task.title) {
+      const updateType = task.isRecurring ? 'global' : 'single'
+      updateTaskTitle(task.id, editedTitle.trim(), updateType)
+    }
+    setIsEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur()
+    }
+  }
+
   if (task.parentTaskId && task.status === 'deleted') {
     return null;
   }
@@ -87,7 +114,6 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 space-x-2'
           : 'border-transparent'
       }`}
-      onClick={handleClick}
     >
       <div className="flex items-center space-x-2 flex-1">
         <Checkbox 
@@ -104,12 +130,34 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           {task.routine && (
             <Repeat className="mr-1 h-5 w-5 text-green-500" title="Recurring Task" />
           )}
-          <span className={`font-semibold ${isExecuted ? 'line-through' : ''}`}>{task.title}</span>
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editedTitle}
+              onChange={handleTitleChange}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeyDown}
+              autoFocus
+              className="font-semibold bg-transparent border-b border-gray-300 focus:outline-none"
+            />
+          ) : (
+            <span 
+              className={`font-semibold ${isExecuted ? 'line-through' : ''} cursor-pointer`}
+              onClick={handleTitleClick}
+            >
+              {task.title}
+            </span>
+          )}
         </div>
         <span className="text-gray-500 text-sm block">{task.memo}</span>
       </div>
       <div className="flex items-center space-x-2 min-w-fit">
-        <Badge>{task.label}</Badge>
+        {task.label ? (
+          <Badge onClick={handleLabelClick} className="cursor-pointer">{task.label}</Badge>
+        ) : (
+          <button onClick={handleLabelClick} className="bg-gray-300 h-4 w-4 rounded"></button>
+        )}
         <Button
           variant="ghost"
           size="sm"
@@ -135,13 +183,13 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
               </DropdownMenuTrigger>
               <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                 <DropdownMenuItem onClick={(e) => handleDelete(e, 'single')}>
-                  Delete This Task
+                  このタスクを削除
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={(e) => handleDelete(e, 'future')}>
-                  Delete Future Tasks
+                  以降のタスクを削除
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={(e) => handleDelete(e, 'all')}>
-                  Delete All Recurring Tasks
+                  すべての繰り返しタスクを削除
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -156,6 +204,14 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           )
         )}
       </div>
+      {isLabelSelectorOpen && (
+        <LabelSelector 
+          task={task}
+          labels={labels}
+          updateTaskLabel={updateTaskLabel}
+          close={closeLabelSelector}
+        />
+      )}
     </li>
   )
 }

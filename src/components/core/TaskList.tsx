@@ -18,9 +18,12 @@ type TaskListProps = {
   setTaskToSchedule?: (task: Task | null) => void;
   showExecutedTasks?: boolean;
   executedTasks?: Task[];
+  labels: string[];
+  updateTaskLabel: (taskId: string, newLabel: string) => void;
+  updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignTaskFromDate, setTaskToSchedule, showExecutedTasks, executedTasks }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle }: TaskListProps) {
   const plannedTasks = tasks.filter(task => task.status === "planned")
 
   return (
@@ -44,8 +47,11 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
                         onEdit={onEdit} 
                         deleteTask={deleteTask}
                         assignToDate={assignTaskToDate}
-                        unassignFromDate={unassignTaskFromDate}
+                        unassignFromDate={unassignFromDate}
                         setTaskToSchedule={setTaskToSchedule}
+                        labels={labels}
+                        updateTaskLabel={updateTaskLabel}
+                        updateTaskTitle={updateTaskTitle}
                       />
                     </div>
                   )}
@@ -66,8 +72,11 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
               onEdit={onEdit} 
               deleteTask={deleteTask}
               assignToDate={assignTaskToDate}
-              unassignFromDate={unassignTaskFromDate}
+              unassignFromDate={unassignFromDate}
               setTaskToSchedule={setTaskToSchedule}
+              labels={labels}
+              updateTaskLabel={updateTaskLabel}
+              updateTaskTitle={updateTaskTitle}
             />
           ))}
         </ul>
@@ -76,16 +85,19 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
         <ul>
           {executedTasks.map((task) => (
             <TaskItem 
-              key={task.id} 
-              task={task} 
-              toggleStatus={toggleStatus} 
-              toggleStar={toggleStar} 
-              onEdit={onEdit} 
+              key={task.id}
+              task={task}
+              toggleStatus={toggleStatus}
+              toggleStar={toggleStar}
+              onEdit={onEdit}
               deleteTask={deleteTask}
               isExecuted={true}
               assignToDate={assignTaskToDate}
-              unassignFromDate={unassignTaskFromDate}
+              unassignFromDate={unassignFromDate}
               setTaskToSchedule={setTaskToSchedule}
+              labels={labels}
+              updateTaskLabel={updateTaskLabel}
+              updateTaskTitle={updateTaskTitle}
             />
           ))}
         </ul>
