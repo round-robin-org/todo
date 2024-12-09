@@ -21,9 +21,11 @@ type TaskListProps = {
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
+  addLabel: (newLabel: string) => Promise<void>;
+  deleteLabel: (label: string) => Promise<void>;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable, onDragEnd, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addLabel, deleteLabel }: TaskListProps) {
   const plannedTasks = tasks.filter(task => task.status === "planned")
 
   return (
@@ -52,6 +54,8 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
                         labels={labels}
                         updateTaskLabel={updateTaskLabel}
                         updateTaskTitle={updateTaskTitle}
+                        addLabel={addLabel}
+                        deleteLabel={deleteLabel}
                       />
                     </div>
                   )}
@@ -77,6 +81,8 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
               labels={labels}
               updateTaskLabel={updateTaskLabel}
               updateTaskTitle={updateTaskTitle}
+              addLabel={addLabel}
+              deleteLabel={deleteLabel}
             />
           ))}
         </ul>
@@ -98,6 +104,8 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, isDraggable,
               labels={labels}
               updateTaskLabel={updateTaskLabel}
               updateTaskTitle={updateTaskTitle}
+              addLabel={addLabel}
+              deleteLabel={deleteLabel}
             />
           ))}
         </ul>

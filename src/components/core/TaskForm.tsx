@@ -237,7 +237,13 @@ export function TaskForm({
       newLabel: selectedLabel === 'new' ? newLabel : undefined,
     };
 
-    onSubmit(formData);
+    const updatedTaskData = {
+      ...formData,
+      routine,
+      exceptions: routine ? {} : formData.exceptions
+    };
+
+    onSubmit(updatedTaskData);
   };
 
   // Detect changes in repeat settings

@@ -6,14 +6,17 @@ import { Button } from "@src/components/ui/button"
 import { Plus } from 'lucide-react'
 import { TaskForm } from '@src/components/core/TaskForm'
 import { toast } from 'sonner'
-import { Task } from '@src/lib/types'
+import { Task, Routine } from '@src/lib/types'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@src/components/ui/dropdown-menu"
+import { LabelSelector } from '@src/components/core/LabelSelector'
 
 type TaskDialogProps = {
   labels: string[];
   addTask: (taskData: Omit<Task, 'id'>) => void;
   updateTask: (task: Task & { updateType?: 'single' | 'future' | 'global' }) => void;
-  addLabel: (newLabel: string) => void;
+  addLabel: (newLabel: string) => Promise<void>;
+  deleteLabel: (label: string) => Promise<void>;
+  updateTaskLabel: (taskId: string, newLabel: string) => void;
   isEdit?: boolean;
   taskToEdit?: Task;
   isToday: boolean;
@@ -22,7 +25,7 @@ type TaskDialogProps = {
   showUnplannedTasks: boolean;
   allowSelectDate?: boolean;
   selectedDate?: Date | null;
-  deleteLabel: (label: string) => void;
+  disableScheduling?: boolean;
 }
 
 export function TaskDialog({ 
@@ -30,6 +33,8 @@ export function TaskDialog({
   addTask, 
   updateTask, 
   addLabel, 
+  deleteLabel,
+  updateTaskLabel,
   isEdit = false, 
   taskToEdit, 
   isToday, 
@@ -38,7 +43,7 @@ export function TaskDialog({
   showUnplannedTasks,
   allowSelectDate = false,
   selectedDate = null,
-  deleteLabel,
+  disableScheduling = false,
 }: TaskDialogProps) {
 
   const [formData, setFormData] = useState<Omit<Task, 'id'> & { updateType?: 'global' | 'local' }>({});
@@ -46,6 +51,9 @@ export function TaskDialog({
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingUpdateType, setPendingUpdateType] = useState<'single' | 'global' | null>(null);
   const [initialRoutine, setInitialRoutine] = useState<Routine | null>(taskToEdit?.routine || null);
+
+  const [showRecurrenceConfig, setShowRecurrenceConfig] = useState(false);
+  const [showRecurrenceForm, setShowRecurrenceForm] = useState(false);
 
   const handleSubmit = (data: Omit<Task, 'id'> & { updateType?: 'global' | 'local' }) => {
     const isRepeatRemoved = taskToEdit?.routine && !data.routine;
@@ -79,17 +87,17 @@ export function TaskDialog({
             ...updatedTaskData,
             updateType: 'single'
           });
-          toast.success('Task updated.');
+          toast.success('タスクが更新されました。');
           if (onClose) onClose();
           return;
         }
       }
       
       updateTask(updatedTaskData);
-      toast.success('Task updated successfully.');
+      toast.success('タスクが正常に更新されました。');
     } else {
       addTask({ ...data, newLabel: data.newLabel });
-      toast.success('Task added successfully.');
+      toast.success('タスクが正常に追加されました。');
     }
     
     if (onClose) {
@@ -97,40 +105,27 @@ export function TaskDialog({
     }
   };
 
-  const handleUpdateType = (updateType: 'single' | 'future' | 'global') => {
-    if (isRepeatChanged && updateType === 'single') {
-      return;
-    }
-
-    if (updateType === 'global' && isRepeatChanged) {
-      setPendingUpdateType('global');
-      setShowConfirm(true);
-    } else {
-      updateTask({
-        ...formData,
-        updateType
-      } as Task & { updateType?: 'single' | 'future' | 'global' })
-      toast.success('Task updated successfully.');
-      if (onClose) onClose();
-    }
+  // 繰り返しルール変更時のハンドラー
+  const handleRecurrenceChange = (newRoutine: Routine) => {
+    setFormData(prev => ({
+      ...prev,
+      routine: newRoutine
+    }));
+    setShowConfirm(true);
   }
 
-  const confirmUpdateAll = () => {
-    if (pendingUpdateType === 'global') {
-      updateTask({
-        ...formData,
-        updateType: 'global'
-      } as Task & { updateType?: 'single' | 'future' | 'global' })
-      toast.success('All recurring tasks updated successfully.');
-      setShowConfirm(false);
-      setPendingUpdateType(null);
-      if (onClose) onClose();
+  const applyRecurrenceChange = () => {
+    // 例外をクリアし繰り返しルールを更新
+    if (formData.routine) {
+      formData.routine.ends = undefined // 必要に応じて調整
+      // 他のフィールドのクリアやリセット処理
     }
-  }
-
-  const cancelUpdateAll = () => {
+    handleSubmit(formData);
     setShowConfirm(false);
-    setPendingUpdateType(null);
+  }
+
+  const cancelRecurrenceChange = () => {
+    setShowConfirm(false);
   }
 
   return (
@@ -138,15 +133,16 @@ export function TaskDialog({
       {!isEdit && (
         <DialogTrigger asChild>
           <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />Add Task
+            <Plus className="mr-2 h-4 w-4" />タスクを追加
           </Button>
         </DialogTrigger>
       )}
+     
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'タスクを編集' : '新しいタスクを追加'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Edit your task details below.' : 'Add a new task using the form below.'}
+            {isEdit ? '以下のフォームでタスクの詳細を編集してください。' : '以下のフォームを使用して新しいタスクを追加してください。'}
           </DialogDescription>
         </DialogHeader>
         <TaskForm 
@@ -174,40 +170,47 @@ export function TaskDialog({
           <div className="mt-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="w-full">Update Method</Button>
+                <Button className="w-full">更新方法を選択</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem 
-                  onClick={() => handleUpdateType('single')}
+                  onClick={() => handleRecurrenceChange('single')}
                   disabled={isRepeatChanged}
                 >
-                  Update This Task
+                  このタスクのみ更新
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleUpdateType('global')}>
-                  Update All Recurring Tasks
+                <DropdownMenuItem onClick={() => handleRecurrenceChange('global')}>
+                  全ての繰り返しタスクを更新
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         )}
+        {showConfirm && (
+          <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>確認</DialogTitle>
+                <DialogDescription>
+                  繰り返しルールを変更すると全てのタスクに適用され���過去の例外はクリアされます。続行しますか？
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button variant="ghost" onClick={cancelRecurrenceChange}>キャンセル</Button>
+                <Button onClick={applyRecurrenceChange}>適用</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+        <LabelSelector 
+          task={taskToEdit}
+          labels={labels}
+          updateTaskLabel={updateTaskLabel}
+          close={() => {}}
+          addLabel={addLabel}
+          deleteLabel={deleteLabel}
+        />
       </DialogContent>
-      
-      {showConfirm && (
-        <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirmation</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to update all recurring tasks? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end space-x-2 mt-4">
-              <Button variant="ghost" onClick={cancelUpdateAll}>Cancel</Button>
-              <Button onClick={confirmUpdateAll}>Apply</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </Dialog>
   )
 }

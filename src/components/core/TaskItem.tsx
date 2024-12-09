@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@src/components/ui/dropdown-menu"
 import { LabelSelector } from './LabelSelector'
+import { TaskDialog } from './TaskDialog'
 
 type TaskItemProps = {
   task: Task;
@@ -28,12 +29,21 @@ type TaskItemProps = {
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
+  addTask: (task: Task) => void;
+  updateTask: (task: Task) => void;
+  addLabel: (newLabel: string) => Promise<void>;
+  deleteLabel: (label: string) => Promise<void>;
+  isToday: boolean;
+  selectedDate: Date;
+  showUnplannedTasks: boolean;
+  allowSelectDate: boolean;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
+  const [isRecurrenceDialogOpen, setIsRecurrenceDialogOpen] = useState(false)
 
   const handlers = useSwipeable({
     onSwipedLeft: () => {
@@ -102,116 +112,143 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     }
   }
 
+  const handleRepeatIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsRecurrenceDialogOpen(true)
+  }
+
   if (task.parentTaskId && task.status === 'deleted') {
     return null;
   }
 
   return (
-    <li
-      {...handlers}
-      className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center ${
-        task.isScheduling 
-          ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 space-x-2'
-          : 'border-transparent'
-      }`}
-    >
-      <div className="flex items-center space-x-2 flex-1">
-        <Checkbox 
-          checked={isExecuted ? true : task.status === "executed"}
-          onCheckedChange={() => toggleStatus(task.id)}
-          onClick={(e) => e.stopPropagation()}
-          aria-label={`Mark task "${task.title}" as ${task.status === "executed" ? "planned" : "executed"}`}
-          className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
-        />
-        <div className="flex items-center">
-          {task.isScheduling && (
-            <CalendarCheck className="mr-2 h-5 w-5 text-blue-500" />
-          )}
-          {task.routine && (
-            <Repeat className="mr-1 h-5 w-5 text-green-500" title="Recurring Task" />
-          )}
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editedTitle}
-              onChange={handleTitleChange}
-              onBlur={handleTitleBlur}
-              onKeyDown={handleTitleKeyDown}
-              autoFocus
-              className="font-semibold bg-transparent border-b border-gray-300 focus:outline-none"
-            />
+    <>
+      <li
+        {...handlers}
+        className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center ${
+          task.isScheduling 
+            ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 space-x-2'
+            : 'border-transparent'
+        }`}
+      >
+        <div className="flex items-center space-x-2 flex-1">
+          <Checkbox 
+            checked={isExecuted ? true : task.status === "executed"}
+            onCheckedChange={() => toggleStatus(task.id)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Mark task "${task.title}" as ${task.status === "executed" ? "planned" : "executed"}`}
+            className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
+          />
+          <div className="flex items-center">
+            {task.isScheduling && (
+              <CalendarCheck className="mr-2 h-5 w-5 text-blue-500" />
+            )}
+            {task.isRecurring && (
+              <Button variant="ghost" size="icon" onClick={handleRepeatIconClick}>
+                <Repeat className="h-4 w-4 text-gray-500" />
+              </Button>
+            )}
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={editedTitle}
+                onChange={handleTitleChange}
+                onBlur={handleTitleBlur}
+                onKeyDown={handleTitleKeyDown}
+                autoFocus
+                className="font-semibold bg-transparent border-b border-gray-300 focus:outline-none"
+              />
+            ) : (
+              <span 
+                className={`font-semibold ${isExecuted ? 'line-through' : ''} cursor-pointer`}
+                onClick={handleTitleClick}
+              >
+                {task.title}
+              </span>
+            )}
+          </div>
+          <span className="text-gray-500 text-sm block">{task.memo}</span>
+        </div>
+        <div className="flex items-center space-x-2 min-w-fit">
+          {task.label ? (
+            <Badge onClick={handleLabelClick} className="cursor-pointer">{task.label}</Badge>
           ) : (
-            <span 
-              className={`font-semibold ${isExecuted ? 'line-through' : ''} cursor-pointer`}
-              onClick={handleTitleClick}
-            >
-              {task.title}
-            </span>
+            <button onClick={handleLabelClick} className="bg-gray-300 h-4 w-4 rounded"></button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleStar(task.id)
+            }}
+            aria-label={`${task.starred ? "Unstar" : "Star"} task "${task.title}"`}
+          >
+            <Star className={task.starred ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
+          </Button>
+          {showDelete && (
+            task.routine || task.parentTaskId ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={(e) => handleDelete(e, 'single')}>
+                    このタスクを削除
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => handleDelete(e, 'future')}>
+                    以降のタスクを削除
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => handleDelete(e, 'all')}>
+                    すべての繰り返しタスクを削除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={(e) => handleDelete(e)}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            )
           )}
         </div>
-        <span className="text-gray-500 text-sm block">{task.memo}</span>
-      </div>
-      <div className="flex items-center space-x-2 min-w-fit">
-        {task.label ? (
-          <Badge onClick={handleLabelClick} className="cursor-pointer">{task.label}</Badge>
-        ) : (
-          <button onClick={handleLabelClick} className="bg-gray-300 h-4 w-4 rounded"></button>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            toggleStar(task.id)
-          }}
-          aria-label={`${task.starred ? "Unstar" : "Star"} task "${task.title}"`}
-        >
-          <Star className={task.starred ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
-        </Button>
-        {showDelete && (
-          task.routine || task.parentTaskId ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuItem onClick={(e) => handleDelete(e, 'single')}>
-                  このタスクを削除
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => handleDelete(e, 'future')}>
-                  以降のタスクを削除
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => handleDelete(e, 'all')}>
-                  すべての繰り返しタスクを削除
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={(e) => handleDelete(e)}
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          )
-        )}
-      </div>
-      {isLabelSelectorOpen && (
-        <LabelSelector 
-          task={task}
+        <TaskDialog
+          open={isRecurrenceDialogOpen}
+          onClose={() => setIsRecurrenceDialogOpen(false)}
+          isEdit={true}
+          taskToEdit={task}
           labels={labels}
+          addTask={addTask}
+          updateTask={updateTask}
+          addLabel={addLabel}
+          deleteLabel={deleteLabel}
+          isToday={isToday}
+          selectedDate={selectedDate}
+          showUnplannedTasks={showUnplannedTasks}
+          allowSelectDate={allowSelectDate}
           updateTaskLabel={updateTaskLabel}
-          close={closeLabelSelector}
         />
-      )}
-    </li>
+        {isLabelSelectorOpen && (
+          <LabelSelector 
+            task={task}
+            labels={labels}
+            updateTaskLabel={updateTaskLabel}
+            close={() => setIsLabelSelectorOpen(false)}
+            addLabel={addLabel}
+            deleteLabel={deleteLabel}
+          />
+        )}
+      </li>
+    </>
   )
 }

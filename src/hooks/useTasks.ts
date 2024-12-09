@@ -161,7 +161,7 @@ function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: Date): 
         if (exception?.status === 'deleted') continue
 
         // 終了日以降のタスクをスキップ
-        if (task.routine.ends.type === 'on' && date > new Date(task.routine.ends.value as string)) {
+        if (task.routine.ends?.type === 'on' && date > new Date(task.routine.ends.value as string)) {
           continue
         }
 
@@ -195,8 +195,8 @@ function buildRecurrenceRule(routine: Routine) {
     freq: RRule.DAILY,
     interval: routine.interval.number,
     dtstart: new Date(routine.starts),
-    until: routine.ends.type === 'on' ? new Date(routine.ends.value as string) : undefined,
-    count: routine.ends.type === 'after' ? routine.ends.value as number : undefined,
+    until: routine.ends?.type === 'on' ? new Date(routine.ends.value as string) : undefined,
+    count: routine.ends?.type === 'after' ? Number(routine.ends.value) : undefined,
   }
 
   switch (routine.interval.unit) {
@@ -207,30 +207,30 @@ function buildRecurrenceRule(routine: Routine) {
       options.freq = RRule.WEEKLY
       if (routine.weekDays && routine.weekDays.length > 0) {
         options.byweekday = routine.weekDays.map(day => {
-          const mappedDay = mapWeekday(day);
+          const mappedDay = mapWeekday(day)
           if (!mappedDay) {
-            throw new Error(`Invalid weekday: ${day}`);
+            throw new Error(`Invalid weekday: ${day}`)
           }
-          return mappedDay;
-        });
+          return mappedDay
+        })
       }
       break
     case 'month':
       options.freq = RRule.MONTHLY
       if (routine.monthOption === 'day') {
-        const day = parseInt(routine.monthDay || '1', 10);
+        const day = parseInt(routine.monthDay || '1', 10)
         if (isNaN(day) || day < 1 || day > 31) {
-          throw new Error(`Invalid month day: ${routine.monthDay}`);
+          throw new Error(`Invalid month day: ${routine.monthDay}`)
         }
-        options.bymonthday = [day];
+        options.bymonthday = [day]
       } else if (routine.monthOption === 'weekday') {
-        const nth = mapNthWeek(routine.monthWeek!);
-        const wd = mapWeekday(routine.monthWeekDay!);
+        const nth = mapNthWeek(routine.monthWeek!)
+        const wd = mapWeekday(routine.monthWeekDay!)
         if (nth === undefined) {
-          throw new Error(`Invalid week number: ${routine.monthWeek}`);
+          throw new Error(`Invalid week number: ${routine.monthWeek}`)
         }
         if (!wd) {
-          throw new Error(`Invalid weekday: ${routine.monthWeekDay}`);
+          throw new Error(`Invalid weekday: ${routine.monthWeekDay}`)
         }
         options.byweekday = [wd.nth(nth)]
       }
@@ -239,7 +239,7 @@ function buildRecurrenceRule(routine: Routine) {
       options.freq = RRule.YEARLY
       break
     default:
-      throw new Error(`Invalid interval unit: ${routine.interval.unit}`);
+      throw new Error(`Invalid interval unit: ${routine.interval.unit}`)
   }
 
   return new RRule(options)
