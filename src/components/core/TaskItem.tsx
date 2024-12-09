@@ -37,9 +37,10 @@ type TaskItemProps = {
   selectedDate: Date;
   showUnplannedTasks: boolean;
   allowSelectDate: boolean;
+  setLabels: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
@@ -201,13 +202,13 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
                 </DropdownMenuTrigger>
                 <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                   <DropdownMenuItem onClick={(e) => handleDelete(e, 'single')}>
-                    このタスクを削除
+                    Delete this task
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => handleDelete(e, 'future')}>
-                    以降のタスクを削除
+                    Delete future tasks
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => handleDelete(e, 'all')}>
-                    すべての繰り返しタスクを削除
+                    Delete all recurring tasks
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -239,9 +240,10 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           updateTaskLabel={updateTaskLabel}
         />
         {isLabelSelectorOpen && (
-          <LabelSelector 
+          <LabelSelector
             task={task}
             labels={labels}
+            setLabels={setLabels}
             updateTaskLabel={updateTaskLabel}
             close={() => setIsLabelSelectorOpen(false)}
             addLabel={addLabel}

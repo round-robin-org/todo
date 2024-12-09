@@ -8,7 +8,6 @@ import { TaskForm } from '@src/components/core/TaskForm'
 import { toast } from 'sonner'
 import { Task, Routine } from '@src/lib/types'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@src/components/ui/dropdown-menu"
-import { LabelSelector } from '@src/components/core/LabelSelector'
 
 type TaskDialogProps = {
   labels: string[];
@@ -16,7 +15,6 @@ type TaskDialogProps = {
   updateTask: (task: Task & { updateType?: 'single' | 'future' | 'global' }) => void;
   addLabel: (newLabel: string) => Promise<void>;
   deleteLabel: (label: string) => Promise<void>;
-  updateTaskLabel: (taskId: string, newLabel: string) => void;
   isEdit?: boolean;
   taskToEdit?: Task;
   isToday: boolean;
@@ -34,7 +32,6 @@ export function TaskDialog({
   updateTask, 
   addLabel, 
   deleteLabel,
-  updateTaskLabel,
   isEdit = false, 
   taskToEdit, 
   isToday, 
@@ -87,17 +84,17 @@ export function TaskDialog({
             ...updatedTaskData,
             updateType: 'single'
           });
-          toast.success('タスクが更新されました。');
+          toast.success('Task updated successfully');
           if (onClose) onClose();
           return;
         }
       }
       
       updateTask(updatedTaskData);
-      toast.success('タスクが正常に更新されました。');
+      toast.success('Task updated successfully');
     } else {
       addTask({ ...data, newLabel: data.newLabel });
-      toast.success('タスクが正常に追加されました。');
+      toast.success('Task added successfully');
     }
     
     if (onClose) {
@@ -133,16 +130,16 @@ export function TaskDialog({
       {!isEdit && (
         <DialogTrigger asChild>
           <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />タスクを追加
+            <Plus className="mr-2 h-4 w-4" />Add Task
           </Button>
         </DialogTrigger>
       )}
      
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'タスクを編集' : '新しいタスクを追加'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Task' : 'Add New Task'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? '以下のフォームでタスクの詳細を編集してください。' : '以下のフォームを使用して新しいタスクを追加してください。'}
+            {isEdit ? 'Edit the task details below.' : 'Use the form below to add a new task.'}
           </DialogDescription>
         </DialogHeader>
         <TaskForm 
@@ -170,17 +167,17 @@ export function TaskDialog({
           <div className="mt-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="w-full">更新方法を選択</Button>
+                <Button className="w-full">Select Update Method</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem 
                   onClick={() => handleRecurrenceChange('single')}
                   disabled={isRepeatChanged}
                 >
-                  このタスクのみ更新
+                  Update this task only
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleRecurrenceChange('global')}>
-                  全ての繰り返しタスクを更新
+                  Update all recurring tasks
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -190,26 +187,18 @@ export function TaskDialog({
           <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>確認</DialogTitle>
+                <DialogTitle>Confirm</DialogTitle>
                 <DialogDescription>
-                  繰り返しルールを変更すると全てのタスクに適用され���過去の例外はクリアされます。続行しますか？
+                  Changing the recurrence rule will apply to all tasks and clear past exceptions. Continue?
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-end space-x-2 mt-4">
-                <Button variant="ghost" onClick={cancelRecurrenceChange}>キャンセル</Button>
-                <Button onClick={applyRecurrenceChange}>適用</Button>
+                <Button variant="ghost" onClick={cancelRecurrenceChange}>Cancel</Button>
+                <Button onClick={applyRecurrenceChange}>Apply</Button>
               </div>
             </DialogContent>
           </Dialog>
         )}
-        <LabelSelector 
-          task={taskToEdit}
-          labels={labels}
-          updateTaskLabel={updateTaskLabel}
-          close={() => {}}
-          addLabel={addLabel}
-          deleteLabel={deleteLabel}
-        />
       </DialogContent>
     </Dialog>
   )

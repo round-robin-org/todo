@@ -26,7 +26,7 @@ export function TaskManagementApp() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showExecutedTasks, setShowExecutedTasks] = useState(false)
   const [showUnplannedTasks, setShowUnplannedTasks] = useState(false)
-  const [labels, setLabels] = useState(["Health", "Work", "Housework"])
+  const [labels, setLabels] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
   const [showExecutedTasksList, setShowExecutedTasksList] = useState(false)
@@ -604,6 +604,7 @@ export function TaskManagementApp() {
   // Add deleteLabel function
   const deleteLabel = async (labelToDelete: string) => {
     try {
+      // データベースからラベルを削除
       const { error } = await supabase
         .from('labels')
         .delete()
@@ -611,6 +612,7 @@ export function TaskManagementApp() {
 
       if (error) throw error;
 
+      // ローカルのラベルリストを更新
       setLabels(prevLabels => prevLabels.filter(label => label !== labelToDelete));
       toast.success('Label deleted successfully');
     } catch (error) {
@@ -641,7 +643,7 @@ export function TaskManagementApp() {
   // ラベルを更新する関数を追加
   const updateTaskLabel = async (taskId: string, newLabel: string) => {
     if (!userId) {
-      toast.error('ユーザーが認証されていません。')
+      toast.error('Authentication is required.')
       return
     }
 
@@ -658,17 +660,17 @@ export function TaskManagementApp() {
       setTasks(prevTasks =>
         prevTasks.map(t => t.id === taskId ? { ...t, label: newLabel === 'none' ? null : newLabel } : t)
       )
-      toast.success('ラベルが更新されました。')
+      toast.success('Label updated successfully')
     } catch (error: any) {
-      console.error('ラベルの更新に失敗しました:', error)
-      toast.error(`ラベルの更新に失敗しました: ${error.message}`)
+      console.error('Failed to update label:', error)
+      toast.error(`Failed to update label: ${error.message}`)
     }
   }
 
   // タイトル更新関数を追加
   const updateTaskTitleHandler = async (taskId: string, newTitle: string, updateType: 'global' | 'single') => {
     if (!userId) {
-      toast.error('ユーザーが認証されていません。')
+      toast.error('Authentication is required.')
       return
     }
 
@@ -742,10 +744,10 @@ export function TaskManagementApp() {
         )
       }
 
-      toast.success('タスクタイトルが更新されました。')
+      toast.success('Task title updated successfully')
     } catch (error: any) {
-      console.error('タスクタイトルの更新に失敗しました:', error)
-      toast.error(`タスクタイトルの更新に失敗しました: ${error.message}`)
+      console.error('Failed to update task title:', error)
+      toast.error(`Failed to update task title: ${error.message}`)
     }
   }
 
@@ -787,6 +789,7 @@ export function TaskManagementApp() {
               showExecutedTasks={showExecutedTasksList}
               executedTasks={executedTodayTasks}
               labels={labels}
+              setLabels={setLabels}
               updateTaskLabel={updateTaskLabel}
               updateTaskTitle={updateTaskTitleHandler}
               addLabel={addLabel}
@@ -843,6 +846,7 @@ export function TaskManagementApp() {
                     setTaskToSchedule={setTaskToSchedule}
                     schedulingTaskId={schedulingTask?.id}
                     labels={labels}
+                    setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
                     updateTaskTitle={updateTaskTitleHandler}
                     addLabel={addLabel}
@@ -879,6 +883,7 @@ export function TaskManagementApp() {
                     setTaskToSchedule={setTaskToSchedule}
                     schedulingTaskId={schedulingTask?.id}
                     labels={labels}
+                    setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
                     updateTaskTitle={updateTaskTitleHandler}
                     addLabel={addLabel}
@@ -924,6 +929,7 @@ export function TaskManagementApp() {
       {editingTask && (
         <TaskDialog 
           labels={labels}
+          setLabels={setLabels}
           addTask={addTask}
           updateTask={updateTask}
           addLabel={addLabel}
