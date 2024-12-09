@@ -113,7 +113,7 @@ export function TaskManagementApp() {
         .single();
 
       if (error) {
-        console.error('Supabaseからのエラー:', error);
+        console.error('Supabaseからのエ���ー:', error);
         throw error;
       }
 
@@ -158,15 +158,16 @@ export function TaskManagementApp() {
         const exceptionDate = updatedTask.scheduledDate;
         if (!exceptionDate) throw new Error('Scheduled date is required for recurring task update');
 
-        // グローバルな変更の場合
-        if (updatedTask.updateType === 'global') {
+        // メモ以外の変更、またはメモもすべてに適用する場合はグローバルな変更
+        if (updatedTask.memo === parentTask.memo || window.confirm('メモをすべての繰り返しタスクに適用しますか？')) {
           const { data: parentData, error: parentError } = await supabase
             .from('tasks')
             .update({
               title: updatedTask.title,
               label: updatedTask.label,
               routine: updatedTask.routine,
-              exceptions: {}, // ルール変更時はexceptionsをクリア
+              memo: updatedTask.memo,
+              exceptions: updatedTask.routine ? {} : parentTask.exceptions, // ルール変更時はexceptionsをクリア
               user_id: userId
             })
             .eq('id', parentTaskId)
@@ -184,7 +185,8 @@ export function TaskManagementApp() {
                     title: updatedTask.title,
                     label: updatedTask.label,
                     routine: updatedTask.routine,
-                    exceptions: {}
+                    memo: updatedTask.memo,
+                    exceptions: updatedTask.routine ? {} : parentTask.exceptions
                   }
                 : t
             )
@@ -262,59 +264,96 @@ export function TaskManagementApp() {
   };
 
   // Toggle Task Status
-  const toggleTaskStatus = async (taskId: string) => {
+  const toggleTaskStatus = async (taskId: string, occurrenceDate?: string) => {
     try {
-      const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('Task not found')
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error('Task not found');
 
-      const updatedStatus = task.status === 'executed' ? 'planned' : 'executed'
+      const updatedStatus = task.status === 'executed' ? 'planned' : 'executed';
 
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status: updatedStatus })
-        .eq('id', taskId)
+      if (task.isRecurring && occurrenceDate) {
+        // 繰り返しタスクの場合は例外として処理
+        const newExceptions = {
+          ...task.exceptions,
+          [occurrenceDate]: {
+            ...task.exceptions?.[occurrenceDate],
+            status: updatedStatus
+          }
+        };
 
-      if (error) throw error
+        const { error } = await supabase
+          .from('tasks')
+          .update({ exceptions: newExceptions })
+          .eq('id', task.originalId);
 
-      // Update state
+        if (error) throw error;
+      } else {
+        // 通常タスクの場合は直接更新
+        const { error } = await supabase
+          .from('tasks')
+          .update({ status: updatedStatus })
+          .eq('id', taskId);
+
+        if (error) throw error;
+      }
+
       setTasks(prevTasks =>
         prevTasks.map(t =>
           t.id === taskId ? { ...t, status: updatedStatus } : t
         )
-      )
-      toast.success('Task status updated')
+      );
+      
+      toast.success('Task status updated');
     } catch (error) {
-      console.error('Failed to update status:', error)
-      toast.error('Failed to update status.')
+      console.error('Failed to update status:', error);
+      toast.error('Failed to update status.');
     }
-  }
+  };
 
   // Toggle Task Star
-  const toggleTaskStar = async (taskId: string) => {
+  const toggleTaskStar = async (taskId: string, occurrenceDate?: string) => {
     try {
-      const task = tasks.find(t => t.id === taskId)
-      if (!task) throw new Error('Task not found')
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error('Task not found');
 
-      const updatedStar = !task.starred
+      const updatedStar = !task.starred;
 
-      const { error } = await supabase
-        .from('tasks')
-        .update({ starred: updatedStar })
-        .eq('id', taskId)
+      if (task.isRecurring && occurrenceDate) {
+        const newExceptions = {
+          ...task.exceptions,
+          [occurrenceDate]: {
+            ...task.exceptions?.[occurrenceDate],
+            starred: updatedStar
+          }
+        };
 
-      if (error) throw error
+        const { error } = await supabase
+          .from('tasks')
+          .update({ exceptions: newExceptions })
+          .eq('id', task.originalId);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('tasks')
+          .update({ starred: updatedStar })
+          .eq('id', taskId);
+
+        if (error) throw error;
+      }
 
       setTasks(prevTasks =>
         prevTasks.map(t =>
           t.id === taskId ? { ...t, starred: updatedStar } : t
         )
-      )
-      toast.success('Task star updated')
+      );
+      
+      toast.success('Task star updated');
     } catch (error) {
-      console.error('Failed to update star:', error)
-      toast.error('Failed to update star.')
+      console.error('Failed to update star:', error);
+      toast.error('Failed to update star.');
     }
-  }
+  };
 
   // Add Label
   const addLabel = async (newLabel: string) => {
@@ -367,7 +406,7 @@ export function TaskManagementApp() {
 
       // 繰り返しタスクの削除
       if (taskToDelete.parentTaskId || taskToDelete.routine) {
-        const parentId = taskToDelete.parentTaskId;
+        const parentId = taskToDelete.parentTaskId || taskToDelete.id; // 親タスクIDを取得
         const currentDate = taskToDelete.scheduledDate;
 
         switch (deleteType) {
@@ -382,7 +421,7 @@ export function TaskManagementApp() {
             if (deleteError) throw deleteError;
 
             setTasks(prevTasks => 
-              prevTasks.filter(t => t.parentTaskId !== parentId)
+              prevTasks.filter(t => t.parentTaskId !== parentId && t.id !== parentId)
             );
             break;
 
@@ -402,6 +441,13 @@ export function TaskManagementApp() {
                     type: 'on',
                     value: currentDate
                   }
+                },
+                exceptions: {
+                  ...parentTask.exceptions,
+                  [currentDate]: {
+                    ...parentTask.exceptions?.[currentDate],
+                    status: 'deleted'
+                  }
                 }
               })
               .eq('id', parentId)
@@ -411,7 +457,27 @@ export function TaskManagementApp() {
             if (updateError) throw updateError;
 
             setTasks(prevTasks =>
-              prevTasks.filter(t => 
+              prevTasks.map(t => 
+                t.id === parentId
+                ? {
+                  ...t,
+                  routine: {
+                    ...t.routine,
+                    ends: {
+                      type: 'on',
+                      value: currentDate
+                    }
+                  },
+                  exceptions: {
+                    ...t.exceptions,
+                    [currentDate]: {
+                      ...t.exceptions?.[currentDate],
+                      status: 'deleted'
+                    }
+                  }
+                }
+                : t
+              ).filter(t => 
                 t.parentTaskId !== parentId || 
                 (t.scheduledDate && t.scheduledDate < currentDate)
               )

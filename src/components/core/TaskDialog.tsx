@@ -45,12 +45,11 @@ export function TaskDialog({
       const { updateType, ...data } = taskData;
       
       if (taskToEdit.routine) {
-        if (updateType === 'global') {
+        if (data.memo !== taskToEdit.memo && window.confirm('メモをすべての繰り返しタスクに適用しますか？')) {
           updateTask({ 
             ...taskToEdit, 
             ...data,
             parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
-            updateType: updateType
           });
         } else {
           updateTask({ 
@@ -68,7 +67,6 @@ export function TaskDialog({
                 title: data.title
               }
             },
-            updateType: updateType
           });
         }
       } else {

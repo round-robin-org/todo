@@ -81,11 +81,6 @@ export function TaskForm({
     initialTask?.routine?.monthWeekDay || (selectedDate ? format(selectedDate, 'eee') : 'Mon')
   );
 
-  // 繰り返しタスクの編集時の更新タイプを管理
-  const [updateType, setUpdateType] = useState<'global' | 'local'>(
-    initialTask?.routine ? 'local' : 'global'
-  );
-
   useEffect(() => {
     if (showUnplannedTasks && !initialTask) {
       setScheduledDate('')
@@ -212,10 +207,17 @@ export function TaskForm({
           })
         })
       } : null,
-      updateType: initialTask?.routine ? updateType : undefined
     };
 
-    onSubmit({ ...taskData, updateType: initialTask?.routine ? updateType : undefined });
+    if (initialTask?.routine && memo !== initialTask.memo) {
+      if (window.confirm('メモをすべての繰り返しタスクに適用しますか？')) {
+        onSubmit({ ...taskData, updateType: 'global' });
+      } else {
+        onSubmit({ ...taskData, updateType: 'local' });
+      }
+    } else {
+      onSubmit(taskData);
+    }
   };
 
   return (
@@ -478,23 +480,6 @@ export function TaskForm({
               />
             </div>
           )}
-        </div>
-      )}
-
-      {/* 繰り返しタスクの編集時のみ表示 */}
-      {initialTask?.routine && (
-        <div className="grid w-full gap-2">
-          <Label>Update Type</Label>
-          <RadioGroup value={updateType} onValueChange={setUpdateType}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="local" id="local" />
-              <Label htmlFor="local">このタスクのみ変更</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="global" id="global" />
-              <Label htmlFor="global">すべての繰り返しタスクを変更</Label>
-            </div>
-          </RadioGroup>
         </div>
       )}
 

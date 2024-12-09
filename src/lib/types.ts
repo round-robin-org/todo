@@ -17,6 +17,9 @@ export type Routine = {
 
 export type Task = {
   id: string;
+  originalId?: string; // 繰り返しタスクの元のID
+  isRecurring?: boolean; // 繰り返しタスクかどうか
+  occurrenceDate?: string; // 繰り返しタスクの発生日
   title: string;
   memo: string;
   status: 'executed' | 'planned';

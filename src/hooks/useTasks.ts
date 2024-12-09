@@ -158,19 +158,26 @@ function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: Date): 
         const formattedDate = format(date, 'yyyy-MM-dd')
         const exception = task.exceptions?.[formattedDate]
 
-        if (exception?.status === 'deleted') {
-          continue // Skip deleted tasks
+        // 削除された日付をスキップ
+        if (exception?.status === 'deleted') continue
+
+        // 終了日以降のタスクをスキップ
+        if (task.routine.ends.type === 'on' && date > new Date(task.routine.ends.value as string)) {
+          continue
         }
 
         expandedTasks.push({
           ...task,
-          parentTaskId: task.id,
-          scheduledDate: exception?.scheduled_date || formattedDate,
+          originalId: task.id,
+          id: task.id,
+          scheduledDate: formattedDate,
           status: exception?.status || task.status,
-          starred: exception?.starred !== undefined ? exception.starred : task.starred,
+          starred: exception?.starred ?? task.starred,
           memo: exception?.memo || task.memo,
           label: exception?.label || task.label,
-          title: exception?.title || task.title,
+          title: task.title,
+          isRecurring: true,
+          occurrenceDate: formattedDate
         })
       }
     } else {

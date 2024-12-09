@@ -131,10 +131,10 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onClick={() => handleDelete('single')}>
-                このタスクのみを削除
+                この予定のみ削除
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDelete('future')}>
-                このタスク以降を削除
+                この予定以降を削除
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDelete('all')}>
                 すべての繰り返しを削除
