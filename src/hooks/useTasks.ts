@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { RRule, RRuleSet, Weekday } from 'rrule'
 import { useAuth } from '@src/hooks/useAuth'
 import { getAuthenticatedClient } from '@src/lib/supabase'
+import { toast } from 'sonner'
 
 export function useTasks(selectedDate: Date, activeTab: string) {
   const { user } = useAuth()
@@ -45,7 +46,7 @@ export function useTasks(selectedDate: Date, activeTab: string) {
         throw error
       }
 
-      console.log('取得したタスクデータ:', data);
+      console.log('���得したタスクデータ:', data);
 
       const formattedTasks: Task[] = data.map((task: any) => ({
         id: task.id.toString(),
@@ -138,6 +139,31 @@ export function useTasks(selectedDate: Date, activeTab: string) {
       supabase.channel('tasks-channel').unsubscribe()
     }
   }, [activeTab, selectedDate, fetchTasks, fetchTodayTasks])
+
+  // タスクの予定日を解除する関数
+  const unassignTaskFromDate = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ scheduled_date: null })
+        .eq('id', taskId)
+
+      if (error) {
+        console.error('タスクの予定日解除に失敗しました:', error)
+        toast.error('タスクの予定日解除に失敗しました。')
+        return
+      }
+
+      // ローカルの状態を更新
+      setTasks(prevTasks =>
+        prevTasks.map(t => t.id === taskId ? { ...t, scheduledDate: null } : t)
+      )
+      toast.success('タスクの予定日を解除しました。')
+    } catch (error) {
+      console.error('タスクの予定日解除中にエラーが発生しました:', error)
+      toast.error('タスクの予定日解除中にエラーが発生しました。')
+    }
+  }
 
   return { tasks, setTasks, error }
 }

@@ -13,8 +13,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@src/components/ui/dropdown-menu"
-import { LabelSelector } from './LabelSelector'
-import { TaskDialog } from './TaskDialog'
+import { LabelSelector } from '@src/components/core/LabelSelector'
+import { TaskDialog } from '@src/components/core/TaskDialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@src/components/ui/alert-dialog"
 
 type TaskItemProps = {
   task: Task;
@@ -45,6 +56,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
   const [isRecurrenceDialogOpen, setIsRecurrenceDialogOpen] = useState(false)
+  const [showUnscheduleConfirm, setShowUnscheduleConfirm] = useState(false)
 
   const handlers = useSwipeable({
     onSwipedLeft: () => {
@@ -56,19 +68,20 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
       interactionRef.current = true
     },
     onSwipedUp: () => {
-      if (setTaskToSchedule) {
+      if (setTaskToSchedule && !task.isRecurring) {
         setTaskToSchedule(task)
       }
       interactionRef.current = true
     },
     onSwipedDown: () => {
-      if (unassignFromDate) {
-        unassignFromDate(task.id)
+      if (!task.isRecurring && unassignFromDate && task.scheduledDate) {
+        setShowUnscheduleConfirm(true)
       }
       interactionRef.current = true
     },
     preventDefaultTouchmoveEvent: true,
-    trackMouse: true
+    trackMouse: true,
+    trackTouch: true,
   })
 
   const handleLabelClick = (e: React.MouseEvent) => {
@@ -118,12 +131,38 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     setIsRecurrenceDialogOpen(true)
   }
 
+  const handleUnschedule = () => {
+    if (unassignFromDate) {
+      unassignFromDate(task.id)
+    }
+    setShowUnscheduleConfirm(false)
+  }
+
   if (task.parentTaskId && task.status === 'deleted') {
     return null;
   }
 
   return (
     <>
+      <AlertDialog open={showUnscheduleConfirm} onOpenChange={setShowUnscheduleConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the scheduled date from this task.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowUnscheduleConfirm(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnschedule}>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <li
         {...handlers}
         className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center ${
@@ -240,7 +279,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           updateTaskLabel={updateTaskLabel}
         />
         {isLabelSelectorOpen && (
-          <LabelSelector
+          <LabelSelector 
             task={task}
             labels={labels}
             setLabels={setLabels}

@@ -33,7 +33,7 @@ export function TaskManagementApp() {
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const reorderedTasks = Array.from(tasks);
@@ -43,7 +43,7 @@ export function TaskManagementApp() {
     setTasks(reorderedTasks);
   };
 
-  const setTaskToSchedule = (task: Task | null) => {
+  const setTaskToScheduleHandler = (task: Task | null) => {
     if (task) {
       if (task.isRecurring) {
         toast.error('Recurring tasks cannot be set to scheduling mode.');
@@ -507,7 +507,7 @@ export function TaskManagementApp() {
 
             if (updateError) throw updateError;
 
-            // 過去の例外を保持しつつ、指定された日付以降の例外に `status: 'deleted'` ���設定
+            // 過去の例外を保持しつつ、指定された日付以降の例外に `status: 'deleted'` 設定
             newExceptions = Object.keys(taskToDelete.exceptions || {})
               .filter(date => date >= currentDate)
               .reduce((acc, date) => ({
@@ -608,15 +608,19 @@ export function TaskManagementApp() {
         .update({ scheduled_date: null })
         .eq('id', taskId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to unassign task from date:', error)
+        toast.error('Failed to unassign task from date.')
+        return
+      }
 
       setTasks(prevTasks =>
         prevTasks.map(t => t.id === taskId ? { ...t, scheduledDate: null } : t)
       )
-      toast.success('Task unscheduled successfully')
+      toast.success('Task scheduled date removed.')
     } catch (error) {
-      console.error('Failed to unschedule task:', error)
-      toast.error('Failed to unschedule task.')
+      console.error('Failed to unassign task from date:', error)
+      toast.error('Failed to unassign task from date.')
     }
   }
 
@@ -803,7 +807,8 @@ export function TaskManagementApp() {
               toggleStatus={toggleTaskStatus}
               toggleStar={toggleTaskStar}
               onEdit={setEditingTask}
-              isDraggable={false}
+              isDraggable={true}
+              onDragEnd={handleDragEnd}
               deleteTask={deleteTask}
               showExecutedTasks={showExecutedTasksList}
               executedTasks={executedTodayTasks}
@@ -813,6 +818,7 @@ export function TaskManagementApp() {
               updateTaskTitle={updateTaskTitleHandler}
               addLabel={addLabel}
               deleteLabel={deleteLabel}
+              unassignFromDate={unassignTaskFromDate}
             />
           </TabContent>
         </TabsContent>
@@ -861,8 +867,8 @@ export function TaskManagementApp() {
                     deleteTask={deleteTask}
                     onDragEnd={handleDragEnd}
                     assignTaskToDate={assignTaskToDate}
-                    unassignTaskFromDate={unassignTaskFromDate}
-                    setTaskToSchedule={setTaskToSchedule}
+                    unassignFromDate={unassignTaskFromDate}
+                    setTaskToSchedule={setTaskToScheduleHandler}
                     schedulingTaskId={schedulingTask?.id}
                     labels={labels}
                     setLabels={setLabels}
@@ -898,8 +904,8 @@ export function TaskManagementApp() {
                     deleteTask={deleteTask}
                     onDragEnd={handleDragEnd}
                     assignTaskToDate={assignTaskToDate}
-                    unassignTaskFromDate={unassignTaskFromDate}
-                    setTaskToSchedule={setTaskToSchedule}
+                    unassignFromDate={unassignTaskFromDate}
+                    setTaskToSchedule={setTaskToScheduleHandler}
                     schedulingTaskId={schedulingTask?.id}
                     labels={labels}
                     setLabels={setLabels}
