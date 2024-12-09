@@ -89,8 +89,8 @@ export function TaskManagementApp() {
   // Add Task
   const addTask = async (taskData: any) => {
     if (!userId) {
-      console.warn('ユーザーIDが取得できませんでした。');
-      toast.error('ユーザーが認証されていません。');
+      console.warn('User ID not found.');
+      toast.error('User not authenticated.');
       return;
     }
 
@@ -107,7 +107,7 @@ export function TaskManagementApp() {
           .single();
 
         if (labelError) {
-          console.error('ラベルの追加に失敗しました:', labelError);
+          console.error('Failed to add label:', labelError);
           toast.error(`Failed to add label: ${labelError.message}`);
           return;
         }
@@ -138,7 +138,7 @@ export function TaskManagementApp() {
         .single();
 
       if (error) {
-        console.error('Supabaseからのエラー:', error);
+        console.error('Supabase error:', error);
         throw error;
       }
 
@@ -159,7 +159,7 @@ export function TaskManagementApp() {
       setTasks(prevTasks => [newTask, ...prevTasks])
       toast.success('Task added successfully')
     } catch (error: any) {
-      console.error('タスクの追加に失敗しました:', error)
+      console.error('Failed to add task:', error)
       toast.error(`Failed to add task: ${error.message}`)
     }
   }
@@ -167,7 +167,7 @@ export function TaskManagementApp() {
   // Update Task
   const updateTask = async (updatedTask: Task) => {
     if (!userId) {
-      toast.error('ユーザーが認証されていません。')
+      toast.error('User not authenticated.')
       return
     }
 
@@ -193,7 +193,7 @@ export function TaskManagementApp() {
             .single();
 
           if (labelError) {
-            console.error('ラベルの追加に失敗しました:', labelError);
+            console.error('Failed to add label:', labelError);
             toast.error(`Failed to add label: ${labelError.message}`);
             return;
           }
@@ -221,7 +221,7 @@ export function TaskManagementApp() {
 
         if (hasChangesOtherThanMemo || updatedTask.memo !== parentTask.memo) {
           // メモ以外の変更がある場合、またはメモが変更されていてすべてに適用する場合
-          if (hasChangesOtherThanMemo || window.confirm('変更をすべての繰り返しタスクに適用しますか？')) {
+          if (hasChangesOtherThanMemo || window.confirm('Apply changes to all recurring tasks?')) {
             const { data: parentData, error: parentError } = await supabase
               .from('tasks')
               .update({
@@ -496,7 +496,7 @@ export function TaskManagementApp() {
   // Delete Task
   const deleteTask = async (taskId: string, deleteType?: 'single' | 'all' | 'future') => {
     if (!userId) {
-      toast.error('ユーザーが認証されていません。');
+      toast.error('User not authenticated.');
       return;
     }
 

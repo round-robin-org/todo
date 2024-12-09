@@ -46,12 +46,12 @@ export function Auth() {
       <Image src="/favicon.ico" alt="Favicon" width={64} height={64} />
       <Card className="w-96">
         <CardHeader className="text-center">
-          <CardTitle>ようこそ</CardTitle>
-          <CardDescription>サインインまたはサインアップを選択してください。</CardDescription>
+          <CardTitle>Welcome</CardTitle>
+          <CardDescription>Please sign in or sign up.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col space-y-4">
           <Button onClick={handleSignIn} disabled={loading}>
-            {loading ? "サインイン中..." : "Googleでサインイン"}
+            {loading ? "Signing in..." : "Sign in with Google"}
           </Button>
           {error && <p className="text-red-500">{error}</p>}
         </CardContent>

@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@src/components/ui/radio-group"
 import { format, getDay, getDate, getDaysInMonth } from 'date-fns'
 import { Task } from '../../lib/types'
 import { Trash2 } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@src/components/ui/dropdown-menu"
 
 type TaskFormProps = {
   initialTask?: Task;
@@ -21,6 +22,7 @@ type TaskFormProps = {
   showUnplannedTasks: boolean;
   allowSelectDate?: boolean;
   deleteLabel: (label: string) => void;
+  isEdit: boolean;
 }
 
 export function TaskForm({ 
@@ -32,7 +34,8 @@ export function TaskForm({
   selectedDate, 
   showUnplannedTasks, 
   allowSelectDate = false, 
-  deleteLabel
+  deleteLabel,
+  isEdit
 }: TaskFormProps) {
   // Helper Function (moved to the top)
   const getNthWeek = (date: Date | null): 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' => {
@@ -189,14 +192,14 @@ export function TaskForm({
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // バリデーション
+    // Validation
     if (showRoutine) {
       if (routineEndsType === 'on' && routineEndsValue && routineStarts > routineEndsValue) {
-        alert('終了日は開始日より後である必要があります。');
+        alert('End date must be after start date.');
         return;
       }
       if (routineEndsType === 'after' && (!routineEndsValue || parseInt(routineEndsValue) <= 0)) {
-        alert('発生回数は正の数である必要があります。');
+        alert('Number of occurrences must be a positive number.');
         return;
       }
     }
@@ -220,7 +223,7 @@ export function TaskForm({
         }
       : null;
 
-    const taskData = {
+    const formData = {
       title,
       memo,
       status: initialTask?.status || 'planned',
@@ -231,7 +234,7 @@ export function TaskForm({
       newLabel: selectedLabel === 'new' ? newLabel : undefined,
     };
 
-    onSubmit(taskData);
+    onSubmit(formData);
   };
 
   return (
@@ -497,7 +500,9 @@ export function TaskForm({
         </div>
       )}
 
-      <Button type="submit">{initialTask ? 'Update Task' : 'Add Task'}</Button>
+      {(!initialTask?.isRecurring || !isEdit) && (
+        <Button type="submit">{initialTask ? 'Update Task' : 'Add Task'}</Button>
+      )}
     </form>
   )
 }

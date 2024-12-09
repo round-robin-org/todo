@@ -82,14 +82,14 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   return (
     <li
       {...handlers}
-      className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center justify-between ${
+      className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center ${
         task.isScheduling 
           ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 space-x-2'
           : 'border-transparent'
       }`}
       onClick={handleClick}
     >
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 flex-1">
         <Checkbox 
           checked={isExecuted ? true : task.status === "executed"}
           onCheckedChange={() => toggleStatus(task.id)}
@@ -108,7 +108,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
         </div>
         <span className="text-gray-500 text-sm block">{task.memo}</span>
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 min-w-fit">
         <Badge>{task.label}</Badge>
         <Button
           variant="ghost"
@@ -121,42 +121,41 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
         >
           <Star className={task.starred ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
         </Button>
+        {showDelete && (
+          task.routine || task.parentTaskId ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={(e) => handleDelete(e, 'single')}>
+                  Delete This Task
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => handleDelete(e, 'future')}>
+                  Delete Future Tasks
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => handleDelete(e, 'all')}>
+                  Delete All Recurring Tasks
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={(e) => handleDelete(e)}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          )
+        )}
       </div>
-      {showDelete && (
-        task.routine || task.parentTaskId ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Trash className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={(e) => handleDelete(e, 'single')}>
-                この予定のみ削除
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => handleDelete(e, 'future')}>
-                この予定以降を削除
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => handleDelete(e, 'all')}>
-                すべての繰り返しを削除
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button
-            variant="destructive"
-            size="sm"
-            className="absolute right-2"
-            onClick={(e) => handleDelete(e)}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
-        )
-      )}
     </li>
   )
 }

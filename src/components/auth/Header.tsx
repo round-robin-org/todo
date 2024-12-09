@@ -35,7 +35,7 @@ export function Header() {
             onClick={() => router.push('/auth/signin')}
             className="mr-2 px-4 py-2 bg-red-500 text-white rounded"
           >
-            Googleでサインイン
+            Sign In with Google
           </Button>
         )}
       </div>
