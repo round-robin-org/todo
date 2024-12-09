@@ -95,13 +95,38 @@ export function TaskManagementApp() {
     }
 
     try {
+      // 新しいラベルの処理を dbTaskData 作成前に移動
+      let finalLabel = taskData.label;
+
+      // 新しいラベルの場合は、まず labels テーブルに追加
+      if (taskData.label === 'new' && taskData.newLabel) {
+        const { data: labelData, error: labelError } = await supabase
+          .from('labels')
+          .insert({ name: taskData.newLabel, user_id: userId })
+          .select()
+          .single();
+
+        if (labelError) {
+          console.error('ラベルの追加に失敗しました:', labelError);
+          toast.error(`Failed to add label: ${labelError.message}`);
+          return;
+        }
+
+        // 新しいラベル名を使用
+        finalLabel = taskData.newLabel;
+        
+        // ローカルのラベルリストを更新
+        setLabels(prev => [...prev, taskData.newLabel]);
+      }
+
+      // dbTaskData の作成を新しいラベル処理の後に移動
       const dbTaskData = {
         title: taskData.title,
         memo: taskData.memo,
         status: taskData.status,
         starred: taskData.starred,
         scheduled_date: taskData.scheduledDate,
-        label: taskData.label,
+        label: finalLabel === 'none' ? null : finalLabel,
         routine: taskData.routine,
         user_id: userId
       };
@@ -149,7 +174,36 @@ export function TaskManagementApp() {
     try {
       console.log('Updating task with data:', updatedTask);
 
-      // 繰り返しタスクの処理
+      let finalLabel = updatedTask.label;
+
+      // 新しいラベルの処理を先に行う
+      if (updatedTask.label === 'test2') {  // 新しいラベルの場合
+        const { data: existingLabel, error: checkError } = await supabase
+          .from('labels')
+          .select('name')
+          .eq('name', updatedTask.label)
+          .single();
+
+        if (!existingLabel) {
+          // ラベルが存在しない場合は追加
+          const { data: labelData, error: labelError } = await supabase
+            .from('labels')
+            .insert({ name: updatedTask.label, user_id: userId })
+            .select()
+            .single();
+
+          if (labelError) {
+            console.error('ラベルの追加に失敗しました:', labelError);
+            toast.error(`Failed to add label: ${labelError.message}`);
+            return;
+          }
+
+          // ローカルのラベルリストを更新
+          setLabels(prev => [...prev, updatedTask.label]);
+        }
+      }
+
+      // タスクの更新処理
       if (updatedTask.isRecurring) {
         const parentTaskId = updatedTask.originalId;
         const parentTask = tasks.find(t => t.id === parentTaskId);
@@ -284,7 +338,7 @@ export function TaskManagementApp() {
             status: updatedTask.status,
             starred: updatedTask.starred,
             scheduled_date: updatedTask.scheduledDate,
-            label: updatedTask.label === 'none' ? null : updatedTask.label,
+            label: finalLabel === 'none' ? null : finalLabel,
             routine: updatedTask.routine || null,
             user_id: userId
           })
@@ -295,7 +349,7 @@ export function TaskManagementApp() {
         if (error) throw error;
 
         setTasks(prevTasks =>
-          prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t)
+          prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask, label: finalLabel } : t)
         );
       }
 

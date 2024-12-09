@@ -44,6 +44,18 @@ export function TaskDialog({
     if (isEdit && taskToEdit) {
       const { updateType, ...data } = taskData;
       
+      if (data.label === 'new' && taskData.newLabel) {
+        data.label = taskData.newLabel;
+      }
+      
+      const updatedTaskData = {
+        ...taskToEdit,
+        ...data,
+        newLabel: taskData.newLabel,
+        parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+        updateType: taskToEdit.isRecurring ? updateType : undefined
+      };
+      
       if (taskToEdit.isRecurring) {
         const hasChangesOtherThanMemo =
           data.title !== taskToEdit.title ||
@@ -55,6 +67,7 @@ export function TaskDialog({
             updateTask({
               ...taskToEdit,
               ...data,
+              newLabel: taskData.newLabel,
               parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
               updateType: 'global'
             });
@@ -62,6 +75,7 @@ export function TaskDialog({
             updateTask({
               ...taskToEdit,
               ...data,
+              newLabel: taskData.newLabel,
               parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
               updateType: 'local'
             });
@@ -71,6 +85,7 @@ export function TaskDialog({
             updateTask({
               ...taskToEdit,
               ...data,
+              newLabel: taskData.newLabel,
               parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
               updateType: 'global'
             });
@@ -78,6 +93,7 @@ export function TaskDialog({
             updateTask({
               ...taskToEdit,
               ...data,
+              newLabel: taskData.newLabel,
               parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
               updateType: 'local'
             });
@@ -86,15 +102,16 @@ export function TaskDialog({
           updateTask({
             ...taskToEdit,
             ...data,
+            newLabel: taskData.newLabel,
             parentTaskId: taskToEdit.parentTaskId || taskToEdit.id
           });
         }
       } else {
-        updateTask({ ...taskToEdit, ...data });
+        updateTask({ ...taskToEdit, ...data, newLabel: taskData.newLabel });
       }
       toast.success('Task updated successfully.');
     } else {
-      addTask(taskData);
+      addTask({ ...taskData, newLabel: taskData.newLabel });
       toast.success('Task added successfully.');
     }
     

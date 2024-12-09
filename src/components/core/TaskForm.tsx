@@ -226,8 +226,9 @@ export function TaskForm({
       status: initialTask?.status || 'planned',
       starred: initialTask?.starred || false,
       scheduledDate: scheduledDate || null,
-      label: selectedLabel,
-      routine
+      label: selectedLabel === 'none' ? null : selectedLabel,
+      routine,
+      newLabel: selectedLabel === 'new' ? newLabel : undefined,
     };
 
     onSubmit(taskData);
