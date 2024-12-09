@@ -44,29 +44,49 @@ export function TaskDialog({
     if (isEdit && taskToEdit) {
       const { updateType, ...data } = taskData;
       
-      if (taskToEdit.routine) {
-        if (data.memo !== taskToEdit.memo && window.confirm('メモをすべての繰り返しタスクに適用しますか？')) {
-          updateTask({ 
-            ...taskToEdit, 
-            ...data,
-            parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
-          });
+      if (taskToEdit.isRecurring) {
+        const hasChangesOtherThanMemo =
+          data.title !== taskToEdit.title ||
+          data.label !== taskToEdit.label ||
+          JSON.stringify(data.routine) !== JSON.stringify(taskToEdit.routine);
+        
+        if (hasChangesOtherThanMemo) {
+          if (window.confirm('この変更をすべての繰り返しタスクに適用しますか？')) {
+            updateTask({
+              ...taskToEdit,
+              ...data,
+              parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+              updateType: 'global'
+            });
+          } else {
+            updateTask({
+              ...taskToEdit,
+              ...data,
+              parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+              updateType: 'local'
+            });
+          }
+        } else if (data.memo !== taskToEdit.memo) {
+          if (window.confirm('メモをすべての繰り返しタスクに適用しますか？')) {
+            updateTask({
+              ...taskToEdit,
+              ...data,
+              parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+              updateType: 'global'
+            });
+          } else {
+            updateTask({
+              ...taskToEdit,
+              ...data,
+              parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+              updateType: 'local'
+            });
+          }
         } else {
-          updateTask({ 
-            ...taskToEdit, 
+          updateTask({
+            ...taskToEdit,
             ...data,
-            parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
-            exceptions: {
-              ...(taskToEdit.exceptions || {}),
-              [taskToEdit.scheduledDate]: {
-                status: data.status,
-                starred: data.starred,
-                memo: data.memo,
-                scheduled_date: data.scheduledDate,
-                label: data.label,
-                title: data.title
-              }
-            },
+            parentTaskId: taskToEdit.parentTaskId || taskToEdit.id
           });
         }
       } else {

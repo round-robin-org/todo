@@ -113,7 +113,7 @@ export function TaskManagementApp() {
         .single();
 
       if (error) {
-        console.error('Supabaseからのエ���ー:', error);
+        console.error('Supabaseからのエラー:', error);
         throw error;
       }
 
@@ -127,6 +127,7 @@ export function TaskManagementApp() {
         label: data.label || null,
         routine: data.routine || null,
         parentTaskId: null,
+        exceptions: {}
       }
 
       console.log('新しいタスクをステートに追加:', newTask);
@@ -149,54 +150,96 @@ export function TaskManagementApp() {
       console.log('Updating task with data:', updatedTask);
 
       // 繰り返しタスクの処理
-      if (updatedTask.parentTaskId) {
-        const parentTaskId = updatedTask.parentTaskId;
-        const parentTask = tasks.find(t => t.id === parentTaskId || t.parentTaskId === parentTaskId);
+      if (updatedTask.isRecurring) {
+        const parentTaskId = updatedTask.originalId;
+        const parentTask = tasks.find(t => t.id === parentTaskId);
 
         if (!parentTask) throw new Error('Parent task not found');
 
         const exceptionDate = updatedTask.scheduledDate;
         if (!exceptionDate) throw new Error('Scheduled date is required for recurring task update');
 
-        // メモ以外の変更、またはメモもすべてに適用する場合はグローバルな変更
-        if (updatedTask.memo === parentTask.memo || window.confirm('メモをすべての繰り返しタスクに適用しますか？')) {
-          const { data: parentData, error: parentError } = await supabase
-            .from('tasks')
-            .update({
-              title: updatedTask.title,
-              label: updatedTask.label,
-              routine: updatedTask.routine,
-              memo: updatedTask.memo,
-              exceptions: updatedTask.routine ? {} : parentTask.exceptions, // ルール変更時はexceptionsをクリア
-              user_id: userId
-            })
-            .eq('id', parentTaskId)
-            .eq('user_id', userId)
-            .select();
+        // メモ以外の変更があるか確認
+        const hasChangesOtherThanMemo =
+          updatedTask.title !== parentTask.title ||
+          updatedTask.label !== parentTask.label ||
+          JSON.stringify(updatedTask.routine) !== JSON.stringify(parentTask.routine);
+
+        if (hasChangesOtherThanMemo || updatedTask.memo !== parentTask.memo) {
+          // メモ以外の変更がある場合、またはメモが変更されていてすべてに適用する場合
+          if (hasChangesOtherThanMemo || window.confirm('変更をすべての繰り返しタスクに適用しますか？')) {
+            const { data: parentData, error: parentError } = await supabase
+              .from('tasks')
+              .update({
+                title: updatedTask.title,
+                label: updatedTask.label,
+                routine: updatedTask.routine,
+                memo: updatedTask.memo,
+                exceptions: updatedTask.routine ? {} : parentTask.exceptions, // ルール変更時はexceptionsをクリア
+                user_id: userId
+              })
+              .eq('id', parentTaskId)
+              .eq('user_id', userId)
+              .select();
 
           if (parentError) throw parentError;
 
-          // 状態を更新
-          setTasks(prevTasks =>
-            prevTasks.map(t =>
-              t.parentTaskId === parentTaskId
-                ? {
-                    ...t,
-                    title: updatedTask.title,
-                    label: updatedTask.label,
-                    routine: updatedTask.routine,
-                    memo: updatedTask.memo,
-                    exceptions: updatedTask.routine ? {} : parentTask.exceptions
-                  }
-                : t
-            )
-          );
+            // 状態を更新
+            setTasks(prevTasks =>
+              prevTasks.map(t =>
+                t.originalId === parentTaskId
+                  ? {
+                      ...t,
+                      title: updatedTask.title,
+                      label: updatedTask.label,
+                      routine: updatedTask.routine,
+                      memo: updatedTask.memo,
+                      exceptions: updatedTask.routine ? {} : parentTask.exceptions
+                    }
+                  : t
+              )
+            );
+          } else {
+            // メモだけが変更された場合、個別に適用
+            const newExceptions = {
+              ...parentTask.exceptions,
+              [exceptionDate]: {
+                ...parentTask.exceptions?.[exceptionDate],
+                memo: updatedTask.memo,
+              }
+            };
 
+            const { data: parentData, error: parentError } = await supabase
+              .from('tasks')
+              .update({
+                exceptions: newExceptions,
+                user_id: userId
+              })
+              .eq('id', parentTaskId)
+              .eq('user_id', userId)
+              .select();
+
+            if (parentError) throw parentError;
+
+            // 状態を更新
+            setTasks(prevTasks =>
+              prevTasks.map(t =>
+                t.id === updatedTask.id
+                  ? {
+                      ...t,
+                      memo: updatedTask.memo,
+                      exceptions: newExceptions
+                    }
+                  : t
+              )
+            );
+          }
         } else {
-          // ローカルな変更の場合
+          // ローカルな変更の場合（例外の更新）
           const newExceptions = {
             ...parentTask.exceptions,
             [exceptionDate]: {
+              ...parentTask.exceptions?.[exceptionDate],
               status: updatedTask.status,
               starred: updatedTask.starred,
               memo: updatedTask.memo,
@@ -221,7 +264,7 @@ export function TaskManagementApp() {
           // 状態を更新
           setTasks(prevTasks =>
             prevTasks.map(t =>
-              t.parentTaskId === parentTaskId && t.scheduledDate === updatedTask.scheduledDate
+              t.id === updatedTask.id
                 ? {
                     ...t,
                     ...updatedTask,
@@ -241,7 +284,7 @@ export function TaskManagementApp() {
             status: updatedTask.status,
             starred: updatedTask.starred,
             scheduled_date: updatedTask.scheduledDate,
-            label: updatedTask.label || null,
+            label: updatedTask.label === 'none' ? null : updatedTask.label,
             routine: updatedTask.routine || null,
             user_id: userId
           })
@@ -252,7 +295,7 @@ export function TaskManagementApp() {
         if (error) throw error;
 
         setTasks(prevTasks =>
-          prevTasks.map(t => t.id === updatedTask.id ? updatedTask : t)
+          prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t)
         );
       }
 
@@ -405,9 +448,10 @@ export function TaskManagementApp() {
       if (!taskToDelete) throw new Error('Task not found');
 
       // 繰り返しタスクの削除
-      if (taskToDelete.parentTaskId || taskToDelete.routine) {
-        const parentId = taskToDelete.parentTaskId || taskToDelete.id; // 親タスクIDを取得
+      if (taskToDelete.isRecurring) {
+        const parentId = taskToDelete.originalId;
         const currentDate = taskToDelete.scheduledDate;
+        let newExceptions = taskToDelete.exceptions || {};
 
         switch (deleteType) {
           case 'all':
@@ -421,94 +465,74 @@ export function TaskManagementApp() {
             if (deleteError) throw deleteError;
 
             setTasks(prevTasks => 
-              prevTasks.filter(t => t.parentTaskId !== parentId && t.id !== parentId)
+              prevTasks.filter(t => t.originalId !== parentId && t.id !== parentId)
             );
             break;
 
           case 'future':
             // このタスク以降を削除
             if (!currentDate) throw new Error('Scheduled date is required');
-
-            const parentTask = tasks.find(t => t.id === parentId);
-            if (!parentTask?.routine) throw new Error('Parent task not found');
-
-            const { data: updateData, error: updateError } = await supabase
+            const { error: updateError } = await supabase
               .from('tasks')
               .update({
                 routine: {
-                  ...parentTask.routine,
+                  ...taskToDelete.routine,
                   ends: {
                     type: 'on',
                     value: currentDate
                   }
-                },
-                exceptions: {
-                  ...parentTask.exceptions,
-                  [currentDate]: {
-                    ...parentTask.exceptions?.[currentDate],
-                    status: 'deleted'
-                  }
                 }
               })
               .eq('id', parentId)
-              .eq('user_id', userId)
-              .select();
+              .eq('user_id', userId);
 
             if (updateError) throw updateError;
 
-            setTasks(prevTasks =>
-              prevTasks.map(t => 
-                t.id === parentId
-                ? {
-                  ...t,
-                  routine: {
-                    ...t.routine,
-                    ends: {
-                      type: 'on',
-                      value: currentDate
-                    }
-                  },
-                  exceptions: {
-                    ...t.exceptions,
-                    [currentDate]: {
-                      ...t.exceptions?.[currentDate],
-                      status: 'deleted'
-                    }
-                  }
+            // 過去の例外を保持しつつ、指定された日付以降の例外に `status: 'deleted'` を設定
+            newExceptions = Object.keys(taskToDelete.exceptions || {})
+              .filter(date => date >= currentDate)
+              .reduce((acc, date) => ({
+                ...acc,
+                [date]: {
+                  ...taskToDelete.exceptions![date],
+                  status: 'deleted'
                 }
-                : t
-              ).filter(t => 
-                t.parentTaskId !== parentId || 
-                (t.scheduledDate && t.scheduledDate < currentDate)
+              }), taskToDelete.exceptions || {});
+
+            setTasks(prevTasks =>
+              prevTasks.map(t =>
+                t.id === parentId
+                  ? { ...t, routine: { ...t.routine, ends: { type: 'on', value: currentDate } }, exceptions: newExceptions }
+                  : t
               )
             );
             break;
 
           case 'single':
-          default:
             // このタスクのみ削除
             if (!currentDate) throw new Error('Scheduled date is required');
-
-            const newExceptions = {
-              ...(taskToDelete.exceptions || {}),
+            newExceptions = {
+              ...taskToDelete.exceptions || {},
               [currentDate]: {
+                ...taskToDelete.exceptions?.[currentDate],
                 status: 'deleted'
               }
             };
 
-            const { data, error } = await supabase
+            const { error } = await supabase
               .from('tasks')
-              .update({
-                exceptions: newExceptions
-              })
+              .update({ exceptions: newExceptions })
               .eq('id', parentId)
-              .eq('user_id', userId)
-              .select();
+              .eq('user_id', userId);
 
             if (error) throw error;
 
             setTasks(prevTasks =>
-              prevTasks.filter(t => !(t.parentTaskId === parentId && t.scheduledDate === currentDate))
+              prevTasks.map(t =>
+                t.id === parentId
+                  ? { ...t, exceptions: newExceptions }
+                  : t
+              ).filter(t => t.id !== taskId)
             );
             break;
         }

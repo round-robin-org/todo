@@ -50,35 +50,43 @@ export function TaskForm({
   const [newLabel, setNewLabel] = useState('');
   const [title, setTitle] = useState(initialTask?.title || '');
   const [memo, setMemo] = useState(initialTask?.memo || '');
-  const [scheduledDate, setScheduledDate] = useState<string>(
-    initialTask?.scheduledDate || ''
+  const [scheduledDate, setScheduledDate] = useState(
+    initialTask?.scheduledDate || (allowSelectDate && selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '')
   );
   const [showRoutine, setShowRoutine] = useState(!!initialTask?.routine);
 
   const [intervalNumber, setIntervalNumber] = useState(initialTask?.routine?.interval.number || 1);
-  const [intervalUnit, setIntervalUnit] = useState(initialTask?.routine?.interval.unit || 'day');
+  const [intervalUnit, setIntervalUnit] = useState< 'day' | 'week' | 'month' | 'year' > (
+    initialTask?.routine?.interval.unit || 'day'
+  );
   
-  const [routineStarts, setRoutineStarts] = useState<string>(
+  const [routineStarts, setRoutineStarts] = useState(
     initialTask?.routine?.starts || (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'))
   );
   const [routineEndsType, setRoutineEndsType] = useState(initialTask?.routine?.ends.type || 'never');
-  const [routineEndsValue, setRoutineEndsValue] = useState(initialTask?.routine?.ends.value || '');
+  const [routineEndsValue, setRoutineEndsValue] = useState(
+    (initialTask && initialTask.routine && initialTask.routine.ends.type === 'on')
+      ? initialTask.routine.ends.value.toString()
+      : (initialTask && initialTask.routine && initialTask.routine.ends.type === 'after')
+      ? initialTask.routine.ends.value.toString()
+      : ''
+  );
 
   // Week Interval
-  const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>(initialTask?.routine?.weekDays || []);
+  const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>(
+    (initialTask && initialTask.routine && initialTask.routine.weekDays) || []
+  );
 
   // Month Interval
-  const [monthOption, setMonthOption] = useState<'day' | 'weekday'>(
-    initialTask?.routine?.monthOption || 'day'
+  const [monthOption, setMonthOption] = useState(initialTask?.routine?.monthOption || 'day');
+  const [selectedMonthDay, setSelectedMonthDay] = useState(
+    initialTask?.routine?.monthDay || (selectedDate ? getDate(selectedDate).toString() : '1')
   );
-  const [selectedMonthDay, setSelectedMonthDay] = useState<string>(
-    initialTask?.routine?.monthDay || (selectedDate ? format(selectedDate, 'd') : '1')
-  );
-  const [selectedMonthWeek, setSelectedMonthWeek] = useState<'First' | 'Second' | 'Third' | 'Fourth' | 'Last'>(
+  const [selectedMonthWeek, setSelectedMonthWeek] = useState< 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' > (
     initialTask?.routine?.monthWeek || getNthWeek(selectedDate)
   );
-  const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState<'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat'>(
-    initialTask?.routine?.monthWeekDay || (selectedDate ? format(selectedDate, 'eee') : 'Mon')
+  const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState(
+    initialTask?.routine?.monthWeekDay || (selectedDate ? format(selectedDate, 'EEE') : 'Sun')
   );
 
   useEffect(() => {
@@ -178,46 +186,51 @@ export function TaskForm({
     });
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // バリデーション
+    if (showRoutine) {
+      if (routineEndsType === 'on' && routineEndsValue && routineStarts > routineEndsValue) {
+        alert('終了日は開始日より後である必要があります。');
+        return;
+      }
+      if (routineEndsType === 'after' && (!routineEndsValue || parseInt(routineEndsValue) <= 0)) {
+        alert('発生回数は正の数である必要があります。');
+        return;
+      }
+    }
+
+    const routine = showRoutine
+      ? {
+          interval: {
+            number: intervalNumber,
+            unit: intervalUnit
+          },
+          starts: routineStarts,
+          ends: {
+            type: routineEndsType,
+            value: routineEndsValue
+          },
+          weekDays: intervalUnit === 'week' ? selectedWeekDays : undefined,
+          monthOption: intervalUnit === 'month' ? monthOption : undefined,
+          monthDay: monthOption === 'day' ? selectedMonthDay : undefined,
+          monthWeek: monthOption === 'weekday' ? selectedMonthWeek : undefined,
+          monthWeekDay: monthOption === 'weekday' ? selectedMonthWeekDay : undefined
+        }
+      : null;
 
     const taskData = {
       title,
       memo,
-      status: 'planned' as const,
+      status: initialTask?.status || 'planned',
       starred: initialTask?.starred || false,
-      scheduledDate: showRoutine ? null : (scheduledDate || null),
-      label: selectedLabel === 'none' ? null : selectedLabel === 'new' ? newLabel : selectedLabel,
-      routine: showRoutine ? {
-        interval: {
-          number: Number(intervalNumber),
-          unit: intervalUnit
-        },
-        starts: routineStarts,
-        ends: {
-          type: routineEndsType,
-          value: routineEndsType === 'after' ? Number(routineEndsValue) : routineEndsValue
-        },
-        ...(intervalUnit === 'week' && { weekDays: selectedWeekDays }),
-        ...(intervalUnit === 'month' && {
-          monthOption,
-          ...(monthOption === 'day' ? { monthDay: selectedMonthDay } : {
-            monthWeek: selectedMonthWeek,
-            monthWeekDay: selectedMonthWeekDay
-          })
-        })
-      } : null,
+      scheduledDate: scheduledDate || null,
+      label: selectedLabel,
+      routine
     };
 
-    if (initialTask?.routine && memo !== initialTask.memo) {
-      if (window.confirm('メモをすべての繰り返しタスクに適用しますか？')) {
-        onSubmit({ ...taskData, updateType: 'global' });
-      } else {
-        onSubmit({ ...taskData, updateType: 'local' });
-      }
-    } else {
-      onSubmit(taskData);
-    }
+    onSubmit(taskData);
   };
 
   return (
@@ -429,7 +442,7 @@ export function TaskForm({
           )}
 
           <div className="grid w-full gap-1.5">
-            <Label htmlFor="routineStarts">Start Date</Label>
+            <Label htmlFor="routineStarts">Starts</Label>
             <Input 
               id="routineStarts" 
               name="routineStarts" 
