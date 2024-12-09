@@ -177,7 +177,7 @@ export function TaskManagementApp() {
       let finalLabel = updatedTask.label;
 
       // 新しいラベルの処理を先に行う
-      if (updatedTask.label === 'test2') {  // 新しいラベルの場合
+      if (updatedTask.label && !labels.includes(updatedTask.label)) {  // ラベルが存在しない場合
         const { data: existingLabel, error: checkError } = await supabase
           .from('labels')
           .select('name')
