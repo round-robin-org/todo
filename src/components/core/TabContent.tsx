@@ -3,19 +3,10 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
 import { TaskDialog } from '@src/components/core/TaskDialog'
+import { LabelManagement } from '@src/components/core/LabelManagement'
 import { Task } from '@src/lib/types'
 import { Button } from "@src/components/ui/button"
 import { Eye, EyeOff } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@src/components/ui/dialog"
-import { Input } from "@src/components/ui/input"
-import { Trash2 } from 'lucide-react'
 
 type TabContentProps = {
   title: string;
@@ -50,22 +41,6 @@ export function TabContent({
   allowSelectDate = false,
   isToday,
 }: TabContentProps) {
-  const [isManageLabelsOpen, setIsManageLabelsOpen] = useState(false)
-  const [newLabel, setNewLabel] = useState('')
-
-  const handleAddLabel = () => {
-    if (newLabel.trim() !== '') {
-      addLabel(newLabel.trim())
-      setNewLabel('')
-    }
-  }
-
-  const handleDeleteLabel = (label: string) => {
-    if (window.confirm(`Are you sure you want to delete the label "${label}"?`)) {
-      deleteLabel(label)
-    }
-  }
-
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:justify-between md:items-start">
@@ -82,9 +57,14 @@ export function TabContent({
               className="flex items-center"
             >
               {showExecutedTasks ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-              {showExecutedTasks ? "Hide Executed Tasks" : "Show Executed Tasks"}
+              {showExecutedTasks ? "実行済みタスクを非表示" : "実行済みタスクを表示"}
             </Button>
           )}
+          <LabelManagement 
+            labels={labels}
+            addLabel={addLabel}
+            deleteLabel={deleteLabel}
+          />
           <TaskDialog 
             labels={labels}
             addTask={addTask}
@@ -95,46 +75,6 @@ export function TabContent({
             showUnplannedTasks={showUnplannedTasks}
             allowSelectDate={allowSelectDate}
           />
-          <Dialog open={isManageLabelsOpen} onOpenChange={setIsManageLabelsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="secondary" size="sm">
-                Manage Labels
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Manage Labels</DialogTitle>
-                <DialogDescription>
-                  Add or remove labels.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4">
-                <div className="flex space-x-2">
-                  <Input 
-                    value={newLabel}
-                    onChange={(e) => setNewLabel(e.target.value)}
-                    placeholder="New label name"
-                  />
-                  <Button onClick={handleAddLabel}>Add</Button>
-                </div>
-                <ul className="space-y-2">
-                  {labels.map(label => (
-                    <li key={label} className="flex items-center justify-between">
-                      <span>{label}</span>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={() => handleDeleteLabel(label)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </li>
-                  ))}
-                  {labels.length === 0 && <li>No labels.</li>}
-                </ul>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </CardHeader>
       <CardContent>
