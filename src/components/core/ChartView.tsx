@@ -37,8 +37,49 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 // Define aggregation periods
 type AggregationPeriod = 'day' | 'week' | 'month' | 'year'
 
+// Calculate date range
+const calculateChartDateRange = (period: AggregationPeriod, offset: number) => {
+  let start: Date
+  let end: Date
+
+  if (period === 'day') {
+    // For daily aggregation, set start and end to the same day
+    const today = new Date()
+    start = addDays(today, offset)
+    end = addDays(today, offset)
+  } else if (period === 'week') {
+    // For weekly aggregation, display the specified week
+    const currentWeekStart = startOfWeek(new Date(), { locale: ja })
+    const adjustedWeekStart = addWeeks(currentWeekStart, offset)
+    start = adjustedWeekStart
+    end = endOfWeek(adjustedWeekStart, { locale: ja })
+  } else if (period === 'month') {
+    // For monthly aggregation, display the specified month (including dates of previous and next months)
+    const currentMonthStart = startOfMonth(new Date())
+    const adjustedMonthStart = addMonths(currentMonthStart, offset)
+    start = startOfWeek(adjustedMonthStart, { locale: ja }) // Start of the week containing the start of the month
+    end = endOfWeek(endOfMonth(adjustedMonthStart), { locale: ja }) // End of the week containing the end of the month
+  } else if (period === 'year') {
+    // For yearly aggregation, display the entire year (January to December)
+    const currentYearStart = startOfYear(new Date())
+    const adjustedYearStart = addYears(currentYearStart, offset)
+    start = startOfMonth(adjustedYearStart) // Start of the first month of the year
+    end = endOfYear(adjustedYearStart) // End of the last month of the year
+  } else {
+    // Default to the current week
+    start = startOfWeek(new Date(), { locale: ja })
+    end = endOfWeek(start, { locale: ja })
+  }
+
+  return { start, end }
+}
+
 interface ChartViewProps {
   tasks: Task[]
+  aggregationPeriod: 'day' | 'week' | 'month' | 'year'
+  navigationOffset: number
+  setAggregationPeriod: React.Dispatch<React.SetStateAction<'day' | 'week' | 'month' | 'year'>>
+  setNavigationOffset: React.Dispatch<React.SetStateAction<number>>
 }
 
 interface TaskData {
@@ -162,15 +203,19 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   return null
 }
 
-export function ChartView({ tasks }: ChartViewProps) {
+export function ChartView({ 
+  tasks, 
+  aggregationPeriod, 
+  navigationOffset, 
+  setAggregationPeriod, 
+  setNavigationOffset 
+}: ChartViewProps) {
   const [taskData, setTaskData] = useState<TaskData[]>([])
   const [goalData, setGoalData] = useState<GoalData[]>([])
-  const [navigationOffset, setNavigationOffset] = useState<number>(0)
   const [currentRange, setCurrentRange] = useState<{ start: Date; end: Date }>({
     start: startOfWeek(new Date(), { locale: ja }),
     end: endOfWeek(new Date(), { locale: ja }),
   })
-  const [aggregationPeriod, setAggregationPeriod] = useState<AggregationPeriod>('week')
 
   // State for colors
   const [colorExecuted, setColorExecuted] = useState<string>('#8884d8') // Default color
@@ -193,74 +238,42 @@ export function ChartView({ tasks }: ChartViewProps) {
   const PIE_COLORS = [colorExecuted, colorPlanned]
 
   useEffect(() => {
-    const calculateRange = (period: AggregationPeriod, offset: number) => {
-      let start: Date
-      let end: Date
-
-      if (period === 'day') {
-        // For daily aggregation, set start and end to the same day
-        const today = new Date()
-        start = addDays(today, offset)
-        end = addDays(today, offset)
-      } else if (period === 'week') {
-        // For weekly aggregation, display the specified week
-        const currentWeekStart = startOfWeek(new Date(), { locale: ja })
-        const adjustedWeekStart = addWeeks(currentWeekStart, offset)
-        start = adjustedWeekStart
-        end = endOfWeek(adjustedWeekStart, { locale: ja })
-      } else if (period === 'month') {
-        // For monthly aggregation, display the specified month (including dates of previous and next months)
-        const currentMonthStart = startOfMonth(new Date())
-        const adjustedMonthStart = addMonths(currentMonthStart, offset)
-        start = startOfWeek(adjustedMonthStart, { locale: ja }) // Start of the week containing the start of the month
-        end = endOfWeek(endOfMonth(adjustedMonthStart), { locale: ja }) // End of the week containing the end of the month
-      } else if (period === 'year') {
-        // For yearly aggregation, display the entire year (January to December)
-        const currentYearStart = startOfYear(new Date())
-        const adjustedYearStart = addYears(currentYearStart, offset)
-        start = startOfMonth(adjustedYearStart) // Start of the first month of the year
-        end = endOfYear(adjustedYearStart) // End of the last month of the year
-      } else {
-        // Default to the current week
-        start = startOfWeek(new Date(), { locale: ja })
-        end = endOfWeek(start, { locale: ja })
-      }
-
-      return { start, end }
-    }
-
-    const { start, end } = calculateRange(aggregationPeriod, navigationOffset)
+    const { start, end } = calculateChartDateRange(aggregationPeriod, navigationOffset)
     setCurrentRange({ start, end })
 
     // Aggregate data
     const data: TaskData[] = []
 
     if (aggregationPeriod === 'day') {
+      // Daily aggregation: Aggregate planned and executed tasks for the pie chart
       const dateStr = format(start, 'yyyy-MM-dd')
       const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
+      const plannedTasks = dayTasks.length
       const executedTasks = dayTasks.filter(t => t.status === 'executed').length
-      const remainingTasks = dayTasks.length - executedTasks
+      const remainingTasks = plannedTasks - executedTasks
 
       data.push(
         { name: 'Executed Tasks', value: executedTasks },
         { name: 'Remaining Tasks', value: remainingTasks }
       )
     } else if (aggregationPeriod === 'week') {
+      // Weekly aggregation: Aggregate tasks daily for the area chart
       for (let i = 0; i < 7; i++) {
         const currentDate = addDays(start, i)
         const dateStr = format(currentDate, 'yyyy-MM-dd')
         const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
+        const plannedTasks = dayTasks.length
         const executedTasks = dayTasks.filter(t => t.status === 'executed').length
-        const remainingTasks = dayTasks.length - executedTasks
 
         data.push({
           name: dateStr,
+          plannedTasks,
           executedTasks,
-          remainingTasks,
         })
       }
     } else if (aggregationPeriod === 'month') {
-      const weeksInMonth: { week: number; executedTasks: number; remainingTasks: number }[] = []
+      // Monthly aggregation: Aggregate tasks weekly for the vertical bar chart
+      const weeksInMonth: { week: number; plannedTasks: number; executedTasks: number }[] = []
       let currentWeekStart = startOfWeek(start, { locale: ja })
       let weekNumber = 1
 
@@ -269,13 +282,13 @@ export function ChartView({ tasks }: ChartViewProps) {
         const weekTasks = tasks.filter(task =>
           isWithinInterval(new Date(task.scheduledDate), { start: currentWeekStart, end: currentWeekEnd })
         )
+        const plannedTasks = weekTasks.length
         const executedTasks = weekTasks.filter(t => t.status === 'executed').length
-        const remainingTasks = weekTasks.length - executedTasks
 
         weeksInMonth.push({
           week: weekNumber,
+          plannedTasks,
           executedTasks,
-          remainingTasks,
         })
 
         currentWeekStart = addWeeks(currentWeekStart, 1)
@@ -285,14 +298,16 @@ export function ChartView({ tasks }: ChartViewProps) {
       weeksInMonth.forEach(weekData => {
         data.push({
           name: `W${weekData.week}`,
+          plannedTasks: weekData.plannedTasks,
           executedTasks: weekData.executedTasks,
-          remainingTasks: weekData.remainingTasks,
         })
       })
     } else if (aggregationPeriod === 'year') {
-      const monthsInYear: { month: number; executedTasks: number; remainingTasks: number }[] = []
+      // Yearly aggregation: Aggregate tasks monthly for the vertical bar chart
+      const monthsInYear: { month: number; plannedTasks: number; executedTasks: number }[] = []
       let currentMonthStart = startOfMonth(start)
 
+      // Process each month from the first month of the year to the last
       while (currentMonthStart <= end) {
         const currentMonthEnd = endOfMonth(currentMonthStart)
         const monthTasks = tasks.filter(task =>
@@ -301,77 +316,94 @@ export function ChartView({ tasks }: ChartViewProps) {
             end: currentMonthEnd
           })
         )
-        const executedTasks = monthTasks.filter(t => t.status === 'executed').length
-        const remainingTasks = monthTasks.length - executedTasks
 
         monthsInYear.push({
           month: currentMonthStart.getMonth(), // 0-11 month index
-          executedTasks,
-          remainingTasks
+          plannedTasks: monthTasks.length,
+          executedTasks: monthTasks.filter(t => t.status === 'executed').length
         })
 
         currentMonthStart = addMonths(currentMonthStart, 1)
       }
 
+      // Format data
       data.push(...monthsInYear.map(monthData => ({
         name: format(new Date(start.getFullYear(), monthData.month), 'MMMM'),
-        executedTasks: monthData.executedTasks,
-        remainingTasks: monthData.remainingTasks
+        plannedTasks: monthData.plannedTasks,
+        executedTasks: monthData.executedTasks
       })))
     }
 
     setTaskData(data)
 
-    // Adjust goal-based data aggregation similarly
-    const labelStats: Record<string, { executed: number; remaining: number }> = {}
+    // Modify goal-based data aggregation
+    const labelStats: Record<string, { planned: number; executed: number }> = {}
+
+    // Get date string
+    const targetDateStr = format(start, 'yyyy-MM-dd')
 
     tasks.forEach(task => {
-      const normalizedLabel = task.label ? task.label.trim() : ''
+      const normalizedLabel = task.label ? task.label.trim() : '';
 
-      if (!normalizedLabel) return // Exclude tasks without labels
-
-      const taskDate = new Date(task.scheduledDate)
-      if (!isWithinInterval(taskDate, { start, end })) return // Exclude tasks outside the range
-
-      if (!labelStats[normalizedLabel]) {
-        labelStats[normalizedLabel] = { executed: 0, remaining: 0 }
+      // Ensure label exists and is not empty
+      if (!normalizedLabel) {
+        return; // Exclude tasks without labels
       }
 
-      if (task.status === 'executed') {
-        labelStats[normalizedLabel].executed++
+      if (aggregationPeriod === 'day') {
+        // For daily aggregation, only consider specific day
+        if (task.scheduledDate === targetDateStr) {
+          if (!labelStats[normalizedLabel]) {
+            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
+          }
+          labelStats[normalizedLabel].planned++;
+          if (task.status === 'executed') {
+            labelStats[normalizedLabel].executed++;
+          }
+        }
       } else {
-        labelStats[normalizedLabel].remaining++
+        // For other periods, aggregate tasks within range
+        const taskDate = new Date(task.scheduledDate);
+        if (isWithinInterval(taskDate, { start, end })) {
+          if (!labelStats[normalizedLabel]) {
+            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
+          }
+          labelStats[normalizedLabel].planned++;
+          if (task.status === 'executed') {
+            labelStats[normalizedLabel].executed++;
+          }
+        }
       }
-    })
+    });
 
     const goalDataArray: GoalData[] = Object.entries(labelStats).map(([name, stats]) => ({
       name,
-      planned: stats.remaining,
-      executed: stats.executed,
+      ...stats,
     }))
 
+    console.log('Aggregated Goal Data:', goalDataArray) // Debug log
     setGoalData(goalDataArray)
   }, [tasks, navigationOffset, aggregationPeriod])
 
   const chartConfigTask = {
+    plannedTasks: {
+      label: "Planned Tasks",
+      color: colorPlanned,
+    },
     executedTasks: {
       label: "Executed Tasks",
       color: colorExecuted,
     },
-    remainingTasks: {
-      label: "Remaining Tasks",
-      color: colorPlanned,
-    },
   }
 
   const chartConfigGoal = {
+    planned: {
+      label: "Planned",
+      color: colorPlanned,
+    },
     executed: {
       label: "Executed",
       color: colorExecuted,
-    },
-    remaining: {
-      label: "Remaining",
-      color: colorPlanned,
     },
   }
 
@@ -508,10 +540,10 @@ export function ChartView({ tasks }: ChartViewProps) {
               />
               <Legend content={<ChartLegendContent />} />
               <Bar
-                dataKey="remainingTasks"
+                dataKey="plannedTasks"
                 stackId="a"
-                fill={chartConfigTask.remainingTasks.color}
-                name={chartConfigTask.remainingTasks.label}
+                fill={chartConfigTask.plannedTasks.color}
+                name={chartConfigTask.plannedTasks.label}
               />
               <Bar
                 dataKey="executedTasks"
@@ -552,10 +584,10 @@ export function ChartView({ tasks }: ChartViewProps) {
               />
               <Legend content={<ChartLegendContent />} />
               <Bar
-                dataKey="remainingTasks"
+                dataKey="plannedTasks"
                 stackId="a"
-                fill={chartConfigTask.remainingTasks.color}
-                name={chartConfigTask.remainingTasks.label}
+                fill={chartConfigTask.plannedTasks.color}
+                name={chartConfigTask.plannedTasks.label}
               />
               <Bar
                 dataKey="executedTasks"
@@ -600,8 +632,8 @@ export function ChartView({ tasks }: ChartViewProps) {
               <Bar
                 dataKey="planned"
                 stackId="a"
-                fill={chartConfigGoal.remaining.color}
-                name={chartConfigGoal.remaining.label}
+                fill={chartConfigGoal.planned.color}
+                name={chartConfigGoal.planned.label}
               />
             </BarChart>
           ) : (

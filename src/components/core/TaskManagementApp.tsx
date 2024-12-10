@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
-import { format } from 'date-fns'
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfWeek, endOfWeek, addDays, addWeeks, addMonths, addYears } from 'date-fns'
 import { Header } from '@src/components/auth/Header'
 import { TaskDialog } from '@src/components/core/TaskDialog'
 import { CalendarView } from '@src/components/core/CalendarView'
@@ -16,9 +16,40 @@ import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { useAuth } from '@src/hooks/useAuth'
-import { LabelSelector } from './LabelSelector'
-import { Input } from '@src/components/ui/input'
-import { Button } from '@src/components/ui/button'
+import { expandRecurringTasks } from '@src/utils/expandRecurringTasks'
+import { DropResult } from 'react-beautiful-dnd'
+
+// calculateChartDateRange 関数を TaskManagementApp コンポーネントの外に移動
+const calculateChartDateRangeForPeriod = (currentDate: Date, period: 'day' | 'week' | 'month' | 'year', offset: number) => {
+  let start: Date
+  let end: Date
+
+  if (period === 'day') {
+    const targetDate = addDays(currentDate, offset)
+    start = new Date(targetDate.setHours(0, 0, 0, 0))
+    end = new Date(targetDate.setHours(23, 59, 59, 999))
+  } else if (period === 'week') {
+    const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
+    const adjustedWeekStart = addWeeks(currentWeekStart, offset)
+    start = adjustedWeekStart
+    end = endOfWeek(adjustedWeekStart, { weekStartsOn: 0 })
+  } else if (period === 'month') {
+    const currentMonthStart = startOfMonth(currentDate)
+    const adjustedMonthStart = addMonths(currentMonthStart, offset)
+    start = startOfWeek(adjustedMonthStart, { weekStartsOn: 0 })
+    end = endOfWeek(endOfMonth(adjustedMonthStart), { weekStartsOn: 0 })
+  } else if (period === 'year') {
+    const currentYearStart = startOfYear(currentDate)
+    const adjustedYearStart = addYears(currentYearStart, offset)
+    start = startOfMonth(adjustedYearStart)
+    end = endOfYear(adjustedYearStart)
+  } else {
+    start = startOfWeek(currentDate, { weekStartsOn: 0 })
+    end = endOfWeek(start, { weekStartsOn: 0 })
+  }
+
+  return { start, end }
+}
 
 export function TaskManagementApp() {
   const { user } = useAuth()
@@ -33,8 +64,49 @@ export function TaskManagementApp() {
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
   const [showExecutedTasksList, setShowExecutedTasksList] = useState(false)
   const [newCalendarTaskTitle, setNewCalendarTaskTitle] = useState('')
+  const [aggregationPeriod, setAggregationPeriod] = useState< 'day' | 'week' | 'month' | 'year' >('week')
+  const [navigationOffset, setNavigationOffset] = useState<number>(0)
 
-  const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
+  // 日付範囲の設定を改善
+  let startDate: Date
+  let endDate: Date
+
+  const { tasks, setTasks, error, loading, fetchTasks } = useTasks()
+
+  // ビューごとのタスク (tasks を直接使用)
+  let viewTasks: Task[] = []
+  switch (activeTab) {
+    case "calendar":
+      startDate = startOfMonth(selectedDate)
+      endDate = endOfMonth(selectedDate)
+      viewTasks = tasks
+      break
+    case "list":
+      // List View は今日だけを表示
+      startDate = new Date()
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date()
+      endDate.setHours(23, 59, 59, 999)
+      viewTasks = tasks
+      break
+    case "chart":
+      // チャートタブの場合は、集計期間に基づいて日付範囲を計算
+      const { start: chartStart, end: chartEnd } = calculateChartDateRangeForPeriod(selectedDate, aggregationPeriod, navigationOffset);
+      startDate = chartStart;
+      endDate = chartEnd;
+      viewTasks = tasks
+      break
+    default:
+      startDate = startOfMonth(selectedDate)
+      endDate = endOfMonth(selectedDate)
+      viewTasks = tasks
+  }
+
+  // フィルタリングされたタスクセット
+  const plannedTasks = viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")
+  const executedPlannedTasks = viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))
+  const unplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
+  const executedUnplannedTasks = viewTasks.filter(task => !task.scheduledDate)
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -141,7 +213,7 @@ export function TaskManagementApp() {
         setLabels(prev => [...prev, taskData.newLabel]);
       }
 
-      // dbTaskData の作成を新しいラベル処理の後に移動
+      // dbTaskData 作成を新しいラベル処理の後に移動
       const dbTaskData = {
         title: taskData.title,
         memo: taskData.memo,
@@ -517,7 +589,7 @@ export function TaskManagementApp() {
 
             if (updateError) throw updateError;
 
-            // 過去の例外を保持しつつ、指定された日付以降の���外に `status: 'deleted'` 設定
+            // 過去の例外を保持しつつ、指定された日付以降の例外に `status: 'deleted'` 設定
             newExceptions = Object.keys(taskToDelete.exceptions || {})
               .filter(date => date >= currentDate)
               .reduce((acc, date) => ({
@@ -654,24 +726,22 @@ export function TaskManagementApp() {
     }
   };
 
-  const plannedTasks = tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")
-  const executedPlannedTasks = tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))
-  const unplannedTasks = tasks.filter(task => !task.scheduledDate && task.status === "planned")
-  const executedUnplannedTasks = tasks.filter(task => !task.scheduledDate)
-
   // Get today's date
   const today = format(new Date(), 'yyyy-MM-dd')
 
   // Filter today's scheduled tasks (reflecting the display settings for executed tasks)
-  const todayTasks = tasks.filter(task => 
-    task.scheduledDate === today && 
-    (showExecutedTasksList || task.status !== 'executed')
-  )
+  const todayTasks = tasks.filter(task => {
+    const isToday = task.scheduledDate === today;
+    const isUnplanned = !task.scheduledDate && task.status === 'planned';
+    return (isToday || isUnplanned) && 
+           (showExecutedTasksList || task.status !== 'executed');
+  });
 
   // Filter today's executed tasks
   const executedTodayTasks = tasks.filter(task => 
-    task.scheduledDate === today && task.status === 'executed'
-  )
+    (task.scheduledDate === today || !task.scheduledDate) && 
+    task.status === 'executed'
+  );
 
   // ラベルを更新する関数を追加
   const updateTaskLabel = async (taskId: string, newLabel: string) => {
@@ -813,6 +883,35 @@ export function TaskManagementApp() {
     setNewCalendarTaskTitle('');
   }
 
+  // 変更箇所: useEffect を追加し、activeTab または selectedDate が変更された場合にタスクを再フェッチ
+  useEffect(() => {
+    let startDate: Date
+    let endDate: Date
+
+    switch (activeTab) {
+      case "calendar":
+        startDate = startOfMonth(selectedDate)
+        endDate = endOfMonth(selectedDate)
+        break
+      case "list":
+        startDate = new Date()
+        startDate.setHours(0, 0, 0, 0)
+        endDate = new Date()
+        endDate.setHours(23, 59, 59, 999)
+        break
+      case "chart":
+        const { start: chartStart, end: chartEnd } = calculateChartDateRangeForPeriod(selectedDate, aggregationPeriod, navigationOffset);
+        startDate = chartStart;
+        endDate = chartEnd;
+        break
+      default:
+        startDate = startOfMonth(selectedDate)
+        endDate = endOfMonth(selectedDate)
+    }
+
+    fetchTasks(startDate, endDate)
+  }, [activeTab, selectedDate, aggregationPeriod, navigationOffset, fetchTasks])
+
   return (
     <div>
       <Header />
@@ -821,10 +920,9 @@ export function TaskManagementApp() {
           <TabsTrigger value='list'>List</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="chart">Chart</TabsTrigger>
-          {/* <TabsTrigger value="map">Map</TabsTrigger> */}
         </TabsList>
 
-        {/* List Tab */}
+        {/* リストタブ */}
         <TabsContent value="list">
           <TabContent 
             title="List View" 
@@ -842,7 +940,11 @@ export function TaskManagementApp() {
             isToday={true}
           >
             <TaskList 
-              tasks={todayTasks} 
+              // List View では今日の日付にマッチするタスクのみを表示する
+              tasks={viewTasks.filter(task => 
+                task.scheduledDate === format(new Date(), 'yyyy-MM-dd') ||
+                (!task.scheduledDate && task.status === 'planned')
+              )} 
               toggleStatus={toggleTaskStatus}
               toggleStar={toggleTaskStar}
               onEdit={setEditingTask}
@@ -850,7 +952,9 @@ export function TaskManagementApp() {
               onDragEnd={handleDragEnd}
               deleteTask={deleteTask}
               showExecutedTasks={showExecutedTasksList}
-              executedTasks={executedTodayTasks}
+              executedTasks={tasks.filter(task => 
+                task.scheduledDate === format(new Date(), 'yyyy-MM-dd') && task.status === 'executed'
+              )}
               labels={labels}
               setLabels={setLabels}
               updateTaskLabel={updateTaskLabel}
@@ -865,7 +969,7 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* Calendar View Tab */}
+        {/* カレンダービュータブ */}
         <TabsContent value="calendar">
           <TabContent 
             title="Calendar View" 
@@ -885,7 +989,7 @@ export function TaskManagementApp() {
             <CalendarView 
               selectedDate={selectedDate} 
               setSelectedDate={handleDateClick} 
-              tasks={tasks} 
+              tasks={viewTasks} 
               addTask={addTask}
               addLabel={addLabel}
               labels={labels}
@@ -977,7 +1081,7 @@ export function TaskManagementApp() {
           </TabContent>
         </TabsContent>
 
-        {/* Chart Tab */}
+        {/* チャートビュータブ */}
         <TabsContent value="chart">
           <TabContent 
             title="Chart View" 
@@ -993,7 +1097,13 @@ export function TaskManagementApp() {
             allowSelectDate={true}
             isToday={true}
           >
-            <ChartView tasks={tasks} />
+            <ChartView 
+              tasks={viewTasks} 
+              aggregationPeriod={aggregationPeriod}
+              navigationOffset={navigationOffset}
+              setAggregationPeriod={setAggregationPeriod}
+              setNavigationOffset={setNavigationOffset}
+            />
           </TabContent>
         </TabsContent>
       </Tabs>

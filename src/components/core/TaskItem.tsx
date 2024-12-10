@@ -13,18 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@src/components/ui/dropdown-menu"
 import { LabelSelector } from '@src/components/core/LabelSelector'
-import { TaskDialog } from '@src/components/core/TaskDialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@src/components/ui/alert-dialog"
 import { useSwipeable } from 'react-swipeable'
 
 type TaskItemProps = {
@@ -55,18 +43,12 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
-  const [isRecurrenceDialogOpen, setIsRecurrenceDialogOpen] = useState(false)
-  const [showUnscheduleConfirm, setShowUnscheduleConfirm] = useState(false)
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     setIsLabelSelectorOpen(true)
   }
-
-  const closeLabelSelector = () => {
-    setIsLabelSelectorOpen(false)
-  }
-
+  
   const handleDelete = (e: React.MouseEvent, type?: 'single' | 'all' | 'future') => {
     e.stopPropagation();
     deleteTask(task.id, type);
@@ -98,13 +80,6 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     if (e.key === 'Enter') {
       e.currentTarget.blur()
     }
-  }
-
-  const handleUnschedule = () => {
-    if (unassignFromDate) {
-      unassignFromDate(task.id)
-    }
-    setShowUnscheduleConfirm(false)
   }
 
   const handlers = useSwipeable({
