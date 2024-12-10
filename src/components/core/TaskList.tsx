@@ -1,8 +1,12 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { TaskItem } from '@src/components/core/TaskItem'
 import { Task } from '@src/lib/types'
+import { Input } from "@src/components/ui/input"
+import { Button } from "@src/components/ui/button"
+import { toast } from "sonner"
+import { format } from 'date-fns'
 
 type TaskListProps = {
   tasks: Task[];
@@ -30,10 +34,53 @@ type TaskListProps = {
 }
 
 export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskListProps) {
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  const handleAddTask = () => {
+    if (newTaskTitle.trim() === '') {
+      toast.error('Please enter a task title');
+      return;
+    }
+
+    const newTask: Task = {
+      id: '',
+      title: newTaskTitle,
+      memo: '',
+      status: 'planned',
+      starred: false,
+      scheduledDate: isToday ? format(selectedDate, 'yyyy-MM-dd') : null,
+      label: null,
+      routine: null,
+      parentTaskId: null,
+      exceptions: {}
+    }
+
+    addTask(newTask);
+    setNewTaskTitle('');
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleAddTask();
+    }
+  }
+
   const plannedTasks = tasks.filter(task => task.status === "planned")
 
   return (
     <>
+      <div className="mb-4">
+        <Input
+          type="text"
+          placeholder="Add a task"
+          value={newTaskTitle}
+          onChange={(e) => setNewTaskTitle(e.target.value)}
+          onKeyPress={handleKeyPress}
+        />
+        <Button onClick={handleAddTask} className="mt-2">
+          Add
+        </Button>
+      </div>
       <ul>
         {plannedTasks.map((task) => (
           <TaskItem

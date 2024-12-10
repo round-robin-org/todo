@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
-import { TaskDialog } from '@src/components/core/TaskDialog'
 import { LabelManagement } from '@src/components/core/LabelManagement'
 import { Task } from '@src/lib/types'
 import { Button } from "@src/components/ui/button"
@@ -74,16 +73,6 @@ export function TabContent({
             labels={labels}
             addLabel={handleAddLabel}
             deleteLabel={deleteLabel}
-          />
-          <TaskDialog 
-            labels={labels}
-            addTask={addTask}
-            addLabel={handleAddLabel}
-            deleteLabel={deleteLabel}
-            isToday={isToday}
-            selectedDate={selectedDate}
-            showUnplannedTasks={showUnplannedTasks}
-            allowSelectDate={allowSelectDate}
           />
         </div>
       </CardHeader>

@@ -17,6 +17,8 @@ import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { useAuth } from '@src/hooks/useAuth'
 import { LabelSelector } from './LabelSelector'
+import { Input } from '@src/components/ui/input'
+import { Button } from '@src/components/ui/button'
 
 export function TaskManagementApp() {
   const { user } = useAuth()
@@ -30,6 +32,7 @@ export function TaskManagementApp() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
   const [showExecutedTasksList, setShowExecutedTasksList] = useState(false)
+  const [newCalendarTaskTitle, setNewCalendarTaskTitle] = useState('')
 
   const { tasks, setTasks, error } = useTasks(selectedDate, activeTab)
 
@@ -507,7 +510,7 @@ export function TaskManagementApp() {
 
             if (updateError) throw updateError;
 
-            // 過去の例外を保持しつつ、指定された日付以降の例外に `status: 'deleted'` 設定
+            // 過去の例外を保持しつつ、指定された日付以降の���外に `status: 'deleted'` 設定
             newExceptions = Object.keys(taskToDelete.exceptions || {})
               .filter(date => date >= currentDate)
               .reduce((acc, date) => ({
@@ -774,6 +777,35 @@ export function TaskManagementApp() {
     }
   }
 
+  const handleCalendarTaskKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleAddCalendarTask();
+    }
+  }
+
+  const handleAddCalendarTask = () => {
+    if (newCalendarTaskTitle.trim() === '') {
+      toast.error('Please enter a task title');
+      return;
+    }
+
+    const newTask: Task = {
+      id: '',
+      title: newCalendarTaskTitle,
+      memo: '',
+      status: 'planned',
+      starred: false,
+      scheduledDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null,
+      label: null,
+      routine: null,
+      parentTaskId: null,
+      exceptions: {}
+    }
+
+    addTask(newTask);
+    setNewCalendarTaskTitle('');
+  }
+
   return (
     <div>
       <Header />
@@ -819,6 +851,9 @@ export function TaskManagementApp() {
               addLabel={addLabel}
               deleteLabel={deleteLabel}
               unassignFromDate={unassignTaskFromDate}
+              addTask={addTask}
+              isToday={true}
+              selectedDate={new Date()}
             />
           </TabContent>
         </TabsContent>
@@ -838,7 +873,7 @@ export function TaskManagementApp() {
             selectedDate={selectedDate}
             showUnplannedTasks={showUnplannedTasks}
             allowSelectDate={false}
-            isToday={showUnplannedTasks}
+            isToday={!showUnplannedTasks}
           >
             <CalendarView 
               selectedDate={selectedDate} 
@@ -876,6 +911,9 @@ export function TaskManagementApp() {
                     updateTaskTitle={updateTaskTitleHandler}
                     addLabel={addLabel}
                     deleteLabel={deleteLabel}
+                    addTask={addTask}
+                    isToday={!showUnplannedTasks}
+                    selectedDate={selectedDate}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
@@ -913,6 +951,9 @@ export function TaskManagementApp() {
                     updateTaskTitle={updateTaskTitleHandler}
                     addLabel={addLabel}
                     deleteLabel={deleteLabel}
+                    addTask={addTask}
+                    isToday={!showUnplannedTasks}
+                    selectedDate={selectedDate}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
