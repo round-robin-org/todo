@@ -103,8 +103,14 @@ export function TaskManagementApp() {
   }
 
   // フィルタリングされたタスクセット
-  const plannedTasks = viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned")
-  const executedPlannedTasks = viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'))
+  const plannedTasks = showUnplannedTasks
+    ? viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
+    : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned");
+
+  const executedPlannedTasks = showUnplannedTasks
+    ? viewTasks.filter(task => !task.scheduledDate)
+    : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'));
+
   const unplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
   const executedUnplannedTasks = viewTasks.filter(task => !task.scheduledDate)
 
@@ -965,6 +971,7 @@ export function TaskManagementApp() {
               addTask={addTask}
               isToday={true}
               selectedDate={new Date()}
+              activeTab={activeTab}
             />
           </TabContent>
         </TabsContent>
@@ -1025,6 +1032,7 @@ export function TaskManagementApp() {
                     addTask={addTask}
                     isToday={!showUnplannedTasks}
                     selectedDate={selectedDate}
+                    activeTab={activeTab}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
@@ -1065,6 +1073,7 @@ export function TaskManagementApp() {
                     addTask={addTask}
                     isToday={!showUnplannedTasks}
                     selectedDate={selectedDate}
+                    activeTab={activeTab}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 

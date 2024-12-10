@@ -37,9 +37,10 @@ type TaskItemProps = {
   showUnplannedTasks: boolean;
   allowSelectDate: boolean;
   setLabels: React.Dispatch<React.SetStateAction<string[]>>;
+  viewMode: string;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels, viewMode }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
@@ -119,50 +120,84 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
               <Repeat className="h-4 w-4 text-gray-500" />
             </Button>
           ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56" onClick={(e) => e.stopPropagation()}>
-                {!task.isRecurring && (
+            viewMode === 'list' ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (setTaskToSchedule) {
-                        setTaskToSchedule(task);
-                      }
+                      onEdit(task);
                     }}
                   >
-                    <CalendarCheck className="mr-2 h-4 w-4" />
-                    Schedule
+                    <Repeat className="mr-2 h-4 w-4" />
+                    Repeat
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(task);
-                  }}
-                >
-                  <Repeat className="mr-2 h-4 w-4" />
-                  Repeat
-                </DropdownMenuItem>
-                {task.scheduledDate && !task.isRecurring && (
+                  {task.scheduledDate && !task.isRecurring && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (unassignFromDate) {
+                          unassignFromDate(task.id);
+                        }
+                      }}
+                    >
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      Unschedule
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56" onClick={(e) => e.stopPropagation()}>
+                  {!task.isRecurring && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (setTaskToSchedule) {
+                          setTaskToSchedule(task);
+                        }
+                      }}
+                    >
+                      <CalendarCheck className="mr-2 h-4 w-4" />
+                      Schedule
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (unassignFromDate) {
-                        unassignFromDate(task.id);
-                      }
+                      onEdit(task);
                     }}
                   >
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Unschedule
+                    <Repeat className="mr-2 h-4 w-4" />
+                    Repeat
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {task.scheduledDate && !task.isRecurring && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (unassignFromDate) {
+                          unassignFromDate(task.id);
+                        }
+                      }}
+                    >
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      Unschedule
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
           )}
           <Checkbox 
             checked={isExecuted ? true : task.status === "executed"}

@@ -31,9 +31,10 @@ type TaskListProps = {
   showUnplannedTasks: boolean;
   allowSelectDate: boolean;
   setLabels: (labels: string[]) => void;
+  activeTab: string;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels, activeTab }: TaskListProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   const handleAddTask = () => {
@@ -90,8 +91,8 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             toggleStar={toggleStar}
             onEdit={onEdit}
             deleteTask={deleteTask}
-            assignTaskToDate={assignTaskToDate}
-            unassignFromDate={unassignFromDate}
+            assignTaskToDate={activeTab === 'list' ? undefined : assignTaskToDate}
+            unassignFromDate={activeTab === 'list' ? undefined : unassignFromDate}
             setTaskToSchedule={setTaskToSchedule}
             labels={labels}
             updateTaskLabel={updateTaskLabel}
@@ -105,6 +106,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             showUnplannedTasks={showUnplannedTasks}
             allowSelectDate={allowSelectDate}
             setLabels={setLabels}
+            viewMode={activeTab}
           />
         ))}
       </ul>
@@ -119,8 +121,8 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
               onEdit={onEdit}
               deleteTask={deleteTask}
               isExecuted={true}
-              assignToDate={assignTaskToDate}
-              unassignFromDate={unassignFromDate}
+              assignTaskToDate={activeTab === 'list' ? undefined : assignTaskToDate}
+              unassignFromDate={activeTab === 'list' ? undefined : unassignFromDate}
               setTaskToSchedule={setTaskToSchedule}
               labels={labels}
               updateTaskLabel={updateTaskLabel}

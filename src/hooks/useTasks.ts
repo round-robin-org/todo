@@ -52,7 +52,7 @@ export function useTasks() {
 
       const expandedTasks = expandRecurringTasks(formattedTasks, startDate, endDate);
 
-      setTasks(expandedTasks)
+      setTasks(expandedTasks);
     } catch (error: any) {
       console.error('タスクのフェッチに失敗しました:', error)
       setError('Failed to fetch tasks.')
