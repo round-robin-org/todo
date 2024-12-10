@@ -17,9 +17,19 @@ type TaskListProps = {
   executedTasks?: Task[];
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
+  updateTaskTitle: (taskId: string, newTitle: string, updateType?: 'global' | 'single') => void;
+  addTask: (task: Task) => void;
+  updateTask: (task: Task) => void;
+  addLabel: (label: string) => void;
+  deleteLabel: (label: string) => void;
+  isToday: boolean;
+  selectedDate: Date;
+  showUnplannedTasks: boolean;
+  allowSelectDate: boolean;
+  setLabels: (labels: string[]) => void;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskListProps) {
   const plannedTasks = tasks.filter(task => task.status === "planned")
 
   return (
@@ -38,6 +48,16 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             setTaskToSchedule={setTaskToSchedule}
             labels={labels}
             updateTaskLabel={updateTaskLabel}
+            updateTaskTitle={updateTaskTitle}
+            addTask={addTask}
+            updateTask={updateTask}
+            addLabel={addLabel}
+            deleteLabel={deleteLabel}
+            isToday={isToday}
+            selectedDate={selectedDate}
+            showUnplannedTasks={showUnplannedTasks}
+            allowSelectDate={allowSelectDate}
+            setLabels={setLabels}
           />
         ))}
       </ul>
@@ -57,6 +77,16 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
               setTaskToSchedule={setTaskToSchedule}
               labels={labels}
               updateTaskLabel={updateTaskLabel}
+              updateTaskTitle={updateTaskTitle}
+              addTask={addTask}
+              updateTask={updateTask}
+              addLabel={addLabel}
+              deleteLabel={deleteLabel}
+              isToday={isToday}
+              selectedDate={selectedDate}
+              showUnplannedTasks={showUnplannedTasks}
+              allowSelectDate={allowSelectDate}
+              setLabels={setLabels}
             />
           ))}
         </ul>
