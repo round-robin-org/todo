@@ -84,6 +84,13 @@ export function TaskManagementApp() {
     if (schedulingTask) {
       assignTaskToDate(schedulingTask.id, date)
       setSchedulingTask(null)
+      setTasks(prevTasks =>
+        prevTasks.map(t =>
+          t.id === schedulingTask.id
+            ? { ...t, isScheduling: false }
+            : t
+        )
+      );
     } else {
       setSelectedDate(date)
       setShowUnplannedTasks(false)

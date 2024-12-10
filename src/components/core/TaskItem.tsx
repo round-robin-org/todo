@@ -1,11 +1,10 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { useSwipeable } from 'react-swipeable'
 import { Checkbox } from "@src/components/ui/checkbox"
 import { Badge } from "@src/components/ui/badge"
 import { Button } from "@src/components/ui/button"
-import { Star, Trash, CalendarCheck, AlertCircle, Repeat } from 'lucide-react'
+import { Star, Trash, CalendarCheck, AlertCircle, Repeat, Calendar } from 'lucide-react'
 import { Task } from '@src/lib/types'
 import {
   DropdownMenu,
@@ -26,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@src/components/ui/alert-dialog"
+import { useSwipeable } from 'react-swipeable'
 
 type TaskItemProps = {
   task: Task;
@@ -57,32 +57,6 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
   const [isRecurrenceDialogOpen, setIsRecurrenceDialogOpen] = useState(false)
   const [showUnscheduleConfirm, setShowUnscheduleConfirm] = useState(false)
-
-  const handlers = useSwipeable({
-    onSwipedLeft: () => {
-      setShowDelete(true)
-      interactionRef.current = true
-    },
-    onSwipedRight: () => {
-      setShowDelete(false)
-      interactionRef.current = true
-    },
-    onSwipedUp: () => {
-      if (setTaskToSchedule && !task.isRecurring) {
-        setTaskToSchedule(task)
-      }
-      interactionRef.current = true
-    },
-    onSwipedDown: () => {
-      if (!task.isRecurring && unassignFromDate && task.scheduledDate) {
-        setShowUnscheduleConfirm(true)
-      }
-      interactionRef.current = true
-    },
-    preventDefaultTouchmoveEvent: true,
-    trackMouse: true,
-    trackTouch: true,
-  })
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -126,11 +100,6 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     }
   }
 
-  const handleRepeatIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsRecurrenceDialogOpen(true)
-  }
-
   const handleUnschedule = () => {
     if (unassignFromDate) {
       unassignFromDate(task.id)
@@ -138,31 +107,26 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     setShowUnscheduleConfirm(false)
   }
 
+  const handlers = useSwipeable({
+    onSwipedLeft: () => {
+      setShowDelete(true)
+      interactionRef.current = true
+    },
+    onSwipedRight: () => {
+      setShowDelete(false)
+      interactionRef.current = true
+    },
+    preventDefaultTouchmoveEvent: true,
+    trackMouse: true,
+    trackTouch: true,
+  })
+
   if (task.parentTaskId && task.status === 'deleted') {
     return null;
   }
 
   return (
     <>
-      <AlertDialog open={showUnscheduleConfirm} onOpenChange={setShowUnscheduleConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove the scheduled date from this task.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowUnscheduleConfirm(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleUnschedule}>
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <li
         {...handlers}
         className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center ${
@@ -172,6 +136,59 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
         }`}
       >
         <div className="flex items-center space-x-2 flex-1">
+          {task.isRecurring ? (
+            <Button variant="ghost" size="icon" onClick={(e) => {
+              e.stopPropagation();
+              onEdit(task);
+            }}>
+              <Repeat className="h-4 w-4 text-gray-500" />
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56" onClick={(e) => e.stopPropagation()}>
+                {!task.isRecurring && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (setTaskToSchedule) {
+                        setTaskToSchedule(task);
+                      }
+                    }}
+                  >
+                    <CalendarCheck className="mr-2 h-4 w-4" />
+                    Schedule
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(task);
+                  }}
+                >
+                  <Repeat className="mr-2 h-4 w-4" />
+                  Repeat
+                </DropdownMenuItem>
+                {task.scheduledDate && !task.isRecurring && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (unassignFromDate) {
+                        unassignFromDate(task.id);
+                      }
+                    }}
+                  >
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Unschedule
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Checkbox 
             checked={isExecuted ? true : task.status === "executed"}
             onCheckedChange={() => toggleStatus(task.id)}
@@ -180,14 +197,6 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
           />
           <div className="flex items-center">
-            {task.isScheduling && (
-              <CalendarCheck className="mr-2 h-5 w-5 text-blue-500" />
-            )}
-            {task.isRecurring && (
-              <Button variant="ghost" size="icon" onClick={handleRepeatIconClick}>
-                <Repeat className="h-4 w-4 text-gray-500" />
-              </Button>
-            )}
             {isEditingTitle ? (
               <input
                 ref={titleInputRef}
@@ -262,22 +271,6 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             )
           )}
         </div>
-        <TaskDialog
-          open={isRecurrenceDialogOpen}
-          onClose={() => setIsRecurrenceDialogOpen(false)}
-          isEdit={true}
-          taskToEdit={task}
-          labels={labels}
-          addTask={addTask}
-          updateTask={updateTask}
-          addLabel={addLabel}
-          deleteLabel={deleteLabel}
-          isToday={isToday}
-          selectedDate={selectedDate}
-          showUnplannedTasks={showUnplannedTasks}
-          allowSelectDate={allowSelectDate}
-          updateTaskLabel={updateTaskLabel}
-        />
         {isLabelSelectorOpen && (
           <LabelSelector 
             task={task}

@@ -80,10 +80,17 @@ export function TaskDialog({
           JSON.stringify(taskData.routine) !== JSON.stringify(taskToEdit.routine);
 
         if (hasChanges) {
-          updateTask({
-            ...updatedTaskData,
-            updateType: 'single'
-          });
+          if (updateType === 'global') {
+            updateTask({
+              ...updatedTaskData,
+              updateType: 'global'
+            });
+          } else {
+            updateTask({
+              ...updatedTaskData,
+              updateType: 'single'
+            });
+          }
           toast.success('Task updated successfully');
           if (onClose) onClose();
           return;
@@ -163,26 +170,6 @@ export function TaskDialog({
             }
           }}
         />
-        {isEdit && taskToEdit?.isRecurring && (
-          <div className="mt-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="w-full">Select Update Method</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem 
-                  onClick={() => handleRecurrenceChange('single')}
-                  disabled={isRepeatChanged}
-                >
-                  Update this task only
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleRecurrenceChange('global')}>
-                  Update all recurring tasks
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
         {showConfirm && (
           <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
             <DialogContent>

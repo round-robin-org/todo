@@ -90,7 +90,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             toggleStar={toggleStar}
             onEdit={onEdit}
             deleteTask={deleteTask}
-            assignToDate={assignTaskToDate}
+            assignTaskToDate={assignTaskToDate}
             unassignFromDate={unassignFromDate}
             setTaskToSchedule={setTaskToSchedule}
             labels={labels}
