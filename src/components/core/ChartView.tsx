@@ -236,35 +236,31 @@ export function ChartView({ tasks }: ChartViewProps) {
     const data: TaskData[] = []
 
     if (aggregationPeriod === 'day') {
-      // Daily aggregation: Aggregate planned and executed tasks for the pie chart
       const dateStr = format(start, 'yyyy-MM-dd')
       const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
-      const plannedTasks = dayTasks.length
       const executedTasks = dayTasks.filter(t => t.status === 'executed').length
-      const remainingTasks = plannedTasks - executedTasks
+      const remainingTasks = dayTasks.length - executedTasks
 
       data.push(
         { name: 'Executed Tasks', value: executedTasks },
         { name: 'Remaining Tasks', value: remainingTasks }
       )
     } else if (aggregationPeriod === 'week') {
-      // Weekly aggregation: Aggregate tasks daily for the area chart
       for (let i = 0; i < 7; i++) {
         const currentDate = addDays(start, i)
         const dateStr = format(currentDate, 'yyyy-MM-dd')
         const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
-        const plannedTasks = dayTasks.length
         const executedTasks = dayTasks.filter(t => t.status === 'executed').length
+        const remainingTasks = dayTasks.length - executedTasks
 
         data.push({
           name: dateStr,
-          plannedTasks,
           executedTasks,
+          remainingTasks,
         })
       }
     } else if (aggregationPeriod === 'month') {
-      // Monthly aggregation: Aggregate tasks weekly for the vertical bar chart
-      const weeksInMonth: { week: number; plannedTasks: number; executedTasks: number }[] = []
+      const weeksInMonth: { week: number; executedTasks: number; remainingTasks: number }[] = []
       let currentWeekStart = startOfWeek(start, { locale: ja })
       let weekNumber = 1
 
@@ -273,13 +269,13 @@ export function ChartView({ tasks }: ChartViewProps) {
         const weekTasks = tasks.filter(task =>
           isWithinInterval(new Date(task.scheduledDate), { start: currentWeekStart, end: currentWeekEnd })
         )
-        const plannedTasks = weekTasks.length
         const executedTasks = weekTasks.filter(t => t.status === 'executed').length
+        const remainingTasks = weekTasks.length - executedTasks
 
         weeksInMonth.push({
           week: weekNumber,
-          plannedTasks,
           executedTasks,
+          remainingTasks,
         })
 
         currentWeekStart = addWeeks(currentWeekStart, 1)
@@ -289,16 +285,14 @@ export function ChartView({ tasks }: ChartViewProps) {
       weeksInMonth.forEach(weekData => {
         data.push({
           name: `W${weekData.week}`,
-          plannedTasks: weekData.plannedTasks,
           executedTasks: weekData.executedTasks,
+          remainingTasks: weekData.remainingTasks,
         })
       })
     } else if (aggregationPeriod === 'year') {
-      // Yearly aggregation: Aggregate tasks monthly for the vertical bar chart
-      const monthsInYear: { month: number; plannedTasks: number; executedTasks: number }[] = []
+      const monthsInYear: { month: number; executedTasks: number; remainingTasks: number }[] = []
       let currentMonthStart = startOfMonth(start)
 
-      // Process each month from the first month of the year to the last
       while (currentMonthStart <= end) {
         const currentMonthEnd = endOfMonth(currentMonthStart)
         const monthTasks = tasks.filter(task =>
@@ -307,94 +301,77 @@ export function ChartView({ tasks }: ChartViewProps) {
             end: currentMonthEnd
           })
         )
+        const executedTasks = monthTasks.filter(t => t.status === 'executed').length
+        const remainingTasks = monthTasks.length - executedTasks
 
         monthsInYear.push({
           month: currentMonthStart.getMonth(), // 0-11 month index
-          plannedTasks: monthTasks.length,
-          executedTasks: monthTasks.filter(t => t.status === 'executed').length
+          executedTasks,
+          remainingTasks
         })
 
         currentMonthStart = addMonths(currentMonthStart, 1)
       }
 
-      // Format data
       data.push(...monthsInYear.map(monthData => ({
         name: format(new Date(start.getFullYear(), monthData.month), 'MMMM'),
-        plannedTasks: monthData.plannedTasks,
-        executedTasks: monthData.executedTasks
+        executedTasks: monthData.executedTasks,
+        remainingTasks: monthData.remainingTasks
       })))
     }
 
     setTaskData(data)
 
-    // Modify goal-based data aggregation
-    const labelStats: Record<string, { planned: number; executed: number }> = {}
-
-    // Get date string
-    const targetDateStr = format(start, 'yyyy-MM-dd')
+    // Adjust goal-based data aggregation similarly
+    const labelStats: Record<string, { executed: number; remaining: number }> = {}
 
     tasks.forEach(task => {
-      const normalizedLabel = task.label ? task.label.trim() : '';
+      const normalizedLabel = task.label ? task.label.trim() : ''
 
-      // Ensure label exists and is not empty
-      if (!normalizedLabel) {
-        return; // Exclude tasks without labels
+      if (!normalizedLabel) return // Exclude tasks without labels
+
+      const taskDate = new Date(task.scheduledDate)
+      if (!isWithinInterval(taskDate, { start, end })) return // Exclude tasks outside the range
+
+      if (!labelStats[normalizedLabel]) {
+        labelStats[normalizedLabel] = { executed: 0, remaining: 0 }
       }
 
-      if (aggregationPeriod === 'day') {
-        // For daily aggregation, only consider specific day
-        if (task.scheduledDate === targetDateStr) {
-          if (!labelStats[normalizedLabel]) {
-            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
-          }
-          labelStats[normalizedLabel].planned++;
-          if (task.status === 'executed') {
-            labelStats[normalizedLabel].executed++;
-          }
-        }
+      if (task.status === 'executed') {
+        labelStats[normalizedLabel].executed++
       } else {
-        // For other periods, aggregate tasks within range
-        const taskDate = new Date(task.scheduledDate);
-        if (isWithinInterval(taskDate, { start, end })) {
-          if (!labelStats[normalizedLabel]) {
-            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
-          }
-          labelStats[normalizedLabel].planned++;
-          if (task.status === 'executed') {
-            labelStats[normalizedLabel].executed++;
-          }
-        }
+        labelStats[normalizedLabel].remaining++
       }
-    });
+    })
 
     const goalDataArray: GoalData[] = Object.entries(labelStats).map(([name, stats]) => ({
       name,
-      ...stats,
+      planned: stats.remaining,
+      executed: stats.executed,
     }))
 
-    console.log('Aggregated Goal Data:', goalDataArray) // Debug log
     setGoalData(goalDataArray)
   }, [tasks, navigationOffset, aggregationPeriod])
 
   const chartConfigTask = {
-    plannedTasks: {
-      label: "Planned Tasks",
-      color: colorPlanned,
-    },
     executedTasks: {
       label: "Executed Tasks",
       color: colorExecuted,
     },
+    remainingTasks: {
+      label: "Remaining Tasks",
+      color: colorPlanned,
+    },
   }
 
   const chartConfigGoal = {
-    planned: {
-      label: "Planned",
-      color: colorPlanned,
-    },
     executed: {
       label: "Executed",
       color: colorExecuted,
+    },
+    remaining: {
+      label: "Remaining",
+      color: colorPlanned,
     },
   }
 
@@ -531,10 +508,10 @@ export function ChartView({ tasks }: ChartViewProps) {
               />
               <Legend content={<ChartLegendContent />} />
               <Bar
-                dataKey="plannedTasks"
+                dataKey="remainingTasks"
                 stackId="a"
-                fill={chartConfigTask.plannedTasks.color}
-                name={chartConfigTask.plannedTasks.label}
+                fill={chartConfigTask.remainingTasks.color}
+                name={chartConfigTask.remainingTasks.label}
               />
               <Bar
                 dataKey="executedTasks"
@@ -575,10 +552,10 @@ export function ChartView({ tasks }: ChartViewProps) {
               />
               <Legend content={<ChartLegendContent />} />
               <Bar
-                dataKey="plannedTasks"
+                dataKey="remainingTasks"
                 stackId="a"
-                fill={chartConfigTask.plannedTasks.color}
-                name={chartConfigTask.plannedTasks.label}
+                fill={chartConfigTask.remainingTasks.color}
+                name={chartConfigTask.remainingTasks.label}
               />
               <Bar
                 dataKey="executedTasks"
@@ -623,8 +600,8 @@ export function ChartView({ tasks }: ChartViewProps) {
               <Bar
                 dataKey="planned"
                 stackId="a"
-                fill={chartConfigGoal.planned.color}
-                name={chartConfigGoal.planned.label}
+                fill={chartConfigGoal.remaining.color}
+                name={chartConfigGoal.remaining.label}
               />
             </BarChart>
           ) : (
