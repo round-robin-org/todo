@@ -50,9 +50,11 @@ export function useTasks() {
         exceptions: task.exceptions || {}
       }))
 
+      const unplannedTasks = formattedTasks.filter(task => !task.scheduledDate)
       const expandedTasks = expandRecurringTasks(formattedTasks, startDate, endDate);
 
-      setTasks(expandedTasks);
+      const combinedTasks = [...unplannedTasks, ...expandedTasks]
+      setTasks(combinedTasks);
     } catch (error: any) {
       console.error('タスクのフェッチに失敗しました:', error)
       setError('Failed to fetch tasks.')
