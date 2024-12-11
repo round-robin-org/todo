@@ -77,9 +77,19 @@ export function TaskManagementApp() {
   let viewTasks: Task[] = []
   switch (activeTab) {
     case "calendar":
-      startDate = startOfMonth(selectedDate)
-      endDate = endOfMonth(selectedDate)
-      viewTasks = tasks
+      if (showUnplannedTasks) {
+        // 未計画タスクを表示する場合は、日付でフィルタリングしない
+        viewTasks = tasks.filter(task => !task.scheduledDate)
+        console.log("view Tasks:", viewTasks)
+      } else {
+        startDate = startOfMonth(selectedDate)
+        endDate = endOfMonth(selectedDate)
+        viewTasks = tasks.filter(task =>
+          task.scheduledDate &&
+          new Date(task.scheduledDate) >= startDate &&
+          new Date(task.scheduledDate) <= endDate
+        )
+      }
       break
     case "chart":
       // チャートタブの場合は、集計期間に基づいて日付範囲を計算
@@ -96,15 +106,14 @@ export function TaskManagementApp() {
 
   // フィルタリングされたタスクセット
   const plannedTasks = showUnplannedTasks
-    ? viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
-    : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned");
+    ? tasks.filter(task => task.status === "planned")
+    : tasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned");
 
-  const executedPlannedTasks = showUnplannedTasks
-    ? viewTasks.filter(task => !task.scheduledDate)
-    : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'));
+  const executedTasks = viewTasks.filter(task => task.status === 'executed')
 
-  const unplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
-  const executedUnplannedTasks = viewTasks.filter(task => !task.scheduledDate)
+  const unplannedTasks = viewTasks.filter(task => task.scheduledDate === null && task.status === "planned")
+
+  console.log("Unplanned Tasks:", unplannedTasks)
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -973,7 +982,7 @@ export function TaskManagementApp() {
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
-                      tasks={executedPlannedTasks}
+                      tasks={executedTasks}
                       toggleStatus={toggleTaskStatus}
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}
@@ -1014,7 +1023,7 @@ export function TaskManagementApp() {
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
-                      tasks={executedUnplannedTasks}
+                      tasks={executedTasks}
                       toggleStatus={toggleTaskStatus}
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}

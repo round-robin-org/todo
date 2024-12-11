@@ -22,7 +22,9 @@ export function useTasks() {
 
     try {
       setLoading(true)
-      const { data, error } = await supabase
+
+      // scheduled_date が null のタスクを取得
+      const { data: unplannedData, error: unplannedError } = await supabase
         .from('tasks')
         .select(`
           *,
@@ -31,13 +33,37 @@ export function useTasks() {
           )
         `)
         .eq('user_id', userId)
+        .is('scheduled_date', null)
+        .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Supabaseからのエラー:', error)
-        throw error
+      if (unplannedError) {
+        console.error('Supabaseからのエラー:', unplannedError)
+        throw unplannedError
       }
 
-      const formattedTasks: Task[] = data.map((task: any) => ({
+      console.log("unplannedData:", unplannedData)
+
+      // scheduled_date が指定された期間内のタスクを取得
+      const { data: plannedData, error: plannedError } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          labels (
+            name
+          )
+        `)
+        .eq('user_id', userId)
+        .gte('scheduled_date', startDate.toISOString())
+        .lte('scheduled_date', endDate.toISOString())
+        .order('created_at', { ascending: false })
+
+      if (plannedError) {
+        console.error('Supabaseからのエラー:', plannedError)
+        throw plannedError
+      }
+
+      // 2つの結果を別々にフォーマット
+      const formattedUnplannedTasks: Task[] = unplannedData.map((task: any) => ({
         id: task.id.toString(),
         title: task.title,
         memo: task.memo || '',
@@ -50,7 +76,23 @@ export function useTasks() {
         exceptions: task.exceptions || {}
       }))
 
-      const expandedTasks = expandRecurringTasks(formattedTasks, startDate, endDate);
+      const formattedPlannedTasks: Task[] = plannedData.map((task: any) => ({
+        id: task.id.toString(),
+        title: task.title,
+        memo: task.memo || '',
+        status: task.status === 'executed' ? 'executed' : 'planned',
+        starred: task.starred || false,
+        scheduledDate: task.scheduled_date || null,
+        label: task.labels?.name || null,
+        routine: task.routine || null,
+        parentTaskId: task.parent_task_id || null,
+        exceptions: task.exceptions || {}
+      }))
+
+      const expandedPlannedTasks = expandRecurringTasks(formattedPlannedTasks, startDate, endDate);
+
+      // 2つの結果を結合
+      const expandedTasks = [...formattedUnplannedTasks, ...expandedPlannedTasks];
 
       setTasks(expandedTasks);
     } catch (error: any) {
