@@ -381,6 +381,7 @@ export function TaskManagementApp() {
       }
 
       toast.success('Task updated successfully');
+      fetchTasks(startDate, endDate);
     } catch (error: any) {
       console.error('Failed to update task:', error);
       toast.error(`Failed to update task: ${error.message}`);
@@ -635,13 +636,7 @@ export function TaskManagementApp() {
                 }
               }), taskToDelete.exceptions || {});
 
-            setTasks(prevTasks =>
-              prevTasks.map(t =>
-                t.originalId === originalId
-                  ? { ...t, routine: { ...t.routine, ends: { type: 'on', value: currentDate } }, exceptions: newExceptions }
-                  : t
-              )
-            );
+            fetchTasks(startDate, endDate);
             break;
 
           case 'single':
