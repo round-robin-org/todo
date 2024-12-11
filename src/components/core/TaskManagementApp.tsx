@@ -18,6 +18,7 @@ import { useAuth } from '@src/hooks/useAuth'
 import { expandRecurringTasks } from '@src/utils/expandRecurringTasks'
 import { DropResult } from 'react-beautiful-dnd'
 import { RecurrenceRuleDialog } from './RecurrenceRuleDialog'
+import { LabelManagement } from '@src/components/core/LabelManagement'
 
 // calculateChartDateRange 関数を TaskManagementApp コンポーネントの外に移動
 const calculateChartDateRangeForPeriod = (currentDate: Date, period: 'day' | 'week' | 'month' | 'year', offset: number) => {
@@ -962,6 +963,47 @@ export function TaskManagementApp() {
     setShowRecurrenceDialog(true);
   };
 
+  // ラベルを編集する関数を追加
+  const editLabel = async (oldLabel: string, newLabel: string) => {
+    if (!userId) {
+      toast.error('Authentication is required.');
+      return;
+    }
+
+    try {
+      // データベースでラベル名を更新
+      const { error } = await supabase
+        .from('labels')
+        .update({ name: newLabel })
+        .eq('name', oldLabel)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // タスク内のラベル名を更新
+      const { error: updateTasksError } = await supabase
+        .from('tasks')
+        .update({ label: newLabel })
+        .eq('label', oldLabel)
+        .eq('user_id', userId);
+
+      if (updateTasksError) throw updateTasksError;
+
+      // ローカルのラベルリストを更新
+      setLabels(prevLabels => prevLabels.map(label => label === oldLabel ? newLabel : label));
+
+      // タスクのラベルも更新
+      setTasks(prevTasks => prevTasks.map(task => 
+        task.label === oldLabel ? { ...task, label: newLabel } : task
+      ));
+
+      toast.success('Label updated successfully');
+    } catch (error: any) {
+      console.error('Failed to update label:', error);
+      toast.error(`Failed to update label: ${error.message}`);
+    }
+  };
+
   return (
     <div>
       <Header />
@@ -1124,6 +1166,12 @@ export function TaskManagementApp() {
           onSubmit={handleRecurrenceSubmit}
         />
       )}
+      <LabelManagement 
+        labels={labels}
+        addLabel={addLabel}
+        deleteLabel={deleteLabel}
+        editLabel={editLabel}
+      />
     </div>
   )
 }
