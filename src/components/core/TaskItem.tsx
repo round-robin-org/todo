@@ -69,15 +69,25 @@ export function TaskItem({
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
 
+  const cancelSchedulingMode = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (setTaskToSchedule) {
+      setTaskToSchedule(null);
+      toast.info('Scheduling or copy mode canceled');
+    }
+  };
+
   const handleLabelClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsLabelSelectorOpen(true)
-  }
+    e.stopPropagation();
+    setIsLabelSelectorOpen(true);
+    cancelSchedulingMode(e);
+  };
   
   const handleDelete = (e: React.MouseEvent, type?: 'single' | 'all' | 'future') => {
     e.stopPropagation();
     deleteTask(task.id, type);
     setShowDelete(false);
+    cancelSchedulingMode(e);
   };
 
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -85,9 +95,10 @@ export function TaskItem({
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   const handleTitleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsEditingTitle(true)
-  }
+    e.stopPropagation();
+    setIsEditingTitle(true);
+    cancelSchedulingMode(e);
+  };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedTitle(e.target.value)
@@ -107,6 +118,20 @@ export function TaskItem({
     }
   }
 
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (task.scheduledDate) {
+      toggleStatus(task.id, task.occurrenceDate);
+    }
+    cancelSchedulingMode(e);
+  };
+
+  const handleStarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleStar(task.id, task.occurrenceDate);
+    cancelSchedulingMode(e);
+  };
+
   const handlers = useSwipeable({
     onSwipedLeft: () => {
       setShowDelete(true)
@@ -120,12 +145,6 @@ export function TaskItem({
     trackMouse: true,
     trackTouch: true,
   })
-
-  const handleCancelScheduling = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setTaskToSchedule(null);
-    toast.info('Canceled scheduling or copy mode');
-  };
 
   if (task.originalId && task.status === 'deleted') {
     return null;
@@ -154,6 +173,7 @@ export function TaskItem({
                 if (!isExecuted && onRecurrenceEdit) {
                   onRecurrenceEdit(task);
                 }
+                cancelSchedulingMode(e);
               }}
               disabled={isExecuted}
             >
@@ -179,7 +199,7 @@ export function TaskItem({
                   Copy to date
                 </DropdownMenuItem>
                 {task.mode && (task.mode === 'copy' || task.mode === 'schedule') && (
-                  <DropdownMenuItem onClick={handleCancelScheduling}>
+                  <DropdownMenuItem onClick={cancelSchedulingMode}>
                     <X className="mr-2 h-4 w-4" />
                     Cancel {task.mode === 'copy' ? 'Copy' : 'Schedule'} Mode
                   </DropdownMenuItem>
@@ -217,7 +237,7 @@ export function TaskItem({
                   Copy to date
                 </DropdownMenuItem>
                 {task.mode && (task.mode === 'copy' || task.mode === 'schedule') && (
-                  <DropdownMenuItem onClick={handleCancelScheduling}>
+                  <DropdownMenuItem onClick={cancelSchedulingMode}>
                     <X className="mr-2 h-4 w-4" />
                     Cancel {task.mode === 'copy' ? 'Copy' : 'Schedule'} Mode
                   </DropdownMenuItem>
@@ -256,7 +276,7 @@ export function TaskItem({
                 toggleStatus(task.id, task.occurrenceDate);
               }
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleCheckboxClick}
             aria-label={`Mark task "${task.title}" as ${task.status === "executed" ? "planned" : "executed"}`}
             className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
             disabled={!task.scheduledDate}
@@ -293,10 +313,7 @@ export function TaskItem({
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleStar(task.id, task.occurrenceDate)
-            }}
+            onClick={handleStarClick}
             aria-label={`${task.starred ? "Unstar" : "Star"} task "${task.title}"`}
           >
             <Star className={task.starred ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
