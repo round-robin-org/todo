@@ -159,7 +159,7 @@ export function TaskItem({
             >
               <Repeat className={`h-4 w-4 ${isExecuted ? 'text-gray-300' : 'text-gray-500'}`} />
             </Button>
-          ) : (
+          ) : disableScheduling || isExecuted ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
@@ -167,19 +167,6 @@ export function TaskItem({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56" onClick={(e) => e.stopPropagation()}>
-                {!disableScheduling && !isExecuted && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (setTaskToSchedule) {
-                        setTaskToSchedule({ ...task, mode: 'schedule' });
-                      }
-                    }}
-                  >
-                    <CalendarCheck className="mr-2 h-4 w-4" />
-                    Schedule
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -197,19 +184,55 @@ export function TaskItem({
                     Cancel {task.mode === 'copy' ? 'Copy' : 'Schedule'} Mode
                   </DropdownMenuItem>
                 )}
-                {!disableScheduling && !isExecuted && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isExecuted && onRecurrenceEdit) {
-                        onRecurrenceEdit(task);
-                      }
-                    }}
-                  >
-                    <Repeat className="mr-2 h-4 w-4" />
-                    Repeat
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (setTaskToSchedule) {
+                      setTaskToSchedule({ ...task, mode: 'schedule' });
+                    }
+                  }}
+                >
+                  <CalendarCheck className="mr-2 h-4 w-4" />
+                  Schedule
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (setTaskToSchedule) {
+                      setTaskToSchedule({ ...task, mode: 'copy' });
+                    }
+                  }}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy to date
+                </DropdownMenuItem>
+                {task.mode && (task.mode === 'copy' || task.mode === 'schedule') && (
+                  <DropdownMenuItem onClick={handleCancelScheduling}>
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel {task.mode === 'copy' ? 'Copy' : 'Schedule'} Mode
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isExecuted && onRecurrenceEdit) {
+                      onRecurrenceEdit(task);
+                    }
+                  }}
+                >
+                  <Repeat className="mr-2 h-4 w-4" />
+                  Repeat
+                </DropdownMenuItem>
                 {task.scheduledDate && (
                   <DropdownMenuItem
                     onClick={(e) => {
