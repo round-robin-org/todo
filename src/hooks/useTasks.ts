@@ -46,7 +46,7 @@ export function useTasks() {
         scheduledDate: task.scheduled_date || null,
         label: task.labels?.name || null,
         routine: task.routine || null,
-        parentTaskId: task.parent_task_id || null,
+        originalId: task.original_task_id || null,
         exceptions: task.exceptions || {}
       }))
 

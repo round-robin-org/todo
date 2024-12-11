@@ -69,7 +69,7 @@ export function TaskDialog({
         ...taskToEdit,
         ...taskData,
         newLabel: data.newLabel,
-        parentTaskId: taskToEdit.parentTaskId || taskToEdit.id,
+        originalId: taskToEdit.originalId || taskToEdit.id,
       };
 
       if (taskToEdit.isRecurring) {

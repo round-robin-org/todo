@@ -97,7 +97,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
     trackTouch: true,
   })
 
-  if (task.parentTaskId && task.status === 'deleted') {
+  if (task.originalId && task.status === 'deleted') {
     return null;
   }
 
@@ -222,7 +222,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             <Star className={task.starred ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
           </Button>
           {showDelete && (
-            task.routine || task.parentTaskId ? (
+            task.routine || task.originalId ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 

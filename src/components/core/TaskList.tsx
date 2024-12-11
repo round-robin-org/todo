@@ -51,7 +51,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
       scheduledDate: isToday ? format(selectedDate, 'yyyy-MM-dd') : null,
       label: null,
       routine: null,
-      parentTaskId: null,
+      originalId: null,
       exceptions: {}
     }
 

@@ -243,7 +243,7 @@ export function TaskManagementApp() {
         scheduledDate: data.scheduled_date || null,
         label: data.label || null,
         routine: data.routine || null,
-        parentTaskId: null,
+        originalId: null,
         exceptions: {}
       }
 
@@ -318,7 +318,7 @@ export function TaskManagementApp() {
 
         setTasks(prevTasks =>
           prevTasks.map(t =>
-            t.originalTaskId === updatedTask.originalId
+            t.originalId === updatedTask.originalId
               ? { ...t, routine: updatedTask.routine, exceptions: {} }
               : t
           )
@@ -408,7 +408,8 @@ export function TaskManagementApp() {
         const { error } = await supabase
           .from('tasks')
           .update({ exceptions: newExceptions })
-          .eq('id', task.originalId);
+          .eq('id', task.originalId)
+          .eq('user_id', userId)
 
         if (error) throw error;
 
@@ -428,11 +429,12 @@ export function TaskManagementApp() {
           })
         );
       } else {
-        // 通常タスクの処理（変更なし）
+        // 通常タスクの処理
         const { error } = await supabase
           .from('tasks')
           .update({ status: updatedStatus })
-          .eq('id', taskId);
+          .eq('id', taskId)
+          .eq('user_id', userId)
 
         if (error) throw error;
 
@@ -470,7 +472,8 @@ export function TaskManagementApp() {
         const { error } = await supabase
           .from('tasks')
           .update({ exceptions: newExceptions })
-          .eq('id', task.originalId);
+          .eq('id', task.originalId)
+          .eq('user_id', userId)
 
         if (error) throw error;
 
@@ -490,11 +493,12 @@ export function TaskManagementApp() {
           })
         );
       } else {
-        // 通常タスクの処理（変更なし）
+        // 通常タスクの処理
         const { error } = await supabase
           .from('tasks')
           .update({ starred: updatedStar })
-          .eq('id', taskId);
+          .eq('id', taskId)
+          .eq('user_id', userId)
 
         if (error) throw error;
 
@@ -581,7 +585,7 @@ export function TaskManagementApp() {
 
       // 繰り返しタスクの削除
       if (taskToDelete.isRecurring) {
-        const parentId = taskToDelete.originalId;
+        const originalId = taskToDelete.originalId;
         const currentDate = taskToDelete.scheduledDate;
         let newExceptions = taskToDelete.exceptions || {};
 
@@ -591,13 +595,13 @@ export function TaskManagementApp() {
             const { error: deleteError } = await supabase
               .from('tasks')
               .delete()
-              .eq('id', parentId)
+              .eq('id', originalId)
               .eq('user_id', userId);
 
             if (deleteError) throw deleteError;
 
             setTasks(prevTasks => 
-              prevTasks.filter(t => t.originalId !== parentId && t.id !== parentId)
+              prevTasks.filter(t => t.originalId !== originalId && t.id !== originalId)
             );
             break;
 
@@ -615,7 +619,7 @@ export function TaskManagementApp() {
                   }
                 }
               })
-              .eq('id', parentId)
+              .eq('id', originalId)
               .eq('user_id', userId);
 
             if (updateError) throw updateError;
@@ -633,7 +637,7 @@ export function TaskManagementApp() {
 
             setTasks(prevTasks =>
               prevTasks.map(t =>
-                t.id === parentId
+                t.originalId === originalId
                   ? { ...t, routine: { ...t.routine, ends: { type: 'on', value: currentDate } }, exceptions: newExceptions }
                   : t
               )
@@ -654,14 +658,14 @@ export function TaskManagementApp() {
             const { error } = await supabase
               .from('tasks')
               .update({ exceptions: newExceptions })
-              .eq('id', parentId)
+              .eq('id', originalId)
               .eq('user_id', userId);
 
             if (error) throw error;
 
             setTasks(prevTasks =>
               prevTasks.map(t =>
-                t.id === parentId
+                t.originalId === originalId
                   ? { ...t, exceptions: newExceptions }
                   : t
               ).filter(t => t.id !== taskId)
@@ -700,6 +704,7 @@ export function TaskManagementApp() {
         .from('tasks')
         .update({ scheduled_date: format(date, 'yyyy-MM-dd') })
         .eq('id', taskId)
+        .eq('user_id', userId)
 
       if (error) throw error
 
@@ -720,6 +725,7 @@ export function TaskManagementApp() {
         .from('tasks')
         .update({ scheduled_date: null })
         .eq('id', taskId)
+        .eq('user_id', userId)
 
       if (error) {
         console.error('Failed to unassign task from date:', error)
@@ -745,6 +751,7 @@ export function TaskManagementApp() {
         .from('labels')
         .delete()
         .eq('name', labelToDelete)
+        .eq('user_id', userId)
 
       if (error) throw error;
 
@@ -793,6 +800,7 @@ export function TaskManagementApp() {
         .from('tasks')
         .update({ label: newLabel === 'none' ? null : newLabel })
         .eq('id', updateId)
+        .eq('user_id', userId)
         .select()
         .single()
 
@@ -844,6 +852,7 @@ export function TaskManagementApp() {
           .from('tasks')
           .update({ title: newTitle })
           .eq('id', updateId)
+          .eq('user_id', userId)
         
         if (updateError) {
           throw updateError
@@ -862,6 +871,7 @@ export function TaskManagementApp() {
           .from('tasks')
           .update({ title: newTitle })
           .eq('id', taskId)
+          .eq('user_id', userId)
         
         if (updateError) {
           throw updateError
@@ -902,7 +912,7 @@ export function TaskManagementApp() {
       scheduledDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null,
       label: null,
       routine: null,
-      parentTaskId: null,
+      originalId: null,
       exceptions: {}
     }
 

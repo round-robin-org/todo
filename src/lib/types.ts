@@ -27,7 +27,6 @@ export type Task = {
   scheduledDate: string | null;
   label: string;
   routine: Routine | null;
-  parentTaskId: string | null;
   exceptions?: {
     [date: string]: {
       status?: 'executed' | 'planned' | 'deleted';
