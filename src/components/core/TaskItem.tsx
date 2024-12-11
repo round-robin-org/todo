@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react'
 import { Checkbox } from "@src/components/ui/checkbox"
 import { Badge } from "@src/components/ui/badge"
 import { Button } from "@src/components/ui/button"
-import { Star, Trash, CalendarCheck, AlertCircle, Repeat, Calendar } from 'lucide-react'
+import { Star, Trash, CalendarCheck, AlertCircle, Repeat, Calendar, Copy, X } from 'lucide-react'
 import { Task } from '@src/lib/types'
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import {
 } from "@src/components/ui/dropdown-menu"
 import { LabelSelector } from '@src/components/core/LabelSelector'
 import { useSwipeable } from 'react-swipeable'
+import { toast } from 'sonner'
 
 type TaskItemProps = {
   task: Task;
@@ -24,7 +25,7 @@ type TaskItemProps = {
   isExecuted?: boolean;
   assignToDate?: (id: string) => void;
   unassignFromDate?: (id: string) => void;
-  setTaskToSchedule?: (task: Task | null) => void;
+  setTaskToSchedule?: (task: Task & { mode?: 'schedule' | 'copy' } | null) => void;
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
@@ -40,7 +41,30 @@ type TaskItemProps = {
   disableScheduling?: boolean;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onRecurrenceEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels, disableScheduling = false }: TaskItemProps) {
+export function TaskItem({ 
+  task, 
+  toggleStatus, 
+  toggleStar, 
+  onRecurrenceEdit, 
+  deleteTask, 
+  isExecuted, 
+  assignToDate, 
+  unassignFromDate, 
+  setTaskToSchedule, 
+  labels, 
+  updateTaskLabel, 
+  updateTaskTitle, 
+  addTask, 
+  updateTask, 
+  addLabel, 
+  deleteLabel, 
+  isToday, 
+  selectedDate, 
+  showUnplannedTasks, 
+  allowSelectDate, 
+  setLabels, 
+  disableScheduling = false 
+}: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
@@ -97,9 +121,18 @@ export function TaskItem({ task, toggleStatus, toggleStar, onRecurrenceEdit, del
     trackTouch: true,
   })
 
+  const handleCancelScheduling = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTaskToSchedule(null);
+    toast.info('Canceled scheduling or copy mode');
+  };
+
   if (task.originalId && task.status === 'deleted') {
     return null;
   }
+
+  const isCopyMode = task.mode === 'copy';
+  const isScheduleMode = task.mode === 'schedule';
 
   return (
     <>
@@ -118,14 +151,13 @@ export function TaskItem({ task, toggleStatus, toggleStar, onRecurrenceEdit, del
               size="icon" 
               onClick={(e) => {
                 e.stopPropagation();
-                onRecurrenceEdit(task);
+                if (!isExecuted && onRecurrenceEdit) {
+                  onRecurrenceEdit(task);
+                }
               }}
+              disabled={isExecuted}
             >
-              <Repeat className="h-4 w-4 text-gray-500" />
-            </Button>
-          ) : disableScheduling ? (
-            <Button variant="ghost" size="icon" disabled>
-              <Calendar className="h-4 w-4 text-gray-300" />
+              <Repeat className={`h-4 w-4 ${isExecuted ? 'text-gray-300' : 'text-gray-500'}`} />
             </Button>
           ) : (
             <DropdownMenu>
@@ -135,12 +167,12 @@ export function TaskItem({ task, toggleStatus, toggleStar, onRecurrenceEdit, del
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56" onClick={(e) => e.stopPropagation()}>
-                {!task.isRecurring && (
+                {!disableScheduling && !isExecuted && (
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
                       if (setTaskToSchedule) {
-                        setTaskToSchedule(task);
+                        setTaskToSchedule({ ...task, mode: 'schedule' });
                       }
                     }}
                   >
@@ -151,13 +183,34 @@ export function TaskItem({ task, toggleStatus, toggleStar, onRecurrenceEdit, del
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    onRecurrenceEdit(task);
+                    if (setTaskToSchedule) {
+                      setTaskToSchedule({ ...task, mode: 'copy' });
+                    }
                   }}
                 >
-                  <Repeat className="mr-2 h-4 w-4" />
-                  Repeat
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy to date
                 </DropdownMenuItem>
-                {task.scheduledDate && !task.isRecurring && (
+                {task.mode && (task.mode === 'copy' || task.mode === 'schedule') && (
+                  <DropdownMenuItem onClick={handleCancelScheduling}>
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel {task.mode === 'copy' ? 'Copy' : 'Schedule'} Mode
+                  </DropdownMenuItem>
+                )}
+                {!disableScheduling && !isExecuted && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isExecuted && onRecurrenceEdit) {
+                        onRecurrenceEdit(task);
+                      }
+                    }}
+                  >
+                    <Repeat className="mr-2 h-4 w-4" />
+                    Repeat
+                  </DropdownMenuItem>
+                )}
+                {task.scheduledDate && (
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();

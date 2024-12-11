@@ -8,7 +8,6 @@ import { CalendarView } from '@src/components/core/CalendarView'
 import { ChartView } from '@src/components/core/ChartView'
 import { useTasks } from '@src/hooks/useTasks'
 import { TaskList } from '@src/components/core/TaskList'
-import { ExecutedTasks } from '@src/components/core/ExecutedTasks'
 import { TabContent } from '@src/components/core/TabContent'
 import { Task } from '@src/lib/types'
 import { supabase } from '@src/lib/supabase'
@@ -61,13 +60,16 @@ export function TaskManagementApp() {
   const [showUnplannedTasks, setShowUnplannedTasks] = useState(false)
   const [labels, setLabels] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
+  const [schedulingTask, setSchedulingTask] = useState<(Task & { mode?: 'schedule' | 'copy' }) | null>(null)
   const [showExecutedTasksList, setShowExecutedTasksList] = useState(false)
   const [newCalendarTaskTitle, setNewCalendarTaskTitle] = useState('')
   const [aggregationPeriod, setAggregationPeriod] = useState< 'day' | 'week' | 'month' | 'year' >('week')
   const [navigationOffset, setNavigationOffset] = useState<number>(0)
   const [showRecurrenceDialog, setShowRecurrenceDialog] = useState(false);
   const [editingTaskRoutine, setEditingTaskRoutine] = useState<Task | null>(null);
+
+  // 新たに追加する状態変数
+  const [allowSelectDate, setAllowSelectDate] = useState<boolean>(false);
 
   // 日付範囲の設定を改善
   let startDate: Date
@@ -96,14 +98,23 @@ export function TaskManagementApp() {
       viewTasks = tasks
   }
 
+  // `allowSelectDate` の値をタブに応じて設定
+  useEffect(() => {
+    if (activeTab === "calendar") {
+      setAllowSelectDate(true);
+    } else {
+      setAllowSelectDate(false);
+    }
+  }, [activeTab]);
+
   // フィルタリングされたタスクセット
   const plannedTasks = showUnplannedTasks
     ? viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
     : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "planned");
 
   const executedPlannedTasks = showUnplannedTasks
-    ? viewTasks.filter(task => !task.scheduledDate)
-    : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd'));
+    ? viewTasks.filter(task => !task.scheduledDate && task.status === "executed")
+    : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "executed");
 
   const unplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
   const executedUnplannedTasks = viewTasks.filter(task => !task.scheduledDate)
@@ -118,29 +129,8 @@ export function TaskManagementApp() {
     setTasks(reorderedTasks);
   };
 
-  const setTaskToScheduleHandler = (task: Task | null) => {
-    if (task) {
-      if (task.isRecurring) {
-        toast.error('Recurring tasks cannot be set to scheduling mode.');
-        return;
-      }
-
-      setTasks(prevTasks =>
-        prevTasks.map(t =>
-          t.id === task.id
-            ? { ...t, isScheduling: !t.isScheduling }
-            : { ...t, isScheduling: false }
-        )
-      );
-
-      if (schedulingTask?.id === task.id) {
-        setSchedulingTask(null);
-        toast.info(`Scheduling mode canceled for: "${task.title}"`);
-      } else {
-        setSchedulingTask(task);
-        toast.info(`Task "${task.title}" set to scheduling mode. Please select a date.`);
-      }
-    } else {
+  const setTaskToScheduleHandler = (task: Task & { mode?: 'schedule' | 'copy' } | null) => {
+    if (!task) {
       setTasks(prevTasks =>
         prevTasks.map(t => ({
           ...t,
@@ -149,13 +139,51 @@ export function TaskManagementApp() {
       );
       setSchedulingTask(null);
       toast.info('Scheduling mode canceled.');
+      return;
     }
+
+    if (task.isRecurring) {
+      toast.error('Recurring tasks cannot be scheduled directly.');
+      return;
+    }
+
+    if (task.status === 'executed' && task.mode !== 'copy') {
+      toast.error('Executed tasks can only be copied.');
+      return;
+    }
+
+    setTasks(prevTasks =>
+      prevTasks.map(t =>
+        t.id === task.id
+          ? { ...t, isScheduling: true }
+          : { ...t, isScheduling: false }
+      )
+    );
+
+    setSchedulingTask(task);
+    
+    const modeMessage = task.mode === 'copy' 
+      ? `Copy mode activated for: "${task.title}"`
+      : `Scheduling mode activated for: "${task.title}"`;
+    toast.info(modeMessage);
   };
 
   const handleDateClick = (date: Date) => {
     if (schedulingTask) {
-      assignTaskToDate(schedulingTask.id, date)
-      setSchedulingTask(null)
+      if (schedulingTask.mode === 'copy') {
+        // タスクをコピーして新しい日付に割り当て
+        const newTask: Task = {
+          ...schedulingTask,
+          id: '', // 新しいIDが生成されるように空にする
+          scheduledDate: format(date, 'yyyy-MM-dd'),
+          mode: undefined // modeプロパティを削除
+        };
+        addTask(newTask);
+      } else {
+        // 通常のスケジュール処理
+        assignTaskToDate(schedulingTask.id, date);
+      }
+      setSchedulingTask(null);
       setTasks(prevTasks =>
         prevTasks.map(t =>
           t.id === schedulingTask.id
@@ -164,8 +192,8 @@ export function TaskManagementApp() {
         )
       );
     } else {
-      setSelectedDate(date)
-      setShowUnplannedTasks(false)
+      setSelectedDate(date);
+      setShowUnplannedTasks(false);
     }
   }
 
@@ -772,12 +800,6 @@ export function TaskManagementApp() {
            (showExecutedTasksList || task.status !== 'executed');
   });
 
-  // Filter today's executed tasks
-  const executedTodayTasks = tasks.filter(task => 
-    (task.scheduledDate === today || !task.scheduledDate) && 
-    task.status === 'executed'
-  );
-
   // ラベルを更新する関数を修正
   const updateTaskLabel = async (taskId: string, newLabel: string) => {
     if (!userId) {
@@ -917,7 +939,7 @@ export function TaskManagementApp() {
     setNewCalendarTaskTitle('');
   }
 
-  // 変更箇所: useEffect を追加し、activeTab または selectedDate が変更された場合にタスクを再ェッチ
+  // 変更箇所: useEffect を追加し、activeTab または selectedDate が変更された場合にタスクを再フェッチ
   useEffect(() => {
     let startDate: Date
     let endDate: Date
@@ -1027,7 +1049,7 @@ export function TaskManagementApp() {
             toggleExecutedTasks={toggleExecutedTasks}
             selectedDate={selectedDate}
             showUnplannedTasks={showUnplannedTasks}
-            allowSelectDate={false}
+            allowSelectDate={allowSelectDate}
             isToday={!showUnplannedTasks}
           >
             <CalendarView 
@@ -1052,14 +1074,13 @@ export function TaskManagementApp() {
                     tasks={plannedTasks}
                     toggleStatus={toggleTaskStatus}
                     toggleStar={toggleTaskStar}
-                    onEdit={setEditingTask}
-                    isDraggable={false}
+                    onRecurrenceEdit={handleRecurrenceEdit}
                     deleteTask={deleteTask}
-                    onDragEnd={handleDragEnd}
                     assignTaskToDate={assignTaskToDate}
                     unassignFromDate={unassignTaskFromDate}
                     setTaskToSchedule={setTaskToScheduleHandler}
-                    schedulingTaskId={schedulingTask?.id}
+                    showExecutedTasks={showExecutedTasks}
+                    executedTasks={executedPlannedTasks}
                     labels={labels}
                     setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
@@ -1069,26 +1090,8 @@ export function TaskManagementApp() {
                     addTask={addTask}
                     isToday={!showUnplannedTasks}
                     selectedDate={selectedDate}
-                    activeTab={activeTab}
-                    onRecurrenceEdit={handleRecurrenceEdit}
+                    allowSelectDate={allowSelectDate}
                   />
-                  {showExecutedTasks && (
-                    <ExecutedTasks 
-                      tasks={executedPlannedTasks}
-                      toggleStatus={toggleTaskStatus}
-                      toggleStar={toggleTaskStar}
-                      onEdit={setEditingTask}
-                      deleteTask={deleteTask}
-                      updateTaskLabel={updateTaskLabel}
-                      labels={labels}
-                      addLabel={addLabel}
-                      updateTaskTitle={updateTaskTitleHandler}
-                      addTask={addTask}
-                      updateTask={updateTask}
-                      deleteLabel={deleteLabel}
-                      setLabels={setLabels}
-                    />
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -1102,14 +1105,13 @@ export function TaskManagementApp() {
                     tasks={unplannedTasks}
                     toggleStatus={toggleTaskStatus}
                     toggleStar={toggleTaskStar}
-                    onEdit={setEditingTask}
-                    isDraggable={false}
+                    onRecurrenceEdit={handleRecurrenceEdit}
                     deleteTask={deleteTask}
-                    onDragEnd={handleDragEnd}
                     assignTaskToDate={assignTaskToDate}
                     unassignFromDate={unassignTaskFromDate}
                     setTaskToSchedule={setTaskToScheduleHandler}
-                    schedulingTaskId={schedulingTask?.id}
+                    showExecutedTasks={showExecutedTasks}
+                    executedTasks={executedUnplannedTasks}
                     labels={labels}
                     setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
@@ -1119,7 +1121,7 @@ export function TaskManagementApp() {
                     addTask={addTask}
                     isToday={!showUnplannedTasks}
                     selectedDate={selectedDate}
-                    activeTab={activeTab}
+                    allowSelectDate={allowSelectDate}
                   />
                 </CardContent>
               </Card>
@@ -1140,7 +1142,7 @@ export function TaskManagementApp() {
             showExecutedTasks={false}
             selectedDate={new Date()}
             showUnplannedTasks={false}
-            allowSelectDate={true}
+            allowSelectDate={allowSelectDate}
             isToday={true}
           >
             <ChartView 

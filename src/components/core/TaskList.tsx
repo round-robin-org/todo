@@ -33,12 +33,35 @@ type TaskListProps = {
   setLabels: (labels: string[]) => void;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onRecurrenceEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskListProps) {
+export function TaskList({ 
+  tasks, 
+  toggleStatus, 
+  toggleStar, 
+  onRecurrenceEdit, 
+  deleteTask, 
+  assignTaskToDate, 
+  unassignFromDate, 
+  setTaskToSchedule, 
+  showExecutedTasks, 
+  executedTasks, 
+  labels, 
+  updateTaskLabel, 
+  updateTaskTitle, 
+  addTask, 
+  updateTask, 
+  addLabel, 
+  deleteLabel, 
+  isToday, 
+  selectedDate, 
+  showUnplannedTasks, 
+  allowSelectDate, 
+  setLabels 
+}: TaskListProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   const handleAddTask = () => {
     if (newTaskTitle.trim() === '') {
-      toast.error('タスクのタイトルを入力してください');
+      toast.error('Enter a task name');
       return;
     }
 
