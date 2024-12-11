@@ -13,6 +13,11 @@ type ExecutedTasksProps = {
   updateTaskLabel: (taskId: string, newLabel: string) => Promise<void>;
   labels: string[];
   addLabel: (label: string) => Promise<void>;
+  updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
+  addTask: (task: Task) => void;
+  updateTask: (task: Task) => void;
+  deleteLabel: (label: string) => Promise<void>;
+  setLabels: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export function ExecutedTasks({ 
@@ -23,7 +28,12 @@ export function ExecutedTasks({
   deleteTask, 
   updateTaskLabel,
   labels,
-  addLabel
+  addLabel,
+  updateTaskTitle,
+  addTask,
+  updateTask,
+  deleteLabel,
+  setLabels
 }: ExecutedTasksProps) {
   const executedTasks = tasks.filter(task => task.status === "executed")
   
@@ -43,6 +53,15 @@ export function ExecutedTasks({
           updateTaskLabel={updateTaskLabel}
           labels={labels}
           addLabel={addLabel}
+          updateTaskTitle={updateTaskTitle}
+          addTask={addTask}
+          updateTask={updateTask}
+          deleteLabel={deleteLabel}
+          setLabels={setLabels}
+          isToday={true}
+          selectedDate={new Date()}
+          showUnplannedTasks={false}
+          allowSelectDate={false}
           disableScheduling={true}
         />
       ))}

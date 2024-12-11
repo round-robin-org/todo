@@ -1010,6 +1010,11 @@ export function TaskManagementApp() {
                       updateTaskLabel={updateTaskLabel}
                       labels={labels}
                       addLabel={addLabel}
+                      updateTaskTitle={updateTaskTitleHandler}
+                      addTask={addTask}
+                      updateTask={updateTask}
+                      deleteLabel={deleteLabel}
+                      setLabels={setLabels}
                     />
                   )}
                 </CardContent>
