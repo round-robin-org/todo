@@ -30,7 +30,7 @@ type TaskItemProps = {
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
   addTask: (task: Task) => void;
-  updateTask: (task: Task) => void;
+  updateTask: (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => Promise<void>;
   addLabel: (newLabel: string) => Promise<void>;
   deleteLabel: (label: string) => Promise<void>;
   isToday: boolean;
@@ -39,6 +39,7 @@ type TaskItemProps = {
   allowSelectDate: boolean;
   setLabels: React.Dispatch<React.SetStateAction<string[]>>;
   disableScheduling?: boolean;
+  updateTaskMemo: (id: string, newMemo: string, updateType?: 'global' | 'single') => void;
 }
 
 export function TaskItem({ 
@@ -63,17 +64,21 @@ export function TaskItem({
   showUnplannedTasks, 
   allowSelectDate, 
   setLabels, 
-  disableScheduling = false 
+  disableScheduling = false, 
+  updateTaskMemo 
 }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
+  const [isEditingMemo, setIsEditingMemo] = useState(false)
+  const [editedMemo, setEditedMemo] = useState(task.memo)
+  const memoTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const cancelSchedulingMode = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (setTaskToSchedule) {
       setTaskToSchedule(null);
-      toast.info('Scheduling or copy mode canceled');
+      // toast.info('Scheduling or copy mode canceled');
     }
   };
 
@@ -130,6 +135,30 @@ export function TaskItem({
     e.stopPropagation();
     toggleStar(task.id, task.occurrenceDate);
     cancelSchedulingMode(e);
+  };
+
+  const handleMemoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditingMemo(true);
+    cancelSchedulingMode(e);
+  };
+
+  const handleMemoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedMemo(e.target.value);
+  };
+
+  const handleMemoBlur = () => {
+    if (editedMemo !== task.memo) {
+      updateTaskMemo(task.id, editedMemo, task.occurrenceDate);
+    }
+    setIsEditingMemo(false);
+  };
+
+  const handleMemoKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
   };
 
   const handlers = useSwipeable({
@@ -281,7 +310,7 @@ export function TaskItem({
             className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
             disabled={!task.scheduledDate}
           />
-          <div className="flex items-center">
+          <div className="flex flex-col flex-1">
             {isEditingTitle ? (
               <input
                 ref={titleInputRef}
@@ -291,18 +320,39 @@ export function TaskItem({
                 onBlur={handleTitleBlur}
                 onKeyDown={handleTitleKeyDown}
                 autoFocus
-                className="font-semibold bg-transparent border-b border-gray-300 focus:outline-none"
+                className="font-semibold bg-transparent border-b border-gray-300 focus:outline-none mb-1"
               />
             ) : (
               <span 
-                className={`font-semibold ${isExecuted ? 'line-through' : ''} cursor-pointer`}
+                className={`font-semibold ${isExecuted ? 'line-through' : ''} cursor-pointer mb-1`}
                 onClick={handleTitleClick}
               >
                 {task.title}
               </span>
             )}
+            <div className="mt-1">
+              {isEditingMemo ? (
+                <textarea
+                  ref={memoTextareaRef}
+                  value={editedMemo}
+                  onChange={handleMemoChange}
+                  onBlur={handleMemoBlur}
+                  onKeyDown={handleMemoKeyDown}
+                  autoFocus
+                  rows={2}
+                  className="text-sm text-gray-500 bg-transparent border rounded p-1 focus:outline-none focus:border-gray-400 resize-none w-full"
+                  placeholder="Add memo..."
+                />
+              ) : (
+                <span 
+                  className="text-gray-500 text-sm cursor-pointer"
+                  onClick={handleMemoClick}
+                >
+                  {task.memo || "Add memo..."}
+                </span>
+              )}
+            </div>
           </div>
-          <span className="text-gray-500 text-sm block">{task.memo}</span>
         </div>
         <div className="flex items-center space-x-2 min-w-fit">
           {task.label ? (

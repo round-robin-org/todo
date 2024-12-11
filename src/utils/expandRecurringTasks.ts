@@ -30,8 +30,8 @@ export function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: 
           status: exception?.status || task.status,
           starred: exception?.starred ?? task.starred,
           memo: exception?.memo || task.memo,
-          label: exception?.label || task.label,
-          title: exception?.title || task.title,
+          label: task.label,
+          title: task.title,
           isRecurring: true,
           occurrenceDate: formattedDate
         })

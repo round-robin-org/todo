@@ -23,7 +23,7 @@ type TaskListProps = {
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   updateTaskTitle: (taskId: string, newTitle: string, updateType?: 'global' | 'single') => void;
   addTask: (task: Task) => void;
-  updateTask: (task: Task) => void;
+  updateTask: (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => Promise<void>;
   addLabel: (label: string) => void;
   deleteLabel: (label: string) => void;
   isToday: boolean;
@@ -31,6 +31,7 @@ type TaskListProps = {
   showUnplannedTasks: boolean;
   allowSelectDate: boolean;
   setLabels: (labels: string[]) => void;
+  updateTaskMemo: (taskId: string, newMemo: string, updateType?: 'global' | 'single') => void;
 }
 
 export function TaskList({ 
@@ -55,7 +56,8 @@ export function TaskList({
   selectedDate, 
   showUnplannedTasks, 
   allowSelectDate, 
-  setLabels 
+  setLabels, 
+  updateTaskMemo 
 }: TaskListProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
@@ -128,6 +130,8 @@ export function TaskList({
             showUnplannedTasks={showUnplannedTasks}
             allowSelectDate={allowSelectDate}
             setLabels={setLabels}
+            updateTaskMemo={updateTaskMemo}
+            occurrenceDate={task.scheduledDate}
           />
         ))}
       </ul>
@@ -157,6 +161,7 @@ export function TaskList({
               showUnplannedTasks={showUnplannedTasks}
               allowSelectDate={allowSelectDate}
               setLabels={setLabels}
+              updateTaskMemo={updateTaskMemo}
             />
           ))}
         </ul>

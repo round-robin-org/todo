@@ -30,7 +30,6 @@ export type Task = {
   exceptions?: {
     [date: string]: {
       status?: 'executed' | 'planned' | 'deleted';
-      scheduled_date?: string;
       starred?: boolean;
       memo?: string;
     };

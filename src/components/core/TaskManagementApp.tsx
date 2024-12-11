@@ -117,7 +117,7 @@ export function TaskManagementApp() {
     : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "executed");
 
   const unplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
-  const executedUnplannedTasks = viewTasks.filter(task => !task.scheduledDate)
+  const executedUnplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status !== "planned")
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -138,7 +138,7 @@ export function TaskManagementApp() {
         }))
       );
       setSchedulingTask(null);
-      toast.info('Scheduling mode canceled.');
+      // toast.info('Scheduling mode canceled.');
       return;
     }
 
@@ -289,8 +289,8 @@ export function TaskManagementApp() {
   // Update Task
   const updateTask = async (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => {
     if (!userId) {
-      toast.error('User not authenticated.')
-      return
+      toast.error('User not authenticated.');
+      return;
     }
 
     try {
@@ -299,7 +299,8 @@ export function TaskManagementApp() {
       let finalLabel = updatedTask.label;
 
       // 新しいラベルの処理を先に行う
-      if (updatedTask.label && !labels.includes(updatedTask.label)) {  // ラベルが存在しない場合
+      if (updatedTask.label && !labels.includes(updatedTask.label)) {
+        // ラベルが存在しない場合
         const trimmedNewLabel = updatedTask.label.trim().toLowerCase();
         if (trimmedNewLabel === 'new' || trimmedNewLabel === 'none') {
           toast.error('"new" or "none" is reserved label name.');
@@ -355,14 +356,22 @@ export function TaskManagementApp() {
         );
       } else if (updatedTask.isRecurring && updatedTask.updateType === 'single') {
         // 単一の繰り返しタスクを更新
+        // メモを exceptions に格納
+        const newExceptions = {
+          ...updatedTask.exceptions,
+          [updatedTask.scheduledDate!]: {
+            ...updatedTask.exceptions?.[updatedTask.scheduledDate!],
+            memo: updatedTask.memo
+          }
+        };
+
         const { data: parentData, error: parentError } = await supabase
           .from('tasks')
           .update({
             title: updatedTask.title,
             label: updatedTask.label,
             routine: updatedTask.routine,
-            memo: updatedTask.memo,
-            exceptions: updatedTask.routine ? {} : updatedTask.exceptions, // ルール変更時はexceptionsをクリア
+            exceptions: newExceptions, // メモを exceptions に格納
             user_id: userId
           })
           .eq('id', updatedTask.originalId)
@@ -379,8 +388,7 @@ export function TaskManagementApp() {
                   title: updatedTask.title,
                   label: updatedTask.label,
                   routine: updatedTask.routine,
-                  memo: updatedTask.memo,
-                  exceptions: updatedTask.routine ? {} : t.exceptions
+                  exceptions: newExceptions
                 }
               : t
           )
@@ -1025,6 +1033,91 @@ export function TaskManagementApp() {
     }
   };
 
+  // Update Task Memo
+  const updateTaskMemoHandler = async (taskId: string, newMemo: string, occurrenceDate?: string) => {
+    if (!userId) {
+      toast.error('Authentication is required.');
+      return;
+    }
+
+    try {
+      // 対象のタスクを見つける
+      const targetTask = tasks.find(t => t.id === taskId);
+      if (!targetTask) throw new Error('Task not found');
+
+      if (targetTask.isRecurring && targetTask.originalId && occurrenceDate) {
+        // 繰り返しタスクの特定の日付に対するメモを更新
+        const newExceptions = {
+          ...targetTask.exceptions,
+          [occurrenceDate]: {
+            ...targetTask.exceptions?.[occurrenceDate],
+            memo: newMemo
+          }
+        };
+
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({ exceptions: newExceptions })
+          .eq('id', targetTask.originalId)
+          .eq('user_id', userId);
+
+        if (updateError) throw updateError;
+
+        setTasks(prevTasks =>
+          prevTasks.map(t => {
+            if (t.originalId === targetTask.originalId) {
+              // 繰り返しタスクの場合、例外の状態を反映
+              const updatedTask = { ...t };
+              if (t.occurrenceDate === occurrenceDate) {
+                updatedTask.memo = newMemo;
+              }
+              updatedTask.exceptions = newExceptions;
+              return updatedTask;
+            }
+            return t;
+          })
+        );
+      } else if (targetTask.isRecurring) {
+        // 繰り返しタスクのメモを更新し、例外をクリア
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({ memo: newMemo, exceptions: {} })
+          .eq('id', targetTask.originalId)
+          .eq('user_id', userId);
+
+        if (updateError) throw updateError;
+
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.originalId === targetTask.originalId
+              ? { ...t, memo: newMemo, exceptions: {} }
+              : t
+          )
+        );
+      } else {
+        // 通常タスクのメモを更新
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({ memo: newMemo })
+          .eq('id', taskId)
+          .eq('user_id', userId);
+
+        if (updateError) throw updateError;
+
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.id === taskId ? { ...t, memo: newMemo } : t
+          )
+        );
+      }
+
+      toast.success('Task memo updated successfully');
+    } catch (error: any) {
+      console.error('Failed to update task memo:', error);
+      toast.error(`Failed to update task memo: ${error.message}`);
+    }
+  };
+
   return (
     <div>
       <Header />
@@ -1085,12 +1178,14 @@ export function TaskManagementApp() {
                     setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
                     updateTaskTitle={updateTaskTitleHandler}
+                    updateTask={updateTask}
                     addLabel={addLabel}
                     deleteLabel={deleteLabel}
                     addTask={addTask}
                     isToday={!showUnplannedTasks}
                     selectedDate={selectedDate}
                     allowSelectDate={allowSelectDate}
+                    updateTaskMemo={updateTaskMemoHandler}
                   />
                 </CardContent>
               </Card>
@@ -1116,12 +1211,14 @@ export function TaskManagementApp() {
                     setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
                     updateTaskTitle={updateTaskTitleHandler}
+                    updateTask={updateTask}
                     addLabel={addLabel}
                     deleteLabel={deleteLabel}
                     addTask={addTask}
                     isToday={!showUnplannedTasks}
                     selectedDate={selectedDate}
                     allowSelectDate={allowSelectDate}
+                    updateTaskMemo={updateTaskMemoHandler}
                   />
                 </CardContent>
               </Card>
