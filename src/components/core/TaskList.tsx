@@ -106,7 +106,6 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             showUnplannedTasks={showUnplannedTasks}
             allowSelectDate={allowSelectDate}
             setLabels={setLabels}
-            viewMode={activeTab}
           />
         ))}
       </ul>

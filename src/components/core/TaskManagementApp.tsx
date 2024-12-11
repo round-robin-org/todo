@@ -16,7 +16,6 @@ import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { useAuth } from '@src/hooks/useAuth'
-import { expandRecurringTasks } from '@src/utils/expandRecurringTasks'
 import { DropResult } from 'react-beautiful-dnd'
 
 // calculateChartDateRange 関数を TaskManagementApp コンポーネントの外に移動
@@ -79,14 +78,6 @@ export function TaskManagementApp() {
     case "calendar":
       startDate = startOfMonth(selectedDate)
       endDate = endOfMonth(selectedDate)
-      viewTasks = tasks
-      break
-    case "list":
-      // List View は今日だけを表示
-      startDate = new Date()
-      startDate.setHours(0, 0, 0, 0)
-      endDate = new Date()
-      endDate.setHours(23, 59, 59, 999)
       viewTasks = tasks
       break
     case "chart":
@@ -798,7 +789,7 @@ export function TaskManagementApp() {
         }
 
         if (!originalTask.is_recurring) {
-          // 繰り返しタスクでない場合は単一スクとして更新
+          // 繰り返しタスクでない場合は単一として更新
           const { error: updateError } = await supabase
             .from('tasks')
             .update({ title: newTitle })
@@ -899,12 +890,6 @@ export function TaskManagementApp() {
         startDate = startOfMonth(selectedDate)
         endDate = endOfMonth(selectedDate)
         break
-      case "list":
-        startDate = new Date()
-        startDate.setHours(0, 0, 0, 0)
-        endDate = new Date()
-        endDate.setHours(23, 59, 59, 999)
-        break
       case "chart":
         const { start: chartStart, end: chartEnd } = calculateChartDateRangeForPeriod(selectedDate, aggregationPeriod, navigationOffset);
         startDate = chartStart;
@@ -923,58 +908,9 @@ export function TaskManagementApp() {
       <Header />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value='list'>List</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="chart">Chart</TabsTrigger>
         </TabsList>
-
-        {/* リストタブ */}
-        <TabsContent value="list">
-          <TabContent 
-            title="List View" 
-            description="Focus on today's tasks." 
-            labels={labels}
-            addTask={addTask}
-            addLabel={addLabel}
-            deleteLabel={deleteLabel}
-            showToggleButton={true}
-            showExecutedTasks={showExecutedTasksList}
-            toggleExecutedTasks={() => setShowExecutedTasksList(prev => !prev)}
-            selectedDate={new Date()}
-            showUnplannedTasks={false}
-            allowSelectDate={false}
-            isToday={true}
-          >
-            <TaskList 
-              // List View では今日の日付にマッチするタスクのみを表示する
-              tasks={viewTasks.filter(task => 
-                task.scheduledDate === format(new Date(), 'yyyy-MM-dd') ||
-                (!task.scheduledDate && task.status === 'planned')
-              )} 
-              toggleStatus={toggleTaskStatus}
-              toggleStar={toggleTaskStar}
-              onEdit={setEditingTask}
-              isDraggable={true}
-              onDragEnd={handleDragEnd}
-              deleteTask={deleteTask}
-              showExecutedTasks={showExecutedTasksList}
-              executedTasks={tasks.filter(task => 
-                task.scheduledDate === format(new Date(), 'yyyy-MM-dd') && task.status === 'executed'
-              )}
-              labels={labels}
-              setLabels={setLabels}
-              updateTaskLabel={updateTaskLabel}
-              updateTaskTitle={updateTaskTitleHandler}
-              addLabel={addLabel}
-              deleteLabel={deleteLabel}
-              unassignFromDate={unassignTaskFromDate}
-              addTask={addTask}
-              isToday={true}
-              selectedDate={new Date()}
-              activeTab={activeTab}
-            />
-          </TabContent>
-        </TabsContent>
 
         {/* カレンダービュータブ */}
         <TabsContent value="calendar">
