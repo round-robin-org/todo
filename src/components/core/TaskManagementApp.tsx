@@ -928,9 +928,14 @@ export function TaskManagementApp() {
         endDate = endOfMonth(selectedDate)
         break
       case "chart":
-        const { start: chartStart, end: chartEnd } = calculateChartDateRangeForPeriod(selectedDate, aggregationPeriod, navigationOffset);
-        startDate = chartStart;
-        endDate = chartEnd;
+        // チャートビューの場合、集計期間とオフセットに基づいて日付範囲を計算
+        const { start, end } = calculateChartDateRangeForPeriod(
+          new Date(),
+          aggregationPeriod,
+          navigationOffset
+        )
+        startDate = start
+        endDate = end
         break
       default:
         startDate = startOfMonth(selectedDate)
