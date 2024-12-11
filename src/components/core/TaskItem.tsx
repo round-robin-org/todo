@@ -344,12 +344,40 @@ export function TaskItem({
                   placeholder="Add memo..."
                 />
               ) : (
-                <span 
-                  className="text-gray-500 text-sm cursor-pointer"
+                <p 
+                  className="text-gray-500 text-sm cursor-pointer whitespace-pre-wrap"
                   onClick={handleMemoClick}
                 >
-                  {task.memo || "Add memo..."}
-                </span>
+                  {task.memo ? (
+                    task.memo.split('\n').map((line, index) => {
+                      const segments = line.split(/(\bhttps?:\/\/\S+\b)/g);
+                      return (
+                        <React.Fragment key={index}>
+                          {segments.map((segment, segmentIndex) => {
+                            if (segment.match(/^https?:\/\//)) {
+                              return (
+                                <a
+                                  key={segmentIndex}
+                                  href={segment}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 hover:underline"
+                                >
+                                  {segment}
+                                </a>
+                              );
+                            } else {
+                              return <span key={segmentIndex}>{segment}</span>;
+                            }
+                          })}
+                          {index < task.memo.split('\n').length - 1 && <br />}
+                        </React.Fragment>
+                      );
+                    })
+                  ) : (
+                    "Add memo..."
+                  )}
+                </p>
               )}
             </div>
           </div>
