@@ -978,6 +978,9 @@ export function TaskManagementApp() {
                       toggleStar={toggleTaskStar}
                       onEdit={setEditingTask}
                       deleteTask={deleteTask}
+                      updateTaskLabel={updateTaskLabel}
+                      labels={labels}
+                      addLabel={addLabel}
                     />
                   )}
                 </CardContent>
@@ -1012,15 +1015,6 @@ export function TaskManagementApp() {
                     selectedDate={selectedDate}
                     activeTab={activeTab}
                   />
-                  {showExecutedTasks && (
-                    <ExecutedTasks 
-                      tasks={executedUnplannedTasks}
-                      toggleStatus={toggleTaskStatus}
-                      toggleStar={toggleTaskStar}
-                      onEdit={setEditingTask}
-                      deleteTask={deleteTask}
-                    />
-                  )}
                 </CardContent>
               </Card>
             )}

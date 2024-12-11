@@ -10,9 +10,21 @@ type ExecutedTasksProps = {
   toggleStar: (id: string) => void;
   onEdit: (task: Task) => void;
   deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
+  updateTaskLabel: (taskId: string, newLabel: string) => Promise<void>;
+  labels: string[];
+  addLabel: (label: string) => Promise<void>;
 }
 
-export function ExecutedTasks({ tasks, toggleStatus, toggleStar, onEdit, deleteTask }: ExecutedTasksProps) {
+export function ExecutedTasks({ 
+  tasks, 
+  toggleStatus, 
+  toggleStar, 
+  onEdit, 
+  deleteTask, 
+  updateTaskLabel,
+  labels,
+  addLabel
+}: ExecutedTasksProps) {
   const executedTasks = tasks.filter(task => task.status === "executed")
   
   if (executedTasks.length === 0) return null;
@@ -28,6 +40,10 @@ export function ExecutedTasks({ tasks, toggleStatus, toggleStar, onEdit, deleteT
           onEdit={onEdit}
           deleteTask={deleteTask}
           isExecuted={true}
+          updateTaskLabel={updateTaskLabel}
+          labels={labels}
+          addLabel={addLabel}
+          disableScheduling={true}
         />
       ))}
     </ul>

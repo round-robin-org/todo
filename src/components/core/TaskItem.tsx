@@ -37,9 +37,10 @@ type TaskItemProps = {
   showUnplannedTasks: boolean;
   allowSelectDate: boolean;
   setLabels: React.Dispatch<React.SetStateAction<string[]>>;
+  disableScheduling?: boolean;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels, disableScheduling = false }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
@@ -118,6 +119,10 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             }}>
               <Repeat className="h-4 w-4 text-gray-500" />
             </Button>
+          ) : disableScheduling ? (
+            <Button variant="ghost" size="icon" disabled>
+              <Calendar className="h-4 w-4 text-gray-300" />
+            </Button>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -166,10 +171,15 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
           )}
           <Checkbox 
             checked={isExecuted ? true : task.status === "executed"}
-            onCheckedChange={() => toggleStatus(task.id)}
+            onCheckedChange={() => {
+              if (task.scheduledDate) {
+                toggleStatus(task.id);
+              }
+            }}
             onClick={(e) => e.stopPropagation()}
             aria-label={`Mark task "${task.title}" as ${task.status === "executed" ? "planned" : "executed"}`}
             className="transition-transform duration-200 ease-in-out transform hover:scale-110 focus:scale-110 rounded-none"
+            disabled={!task.scheduledDate}
           />
           <div className="flex items-center">
             {isEditingTitle ? (
