@@ -31,15 +31,14 @@ type TaskListProps = {
   showUnplannedTasks: boolean;
   allowSelectDate: boolean;
   setLabels: (labels: string[]) => void;
-  activeTab: string;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels, activeTab }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskListProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   const handleAddTask = () => {
     if (newTaskTitle.trim() === '') {
-      toast.error('Please enter a task title');
+      toast.error('タスクのタイトルを入力してください');
       return;
     }
 
@@ -73,7 +72,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
       <div className="mb-4">
         <Input
           type="text"
-          placeholder="Add a task"
+          placeholder="Enter a task name"
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -91,8 +90,8 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             toggleStar={toggleStar}
             onEdit={onEdit}
             deleteTask={deleteTask}
-            assignTaskToDate={activeTab === 'list' ? undefined : assignTaskToDate}
-            unassignFromDate={activeTab === 'list' ? undefined : unassignFromDate}
+            assignTaskToDate={assignTaskToDate}
+            unassignFromDate={unassignFromDate}
             setTaskToSchedule={setTaskToSchedule}
             labels={labels}
             updateTaskLabel={updateTaskLabel}
@@ -106,7 +105,6 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             showUnplannedTasks={showUnplannedTasks}
             allowSelectDate={allowSelectDate}
             setLabels={setLabels}
-            viewMode={activeTab}
           />
         ))}
       </ul>
@@ -121,8 +119,8 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
               onEdit={onEdit}
               deleteTask={deleteTask}
               isExecuted={true}
-              assignTaskToDate={activeTab === 'list' ? undefined : assignTaskToDate}
-              unassignFromDate={activeTab === 'list' ? undefined : unassignFromDate}
+              assignTaskToDate={assignTaskToDate}
+              unassignFromDate={unassignFromDate}
               setTaskToSchedule={setTaskToSchedule}
               labels={labels}
               updateTaskLabel={updateTaskLabel}
