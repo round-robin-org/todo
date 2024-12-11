@@ -19,7 +19,7 @@ type TaskItemProps = {
   task: Task;
   toggleStatus: (id: string, occurrenceDate?: string) => void;
   toggleStar: (id: string, occurrenceDate?: string) => void;
-  onEdit: (task: Task) => void;
+  onRecurrenceEdit: (task: Task) => void;
   deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
   isExecuted?: boolean;
   assignToDate?: (id: string) => void;
@@ -40,7 +40,7 @@ type TaskItemProps = {
   disableScheduling?: boolean;
 }
 
-export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels, disableScheduling = false }: TaskItemProps) {
+export function TaskItem({ task, toggleStatus, toggleStar, onRecurrenceEdit, deleteTask, isExecuted, assignToDate, unassignFromDate, setTaskToSchedule, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels, disableScheduling = false }: TaskItemProps) {
   const [showDelete, setShowDelete] = useState(false)
   const interactionRef = useRef(false)
   const [isLabelSelectorOpen, setIsLabelSelectorOpen] = useState(false)
@@ -113,10 +113,14 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
       >
         <div className="flex items-center space-x-2 flex-1">
           {task.routine ? (
-            <Button variant="ghost" size="icon" onClick={(e) => {
-              e.stopPropagation();
-              onEdit(task);
-            }}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onRecurrenceEdit(task);
+              }}
+            >
               <Repeat className="h-4 w-4 text-gray-500" />
             </Button>
           ) : disableScheduling ? (
@@ -147,7 +151,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEdit(task);
+                    onRecurrenceEdit(task);
                   }}
                 >
                   <Repeat className="mr-2 h-4 w-4" />

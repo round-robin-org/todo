@@ -12,7 +12,7 @@ type TaskListProps = {
   tasks: Task[];
   toggleStatus: (id: string) => void;
   toggleStar: (id: string) => void;
-  onEdit: (task: Task) => void;
+  onRecurrenceEdit: (task: Task) => void;
   deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
   assignTaskToDate?: (id: string) => void;
   unassignFromDate?: (id: string) => void;
@@ -33,7 +33,7 @@ type TaskListProps = {
   setLabels: (labels: string[]) => void;
 }
 
-export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskListProps) {
+export function TaskList({ tasks, toggleStatus, toggleStar, onRecurrenceEdit, deleteTask, assignTaskToDate, unassignFromDate, setTaskToSchedule, showExecutedTasks, executedTasks, labels, updateTaskLabel, updateTaskTitle, addTask, updateTask, addLabel, deleteLabel, isToday, selectedDate, showUnplannedTasks, allowSelectDate, setLabels }: TaskListProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   const handleAddTask = () => {
@@ -88,7 +88,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
             task={task}
             toggleStatus={toggleStatus}
             toggleStar={toggleStar}
-            onEdit={onEdit}
+            onRecurrenceEdit={onRecurrenceEdit}
             deleteTask={deleteTask}
             assignTaskToDate={assignTaskToDate}
             unassignFromDate={unassignFromDate}
@@ -116,7 +116,7 @@ export function TaskList({ tasks, toggleStatus, toggleStar, onEdit, deleteTask, 
               task={task}
               toggleStatus={toggleStatus}
               toggleStar={toggleStar}
-              onEdit={onEdit}
+              onRecurrenceEdit={onRecurrenceEdit}
               deleteTask={deleteTask}
               isExecuted={true}
               assignTaskToDate={assignTaskToDate}

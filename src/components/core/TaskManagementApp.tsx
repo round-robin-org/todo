@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfWeek, endOfWeek, addDays, addWeeks, addMonths, addYears } from 'date-fns'
 import { Header } from '@src/components/auth/Header'
-import { TaskDialog } from '@src/components/core/TaskDialog'
 import { CalendarView } from '@src/components/core/CalendarView'
 import { ChartView } from '@src/components/core/ChartView'
 import { useTasks } from '@src/hooks/useTasks'
@@ -18,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { useAuth } from '@src/hooks/useAuth'
 import { expandRecurringTasks } from '@src/utils/expandRecurringTasks'
 import { DropResult } from 'react-beautiful-dnd'
+import { RecurrenceRuleDialog } from './RecurrenceRuleDialog'
 
 // calculateChartDateRange 関数を TaskManagementApp コンポーネントの外に移動
 const calculateChartDateRangeForPeriod = (currentDate: Date, period: 'day' | 'week' | 'month' | 'year', offset: number) => {
@@ -66,6 +66,8 @@ export function TaskManagementApp() {
   const [newCalendarTaskTitle, setNewCalendarTaskTitle] = useState('')
   const [aggregationPeriod, setAggregationPeriod] = useState< 'day' | 'week' | 'month' | 'year' >('week')
   const [navigationOffset, setNavigationOffset] = useState<number>(0)
+  const [showRecurrenceDialog, setShowRecurrenceDialog] = useState(false);
+  const [editingTaskRoutine, setEditingTaskRoutine] = useState<Task | null>(null);
 
   // 日付範囲の設定を改善
   let startDate: Date
@@ -310,7 +312,7 @@ export function TaskManagementApp() {
             routine: updatedTask.routine,
             exceptions: {}
           })
-          .eq('original_task_id', updatedTask.originalId)
+          .eq('id', updatedTask.originalId)
           .eq('user_id', userId)
           .select();
 
@@ -938,6 +940,23 @@ export function TaskManagementApp() {
     fetchTasks(startDate, endDate)
   }, [activeTab, selectedDate, aggregationPeriod, navigationOffset, fetchTasks])
 
+  const handleRecurrenceSubmit = (routine: Routine) => {
+    if (editingTaskRoutine) {
+      updateTask({
+        ...editingTaskRoutine,
+        routine,
+        updateType: 'global'
+      });
+    }
+    setShowRecurrenceDialog(false);
+    setEditingTaskRoutine(null);
+  };
+
+  const handleRecurrenceEdit = (task: Task) => {
+    setEditingTaskRoutine(task);
+    setShowRecurrenceDialog(true);
+  };
+
   return (
     <div>
       <Header />
@@ -1004,6 +1023,7 @@ export function TaskManagementApp() {
                     isToday={!showUnplannedTasks}
                     selectedDate={selectedDate}
                     activeTab={activeTab}
+                    onRecurrenceEdit={handleRecurrenceEdit}
                   />
                   {showExecutedTasks && (
                     <ExecutedTasks 
@@ -1087,24 +1107,16 @@ export function TaskManagementApp() {
         </TabsContent>
       </Tabs>
 
-      {/* Task Edit Dialog */}
-      {editingTask && (
-        <TaskDialog 
-          labels={labels}
-          setLabels={setLabels}
-          addTask={addTask}
-          updateTask={updateTask}
-          addLabel={addLabel}
-          deleteLabel={deleteLabel}
-          updateTaskLabel={updateTaskLabel}
-          isEdit={true}
-          taskToEdit={editingTask}
-          isToday={showUnplannedTasks || true}
-          open={true}
-          onClose={() => setEditingTask(null)}
-          selectedDate={showUnplannedTasks ? new Date() : selectedDate || new Date()}
-          showUnplannedTasks={false}
-          allowSelectDate={false}
+      {showRecurrenceDialog && editingTaskRoutine && (
+        <RecurrenceRuleDialog
+          initialRoutine={editingTaskRoutine.routine}
+          selectedDate={selectedDate}
+          open={showRecurrenceDialog}
+          onClose={() => {
+            setShowRecurrenceDialog(false);
+            setEditingTaskRoutine(null);
+          }}
+          onSubmit={handleRecurrenceSubmit}
         />
       )}
     </div>
