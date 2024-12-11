@@ -112,7 +112,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
         }`}
       >
         <div className="flex items-center space-x-2 flex-1">
-          {task.isRecurring ? (
+          {task.routine ? (
             <Button variant="ghost" size="icon" onClick={(e) => {
               e.stopPropagation();
               onEdit(task);
