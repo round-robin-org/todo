@@ -23,7 +23,6 @@ export function RecurrenceRuleForm({
   onSubmit,
   onCancel
 }: RecurrenceRuleFormProps) {
-  // ... 既存のルーチン関連の state のみを保持 ...
   const [intervalNumber, setIntervalNumber] = useState(initialRoutine?.interval.number || 1);
   const [intervalUnit, setIntervalUnit] = useState<'day' | 'week' | 'month' | 'year'>(
     initialRoutine?.interval.unit || 'day'
@@ -34,13 +33,13 @@ export function RecurrenceRuleForm({
     initialRoutine?.monthDay || 
     (selectedDate ? getDate(selectedDate).toString() : '1')
   );
-  const [selectedMonthWeek, setSelectedMonthWeek] = useState(initialRoutine?.monthWeek || 1);
+  const [selectedMonthWeek, setSelectedMonthWeek] = useState<'First' | 'Second' | 'Third' | 'Fourth' | 'Last'>(
+    initialRoutine?.monthWeek as 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' || 'First'
+  );
   const [selectedMonthWeekDay, setSelectedMonthWeekDay] = useState(initialRoutine?.monthWeekDay || 'Sun');
   const [routineStarts, setRoutineStarts] = useState(initialRoutine?.starts || format(new Date(), 'yyyy-MM-dd'));
   const [routineEndsType, setRoutineEndsType] = useState(initialRoutine?.ends.type || 'never');
   const [routineEndsValue, setRoutineEndsValue] = useState(initialRoutine?.ends.value || '');
-  
-  // ... 他の繰り返しルール関連の state ...
 
   const getNthWeek = (date: Date | null): 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' => {
     if (!date) return 'First';
@@ -56,7 +55,6 @@ export function RecurrenceRuleForm({
     if (selectedDate && !initialRoutine) {
       setRoutineStarts(format(selectedDate, 'yyyy-MM-dd'));
 
-      // Pre-fill Choose Days based on selectedDate
       const dayOfWeek = getDay(selectedDate);
       const dayMap: Record<number, string> = {
         0: 'Sun',
@@ -71,8 +69,7 @@ export function RecurrenceRuleForm({
       if (dayStr && !selectedWeekDays.includes(dayStr)) {
         setSelectedWeekDays([dayStr]);
       }
-
-      // Pre-fill Month Options based on selectedDate
+      
       const date = getDate(selectedDate);
       const daysInMonth = getDaysInMonth(selectedDate);
       if (intervalUnit === 'month') {
@@ -97,12 +94,11 @@ export function RecurrenceRuleForm({
           5: 'Fri',
           6: 'Sat'
         };
-        const weekdayStr = weekdayMap[getDay(selectedDate)];
+        const weekdayStr = weekdayMap[getDay(selectedDate)] as "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat";
         if (weekdayStr) {
           setSelectedMonthWeekDay(weekdayStr);
         }
 
-        // Pre-fill Day of Month based on selectedDate
         if (date <= daysInMonth) {
           setSelectedMonthDay(date.toString());
         } else {
@@ -180,7 +176,11 @@ export function RecurrenceRuleForm({
         </div>
         <div className="flex-1">
           <Label htmlFor="intervalUnit">Unit</Label>
-          <Select name="intervalUnit" value={intervalUnit} onValueChange={setIntervalUnit}>
+          <Select 
+            name="intervalUnit" 
+            value={intervalUnit} 
+            onValueChange={(value) => setIntervalUnit(value as "day" | "week" | "month" | "year")}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select unit" />
             </SelectTrigger>
@@ -215,7 +215,11 @@ export function RecurrenceRuleForm({
       {intervalUnit === 'month' && (
         <div className="grid w-full gap-1.5">
           <Label>Month Options</Label>
-          <RadioGroup value={monthOption} onValueChange={setMonthOption} className="flex space-x-4">
+          <RadioGroup 
+            value={monthOption} 
+            onValueChange={(value) => setMonthOption(value as "day" | "weekday")} 
+            className="flex space-x-4"
+          >
             <label className="flex items-center space-x-1">
               <RadioGroupItem value="day" />
               <span>Day</span>
@@ -246,7 +250,11 @@ export function RecurrenceRuleForm({
           {monthOption === 'weekday' && (
             <div className="grid w-full gap-1.5">
               <Label>Week</Label>
-              <Select name="monthWeek" value={selectedMonthWeek} onValueChange={setSelectedMonthWeek}>
+              <Select 
+                name="monthWeek" 
+                value={selectedMonthWeek} 
+                onValueChange={(value) => setSelectedMonthWeek(value as "First" | "Second" | "Third" | "Fourth" | "Last")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select week" />
                 </SelectTrigger>
@@ -260,7 +268,11 @@ export function RecurrenceRuleForm({
               </Select>
 
               <Label>Weekday</Label>
-              <Select name="monthWeekDay" value={selectedMonthWeekDay} onValueChange={setSelectedMonthWeekDay}>
+              <Select 
+                name="monthWeekDay" 
+                value={selectedMonthWeekDay} 
+                onValueChange={(value) => setSelectedMonthWeekDay(value as "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select weekday" />
                 </SelectTrigger>
@@ -293,7 +305,11 @@ export function RecurrenceRuleForm({
 
       <div className="grid w-full gap-1.5">
         <Label htmlFor="routineEnds">Ends</Label>
-        <Select name="routineEndsType" value={routineEndsType} onValueChange={setRoutineEndsType}>
+        <Select 
+          name="routineEndsType" 
+          value={routineEndsType} 
+          onValueChange={(value) => setRoutineEndsType(value as "never" | "on" | "after")}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select end type" />
           </SelectTrigger>

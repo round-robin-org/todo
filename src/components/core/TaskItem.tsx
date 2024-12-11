@@ -14,7 +14,6 @@ import {
 } from "@src/components/ui/dropdown-menu"
 import { LabelSelector } from '@src/components/core/LabelSelector'
 import { useSwipeable } from 'react-swipeable'
-import { toast } from 'sonner'
 
 type TaskItemProps = {
   task: Task;
@@ -23,12 +22,12 @@ type TaskItemProps = {
   onRecurrenceEdit: (task: Task) => void;
   deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
   isExecuted?: boolean;
-  assignToDate?: (id: string) => void;
+  assignToDate?: (taskId: string, date: Date) => Promise<void>;
   unassignFromDate?: (id: string) => void;
   setTaskToSchedule?: (task: Task & { mode?: 'schedule' | 'copy' } | null) => void;
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
-  updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => void;
+  updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => Promise<void>;
   addTask: (task: Task) => void;
   updateTask: (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => Promise<void>;
   addLabel: (newLabel: string) => Promise<void>;
@@ -39,7 +38,7 @@ type TaskItemProps = {
   allowSelectDate: boolean;
   setLabels: React.Dispatch<React.SetStateAction<string[]>>;
   disableScheduling?: boolean;
-  updateTaskMemo: (id: string, newMemo: string, updateType?: 'global' | 'single') => void;
+  updateTaskMemo: (id: string, newMemo: string, occurrenceDate?: string) => void;
 }
 
 export function TaskItem({ 
@@ -48,21 +47,14 @@ export function TaskItem({
   toggleStar, 
   onRecurrenceEdit, 
   deleteTask, 
-  isExecuted, 
-  assignToDate, 
+  isExecuted,
   unassignFromDate, 
   setTaskToSchedule, 
   labels, 
   updateTaskLabel, 
-  updateTaskTitle, 
-  addTask, 
-  updateTask, 
+  updateTaskTitle,
   addLabel, 
-  deleteLabel, 
-  isToday, 
-  selectedDate, 
-  showUnplannedTasks, 
-  allowSelectDate, 
+  deleteLabel,
   setLabels, 
   disableScheduling = false, 
   updateTaskMemo 
@@ -78,7 +70,6 @@ export function TaskItem({
     e.stopPropagation();
     if (setTaskToSchedule) {
       setTaskToSchedule(null);
-      // toast.info('Scheduling or copy mode canceled');
     }
   };
 
@@ -170,7 +161,7 @@ export function TaskItem({
       setShowDelete(false)
       interactionRef.current = true
     },
-    preventDefaultTouchmoveEvent: true,
+    preventScrollOnSwipe: true,
     trackMouse: true,
     trackTouch: true,
   })
@@ -178,9 +169,6 @@ export function TaskItem({
   if (task.originalId && task.status === 'deleted') {
     return null;
   }
-
-  const isCopyMode = task.mode === 'copy';
-  const isScheduleMode = task.mode === 'schedule';
 
   return (
     <>
@@ -258,7 +246,12 @@ export function TaskItem({
                   onClick={(e) => {
                     e.stopPropagation();
                     if (setTaskToSchedule) {
-                      setTaskToSchedule({ ...task, mode: 'copy' });
+                      const taskToCopy = {
+                        ...task,
+                        mode: 'copy' as const,
+                        status: 'planned' as const
+                      };
+                      setTaskToSchedule(taskToCopy);
                     }
                   }}
                 >
@@ -435,11 +428,9 @@ export function TaskItem({
           <LabelSelector 
             task={task}
             labels={labels}
-            setLabels={setLabels}
             updateTaskLabel={updateTaskLabel}
             close={() => setIsLabelSelectorOpen(false)}
             addLabel={addLabel}
-            deleteLabel={deleteLabel}
           />
         )}
       </li>

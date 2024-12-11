@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Task } from '@src/lib/types'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
+import { toast } from 'sonner'
 
 type LabelSelectorProps = {
   task: Task;
@@ -30,12 +31,9 @@ export function LabelSelector({ task, labels, updateTaskLabel, close, addLabel }
   }
 
   const handleAddNewLabel = async () => {
-    console.log("handleAddNewLabel called");
     const trimmedLabel = newLabelValue.trim().toLowerCase()
-    console.log("trimmedLabel:", trimmedLabel);
     if (trimmedLabel === '' || RESERVED_LABELS.includes(trimmedLabel)) {
-      console.log("Reserved label detected!");
-      alert('"new" or "none" is reserved label name.')
+      toast.error('"new" or "none" is reserved label name.')
       return
     }
 
@@ -45,8 +43,7 @@ export function LabelSelector({ task, labels, updateTaskLabel, close, addLabel }
       setIsAddingNewLabel(false)
       close()
     } catch (error) {
-      console.error('Failed to add label:', error)
-      // 必要に応じてエラーメッセージを表示
+        throw error
     }
   }
 

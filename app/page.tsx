@@ -14,7 +14,6 @@ export default function Page() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      console.log('Current session:', session)
     }
 
     checkAuth()

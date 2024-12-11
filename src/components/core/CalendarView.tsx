@@ -24,12 +24,11 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
   const startWeekDay = monthStart.getDay();
-
-  // Determine the number of blank cells
+  
   const blankDays = Array.from({ length: startWeekDay }, (_, i) => i);
 
-  // Add Today button
   const handleToday = () => {
     setSelectedDate(new Date())
   }
@@ -38,7 +37,10 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
     <div>
       <div className="flex justify-between items-center mb-4 w-full">
         <Button
-          onClick={() => setSelectedDate(date => new Date(date.getFullYear(), date.getMonth() - 1, 1))}
+          onClick={() => {
+            const newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1)
+            setSelectedDate(newDate)
+          }}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -47,7 +49,10 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
           {format(selectedDate, 'MMMM yyyy')}
         </h2>
         <Button
-          onClick={() => setSelectedDate(date => new Date(date.getFullYear(), date.getMonth() + 1, 1))}
+          onClick={() => {
+            const newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1)
+            setSelectedDate(newDate)
+          }}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
         >
           <ChevronRight className="h-4 w-4" />
@@ -110,7 +115,6 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                       >
                         {plannedTasks.length}
                       </Badge>
-                      {/* Task list tooltip */}
                       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 pointer-events-none">
                         <div className="p-2">
                           <h4 className="text-sm font-semibold mb-1">Planned Tasks</h4>
@@ -133,7 +137,6 @@ export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, ad
                       >
                         {executedTasks.length}
                       </Badge>
-                      {/* Task list tooltip */}
                       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-40 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 pointer-events-none">
                         <div className="p-2">
                           <h4 className="text-sm font-semibold mb-1">Executed Tasks</h4>

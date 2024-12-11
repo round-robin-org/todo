@@ -30,18 +30,13 @@ export function TabContent({
   title, 
   description, 
   children, 
-  labels, 
-  addTask, 
+  labels,
   addLabel,
   deleteLabel,
+  editLabel,
   showToggleButton = false,
   showExecutedTasks = false,
   toggleExecutedTasks = () => {},
-  selectedDate,
-  showUnplannedTasks = false,
-  allowSelectDate = false,
-  isToday,
-  editLabel,
 }: TabContentProps) {
   const handleAddLabel = async (newLabel: string) => {
     const trimmedLabel = newLabel.trim().toLowerCase();
@@ -51,7 +46,6 @@ export function TabContent({
     }
     addLabel(newLabel);
   };
-
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:justify-between md:items-start">

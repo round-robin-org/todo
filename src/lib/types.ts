@@ -22,7 +22,7 @@ export type Task = {
   occurrenceDate?: string; // 繰り返しタスクの発生日
   title: string;
   memo: string;
-  status: 'executed' | 'planned';
+  status: 'executed' | 'planned' | 'deleted';
   starred: boolean;
   scheduledDate: string | null;
   label: string;
@@ -34,4 +34,6 @@ export type Task = {
       memo?: string;
     };
   };
+  isScheduling?: boolean;
+  mode?: 'schedule' | 'copy';
 } 

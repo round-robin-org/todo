@@ -14,24 +14,24 @@ type TaskListProps = {
   toggleStar: (id: string) => void;
   onRecurrenceEdit: (task: Task) => void;
   deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
-  assignTaskToDate?: (id: string) => void;
+  assignTaskToDate?: (taskId: string, date: Date) => Promise<void>;
   unassignFromDate?: (id: string) => void;
   setTaskToSchedule?: (task: Task | null) => void;
   showExecutedTasks?: boolean;
   executedTasks?: Task[];
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
-  updateTaskTitle: (taskId: string, newTitle: string, updateType?: 'global' | 'single') => void;
+  updateTaskTitle: (taskId: string, newTitle: string, updateType?: 'single' | 'global') => Promise<void>;
   addTask: (task: Task) => void;
   updateTask: (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => Promise<void>;
-  addLabel: (label: string) => void;
-  deleteLabel: (label: string) => void;
+  addLabel: (label: string) => Promise<void>;
+  deleteLabel: (label: string) => Promise<void>;
   isToday: boolean;
   selectedDate: Date;
   showUnplannedTasks: boolean;
   allowSelectDate: boolean;
-  setLabels: (labels: string[]) => void;
-  updateTaskMemo: (taskId: string, newMemo: string, updateType?: 'global' | 'single') => void;
+  setLabels: React.Dispatch<React.SetStateAction<string[]>>;
+  updateTaskMemo: (taskId: string, newMemo: string, occurrenceDate?: string) => void;
 }
 
 export function TaskList({ 
@@ -74,9 +74,9 @@ export function TaskList({
       status: 'planned',
       starred: false,
       scheduledDate: isToday ? format(selectedDate, 'yyyy-MM-dd') : null,
-      label: null,
+      label: '' as string,
       routine: null,
-      originalId: null,
+      originalId: undefined,
       exceptions: {}
     }
 
@@ -100,7 +100,7 @@ export function TaskList({
           placeholder="Enter a task name"
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
         />
         <Button onClick={handleAddTask} className="mt-2">
           Add
@@ -115,7 +115,7 @@ export function TaskList({
             toggleStar={toggleStar}
             onRecurrenceEdit={onRecurrenceEdit}
             deleteTask={deleteTask}
-            assignTaskToDate={assignTaskToDate}
+            assignToDate={assignTaskToDate}
             unassignFromDate={unassignFromDate}
             setTaskToSchedule={setTaskToSchedule}
             labels={labels}
@@ -131,7 +131,6 @@ export function TaskList({
             allowSelectDate={allowSelectDate}
             setLabels={setLabels}
             updateTaskMemo={updateTaskMemo}
-            occurrenceDate={task.scheduledDate}
           />
         ))}
       </ul>
@@ -146,7 +145,7 @@ export function TaskList({
               onRecurrenceEdit={onRecurrenceEdit}
               deleteTask={deleteTask}
               isExecuted={true}
-              assignTaskToDate={assignTaskToDate}
+              assignToDate={assignTaskToDate}
               unassignFromDate={unassignFromDate}
               setTaskToSchedule={setTaskToSchedule}
               labels={labels}

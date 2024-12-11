@@ -34,39 +34,32 @@ import { Task } from '@src/lib/types'
 import { Button } from "@src/components/ui/button"
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 
-// Define aggregation periods
 type AggregationPeriod = 'day' | 'week' | 'month' | 'year'
 
-// Calculate date range
 const calculateChartDateRange = (period: AggregationPeriod, offset: number) => {
   let start: Date
   let end: Date
 
   if (period === 'day') {
-    // For daily aggregation, set start and end to the same day
     const today = new Date()
     start = addDays(today, offset)
     end = addDays(today, offset)
   } else if (period === 'week') {
-    // For weekly aggregation, display the specified week
     const currentWeekStart = startOfWeek(new Date(), { locale: ja })
     const adjustedWeekStart = addWeeks(currentWeekStart, offset)
     start = adjustedWeekStart
     end = endOfWeek(adjustedWeekStart, { locale: ja })
   } else if (period === 'month') {
-    // For monthly aggregation, display the specified month (including dates of previous and next months)
     const currentMonthStart = startOfMonth(new Date())
     const adjustedMonthStart = addMonths(currentMonthStart, offset)
-    start = startOfWeek(adjustedMonthStart, { locale: ja }) // Start of the week containing the start of the month
-    end = endOfWeek(endOfMonth(adjustedMonthStart), { locale: ja }) // End of the week containing the end of the month
+    start = startOfWeek(adjustedMonthStart, { locale: ja })
+    end = endOfWeek(endOfMonth(adjustedMonthStart), { locale: ja })
   } else if (period === 'year') {
-    // For yearly aggregation, display the entire year (January to December)
     const currentYearStart = startOfYear(new Date())
     const adjustedYearStart = addYears(currentYearStart, offset)
-    start = startOfMonth(adjustedYearStart) // Start of the first month of the year
-    end = endOfYear(adjustedYearStart) // End of the last month of the year
+    start = startOfMonth(adjustedYearStart)
+    end = endOfYear(adjustedYearStart)
   } else {
-    // Default to the current week
     start = startOfWeek(new Date(), { locale: ja })
     end = endOfWeek(start, { locale: ja })
   }
@@ -86,7 +79,7 @@ interface TaskData {
   name: string
   plannedTasks?: number
   executedTasks?: number
-  value?: number // For PieChart
+  value?: number
 }
 
 interface GoalData {
@@ -95,9 +88,8 @@ interface GoalData {
   executed: number
 }
 
-// Custom tooltip property type
 interface CustomTooltipProps {
-  active: boolean
+  active?: boolean
   payload?: any
   label?: string
   tasks: Task[]
@@ -130,12 +122,14 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
         const specificDateStr = format(addDays(currentRange.start, dayIndex), 'yyyy-MM-dd')
         filteredTasks = tasks.filter(task => task.scheduledDate === specificDateStr)
       } else if (aggregationPeriod === 'month') {
+        if (!label) return null;
         const weekMatch = label.match(/W(\d+)/)
         if (!weekMatch) return null
         const weekNumber = parseInt(weekMatch[1], 10)
         const weekStartDate = addWeeks(startOfWeek(currentRange.start, { locale: ja }), weekNumber - 1)
         const weekEndDate = endOfWeek(weekStartDate, { locale: ja })
         filteredTasks = tasks.filter(task =>
+          task.scheduledDate &&
           isWithinInterval(new Date(task.scheduledDate), { start: weekStartDate, end: weekEndDate })
         )
       } else if (aggregationPeriod === 'year') {
@@ -143,6 +137,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
         const monthStartDate = startOfMonth(addMonths(startOfYear(currentRange.start), monthIndex))
         const monthEndDate = endOfMonth(monthStartDate)
         filteredTasks = tasks.filter(task =>
+          task.scheduledDate &&
           isWithinInterval(new Date(task.scheduledDate), { start: monthStartDate, end: monthEndDate })
         )
       }
@@ -160,6 +155,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
       } else {
         filteredTasks = tasks.filter(task =>
           task.label?.trim() === goalName &&
+          task.scheduledDate &&
           isWithinInterval(new Date(task.scheduledDate), { start: currentRange.start, end: currentRange.end })
         )
       }
@@ -221,11 +217,9 @@ export function ChartView({
     end: endOfWeek(new Date(), { locale: ja }),
   })
 
-  // State for colors
-  const [colorExecuted, setColorExecuted] = useState<string>('#8884d8') // Default color
-  const [colorPlanned, setColorPlanned] = useState<string>('#82ca9d') // Default color
+  const [colorExecuted, setColorExecuted] = useState<string>('#8884d8')
+  const [colorPlanned, setColorPlanned] = useState<string>('#82ca9d')
 
-  // Fetch CSS variable colors on component mount
   useEffect(() => {
     const root = document.documentElement
     const executed = getComputedStyle(root).getPropertyValue('--color-executed').trim()
@@ -238,18 +232,15 @@ export function ChartView({
     }
   }, [])
 
-  // Define PIE_COLORS inside the component
   const PIE_COLORS = [colorExecuted, colorPlanned]
 
   useEffect(() => {
     const { start, end } = calculateChartDateRange(aggregationPeriod, navigationOffset)
     setCurrentRange({ start, end })
 
-    // Aggregate data
     const data: TaskData[] = []
 
     if (aggregationPeriod === 'day') {
-      // Daily aggregation: Aggregate planned and executed tasks for the pie chart
       const dateStr = format(start, 'yyyy-MM-dd')
       const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
       const plannedTasks = dayTasks.length
@@ -261,7 +252,6 @@ export function ChartView({
         { name: 'Remaining Tasks', value: remainingTasks }
       )
     } else if (aggregationPeriod === 'week') {
-      // Weekly aggregation: Aggregate tasks daily for the area chart
       for (let i = 0; i < 7; i++) {
         const currentDate = addDays(start, i)
         const dateStr = format(currentDate, 'yyyy-MM-dd')
@@ -276,7 +266,6 @@ export function ChartView({
         })
       }
     } else if (aggregationPeriod === 'month') {
-      // Monthly aggregation: Aggregate tasks weekly for the vertical bar chart
       const weeksInMonth: { week: number; plannedTasks: number; executedTasks: number }[] = []
       let currentWeekStart = startOfWeek(start, { locale: ja })
       let weekNumber = 1
@@ -284,6 +273,7 @@ export function ChartView({
       while (currentWeekStart <= end) {
         const currentWeekEnd = endOfWeek(currentWeekStart, { locale: ja })
         const weekTasks = tasks.filter(task =>
+          task.scheduledDate &&
           isWithinInterval(new Date(task.scheduledDate), { start: currentWeekStart, end: currentWeekEnd })
         )
         const plannedTasks = weekTasks.length
@@ -307,14 +297,13 @@ export function ChartView({
         })
       })
     } else if (aggregationPeriod === 'year') {
-      // Yearly aggregation: Aggregate tasks monthly for the vertical bar chart
       const monthsInYear: { month: number; plannedTasks: number; executedTasks: number }[] = []
       let currentMonthStart = startOfMonth(start)
 
-      // Process each month from the first month of the year to the last
       while (currentMonthStart <= end) {
         const currentMonthEnd = endOfMonth(currentMonthStart)
         const monthTasks = tasks.filter(task =>
+          task.scheduledDate &&
           isWithinInterval(new Date(task.scheduledDate), {
             start: currentMonthStart,
             end: currentMonthEnd
@@ -322,7 +311,7 @@ export function ChartView({
         )
 
         monthsInYear.push({
-          month: currentMonthStart.getMonth(), // 0-11 month index
+          month: currentMonthStart.getMonth(),
           plannedTasks: monthTasks.length,
           executedTasks: monthTasks.filter(t => t.status === 'executed').length
         })
@@ -330,7 +319,6 @@ export function ChartView({
         currentMonthStart = addMonths(currentMonthStart, 1)
       }
 
-      // Format data
       data.push(...monthsInYear.map(monthData => ({
         name: format(new Date(start.getFullYear(), monthData.month), 'MMMM'),
         plannedTasks: monthData.plannedTasks,
@@ -340,22 +328,18 @@ export function ChartView({
 
     setTaskData(data)
 
-    // Modify goal-based data aggregation
     const labelStats: Record<string, { planned: number; executed: number }> = {}
 
-    // Get date string
     const targetDateStr = format(start, 'yyyy-MM-dd')
 
     tasks.forEach(task => {
       const normalizedLabel = task.label ? task.label.trim() : '';
 
-      // Ensure label exists and is not empty
       if (!normalizedLabel) {
-        return; // Exclude tasks without labels
+        return;
       }
 
       if (aggregationPeriod === 'day') {
-        // For daily aggregation, only consider specific day
         if (task.scheduledDate === targetDateStr) {
           if (!labelStats[normalizedLabel]) {
             labelStats[normalizedLabel] = { planned: 0, executed: 0 };
@@ -366,7 +350,7 @@ export function ChartView({
           }
         }
       } else {
-        // For other periods, aggregate tasks within range
+        if (!task.scheduledDate) return;
         const taskDate = new Date(task.scheduledDate);
         if (isWithinInterval(taskDate, { start, end })) {
           if (!labelStats[normalizedLabel]) {
@@ -422,7 +406,7 @@ export function ChartView({
   const handleAggregationPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedPeriod = e.target.value as AggregationPeriod
     setAggregationPeriod(selectedPeriod)
-    setNavigationOffset(0) // Reset offset when aggregation period changes
+    setNavigationOffset(0)
   }
 
   const handleToday = () => {
@@ -438,11 +422,8 @@ export function ChartView({
 
   return (
     <div>
-      {/* Aggregation period selection */}
       <div className="flex items-center justify-between mb-4">
       </div>
-
-      {/* Navigation and range display */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">Task Execution Rate</h3>
         <div className="flex items-center space-x-2">
@@ -481,11 +462,9 @@ export function ChartView({
         </div>
       </div>
 
-      {/* Task Execution Rate Chart */}
       <ChartContainer config={chartConfigTask} className="min-h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           {aggregationPeriod === 'day' ? (
-            // Daily aggregation: Pie chart
             <PieChart>
               <text
                 x="50%"
@@ -494,7 +473,7 @@ export function ChartView({
                 dominantBaseline="middle"
                 className="text-lg font-semibold"
               >
-                {format(currentRange.start, 'yyyy-MM-dd')} {/* Display date */}
+                {format(currentRange.start, 'yyyy-MM-dd')}
               </text>
               <Pie
                 data={taskData}
@@ -526,7 +505,6 @@ export function ChartView({
               <Legend />
             </PieChart>
           ) : aggregationPeriod === 'week' ? (
-            // 週次の集計: バーチャートに変更
             <BarChart data={taskData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -559,7 +537,6 @@ export function ChartView({
               />
             </BarChart>
           ) : (
-            // Monthly and yearly aggregation: Vertical bar chart
             <BarChart data={taskData}>
               <text
                 x="50%"
@@ -606,7 +583,6 @@ export function ChartView({
         </ResponsiveContainer>
       </ChartContainer>
 
-      {/* Goal-based Task Count Chart */}
       <h3 className="font-semibold mt-8 mb-2">Goal-based Task Count</h3>
       <ChartContainer config={chartConfigGoal} className="min-h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">

@@ -5,19 +5,16 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
 import { Button } from "@src/components/ui/button"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
 
 export function Auth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
   const supabase = createClientComponentClient()
 
   const handleSignIn = async () => {
     try {
       setLoading(true)
-      console.log('Signing in with redirect URL:', `${window.location.origin}/auth/callback`)
-      
+
       const { error, data } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -30,11 +27,8 @@ export function Auth() {
         }
       })
       
-      console.log('Sign in response:', { error, data })
-      
       if (error) throw error
     } catch (error: any) {
-      console.error('Sign in error:', error)
       setError(error.message)
     } finally {
       setLoading(false)
