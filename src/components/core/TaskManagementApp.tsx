@@ -412,15 +412,23 @@ export function TaskManagementApp() {
 
         if (error) throw error;
 
+        // UIの更新ロジックを修正
         setTasks(prevTasks =>
-          prevTasks.map(t =>
-            t.originalId === task.originalId
-              ? { ...t, exceptions: newExceptions }
-              : t
-          )
+          prevTasks.map(t => {
+            if (t.originalId === task.originalId) {
+              // 繰り返しタスクの場合、例外の状態を反映
+              const updatedTask = { ...t };
+              if (t.occurrenceDate === occurrenceDate) {
+                updatedTask.status = updatedStatus;
+              }
+              updatedTask.exceptions = newExceptions;
+              return updatedTask;
+            }
+            return t;
+          })
         );
       } else {
-        // 通常タスクの場合は直接更新
+        // 通常タスクの処理（変更なし）
         const { error } = await supabase
           .from('tasks')
           .update({ status: updatedStatus })
@@ -466,14 +474,23 @@ export function TaskManagementApp() {
 
         if (error) throw error;
 
+        // UIの更新ロジックを修正
         setTasks(prevTasks =>
-          prevTasks.map(t =>
-            t.originalId === task.originalId
-              ? { ...t, exceptions: newExceptions }
-              : t
-          )
+          prevTasks.map(t => {
+            if (t.originalId === task.originalId) {
+              // 繰り返しタスクの場合、例外の状態を反映
+              const updatedTask = { ...t };
+              if (t.occurrenceDate === occurrenceDate) {
+                updatedTask.starred = updatedStar;
+              }
+              updatedTask.exceptions = newExceptions;
+              return updatedTask;
+            }
+            return t;
+          })
         );
       } else {
+        // 通常タスクの処理（変更なし）
         const { error } = await supabase
           .from('tasks')
           .update({ starred: updatedStar })
@@ -893,7 +910,7 @@ export function TaskManagementApp() {
     setNewCalendarTaskTitle('');
   }
 
-  // 変更箇所: useEffect を追加し、activeTab または selectedDate が変更された場合にタスクを再���ェッチ
+  // 変更箇所: useEffect を追加し、activeTab または selectedDate が変更された場合にタスクを再ェッチ
   useEffect(() => {
     let startDate: Date
     let endDate: Date
