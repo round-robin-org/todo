@@ -395,7 +395,7 @@ export function TaskManagementApp() {
 
       const updatedStatus = task.status === 'executed' ? 'planned' : 'executed';
 
-      if (task.isRecurring && occurrenceDate) {
+      if (task.isRecurring && task.originalId && occurrenceDate) {
         // 繰り返しタスクの場合は例外として処理
         const newExceptions = {
           ...task.exceptions,
@@ -411,6 +411,14 @@ export function TaskManagementApp() {
           .eq('id', task.originalId);
 
         if (error) throw error;
+
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.originalId === task.originalId
+              ? { ...t, exceptions: newExceptions }
+              : t
+          )
+        );
       } else {
         // 通常タスクの場合は直接更新
         const { error } = await supabase
@@ -419,13 +427,13 @@ export function TaskManagementApp() {
           .eq('id', taskId);
 
         if (error) throw error;
-      }
 
-      setTasks(prevTasks =>
-        prevTasks.map(t =>
-          t.id === taskId ? { ...t, status: updatedStatus } : t
-        )
-      );
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.id === taskId ? { ...t, status: updatedStatus } : t
+          )
+        );
+      }
       
       toast.success('Task status updated');
     } catch (error) {
@@ -442,7 +450,7 @@ export function TaskManagementApp() {
 
       const updatedStar = !task.starred;
 
-      if (task.isRecurring && occurrenceDate) {
+      if (task.isRecurring && task.originalId && occurrenceDate) {
         const newExceptions = {
           ...task.exceptions,
           [occurrenceDate]: {
@@ -457,6 +465,14 @@ export function TaskManagementApp() {
           .eq('id', task.originalId);
 
         if (error) throw error;
+
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.originalId === task.originalId
+              ? { ...t, exceptions: newExceptions }
+              : t
+          )
+        );
       } else {
         const { error } = await supabase
           .from('tasks')
@@ -464,13 +480,13 @@ export function TaskManagementApp() {
           .eq('id', taskId);
 
         if (error) throw error;
-      }
 
-      setTasks(prevTasks =>
-        prevTasks.map(t =>
-          t.id === taskId ? { ...t, starred: updatedStar } : t
-        )
-      );
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.id === taskId ? { ...t, starred: updatedStar } : t
+          )
+        );
+      }
       
       toast.success('Task star updated');
     } catch (error) {
@@ -741,7 +757,7 @@ export function TaskManagementApp() {
     task.status === 'executed'
   );
 
-  // ラベルを更新する関数を追加
+  // ラベルを更新する関数を修正
   const updateTaskLabel = async (taskId: string, newLabel: string) => {
     if (!userId) {
       toast.error('Authentication is required.')
@@ -749,18 +765,41 @@ export function TaskManagementApp() {
     }
 
     try {
+      // 対象のタスクを見つける
+      const targetTask = tasks.find(t => t.id === taskId)
+      if (!targetTask) throw new Error('Task not found')
+
+      // 実際に更新するIDを決定
+      const updateId = targetTask.originalId || taskId
+
       const { data, error } = await supabase
         .from('tasks')
         .update({ label: newLabel === 'none' ? null : newLabel })
-        .eq('id', taskId)
+        .eq('id', updateId)
         .select()
         .single()
 
       if (error) throw error
 
-      setTasks(prevTasks =>
-        prevTasks.map(t => t.id === taskId ? { ...t, label: newLabel === 'none' ? null : newLabel } : t)
-      )
+      // 繰り返しタスクの場合は、同じoriginalIdを持つすべてのタスクを更新
+      if (targetTask.isRecurring) {
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.originalId === targetTask.originalId
+              ? { ...t, label: newLabel === 'none' ? null : newLabel }
+              : t
+          )
+        )
+      } else {
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.id === taskId
+              ? { ...t, label: newLabel === 'none' ? null : newLabel }
+              : t
+          )
+        )
+      }
+      
       toast.success('Label updated successfully')
     } catch (error: any) {
       console.error('Failed to update label:', error)
@@ -768,7 +807,7 @@ export function TaskManagementApp() {
     }
   }
 
-  // タイトル更新関数を追加
+  // タイトル更新関数を修正
   const updateTaskTitleHandler = async (taskId: string, newTitle: string, updateType: 'global' | 'single') => {
     if (!userId) {
       toast.error('Authentication is required.')
@@ -776,59 +815,32 @@ export function TaskManagementApp() {
     }
 
     try {
-      // 繰り返しタスクの場合、全ての関連タスクを更新
+      // 対象のタスクを見つける
+      const targetTask = tasks.find(t => t.id === taskId)
+      if (!targetTask) throw new Error('Task not found')
+
+      // 実際に更新するIDを決定
+      const updateId = targetTask.originalId || taskId
+
       if (updateType === 'global') {
-        // オリジナルタスクを取得
-        const { data: originalTask, error: fetchError } = await supabase
+        const { error: updateError } = await supabase
           .from('tasks')
-          .select('*')
-          .eq('id', taskId)
-          .single()
-
-        if (fetchError) {
-          throw fetchError
+          .update({ title: newTitle })
+          .eq('id', updateId)
+        
+        if (updateError) {
+          throw updateError
         }
 
-        if (!originalTask.is_recurring) {
-          // 繰り返しタスクでない場合は単一スクとして更新
-          const { error: updateError } = await supabase
-            .from('tasks')
-            .update({ title: newTitle })
-            .eq('id', taskId)
-          
-          if (updateError) {
-            throw updateError
-          }
-
-          setTasks(prevTasks =>
-            prevTasks.map(t =>
-              t.id === taskId ? { ...t, title: newTitle } : t
-            )
+        // 繰り返しタスクの場合は、同じoriginalIdを持つすべてのタスクを更新
+        setTasks(prevTasks =>
+          prevTasks.map(t =>
+            t.originalId === targetTask.originalId
+              ? { ...t, title: newTitle }
+              : t
           )
-        } else {
-          // 繰り返しタスクの場合、originalIdを基に全ての関連タスクを更新
-          const parentId = originalTask.original_task_id || originalTask.id
-
-          const { data: updatedTasks, error: updateError } = await supabase
-            .from('tasks')
-            .update({ title: newTitle })
-            .eq('original_task_id', parentId)
-            .eq('user_id', userId)
-          
-          if (updateError) {
-            throw updateError
-          }
-
-          setTasks(prevTasks =>
-            prevTasks.map(t =>
-              t.originalTaskId === parentId
-                ? { ...t, title: newTitle }
-                : t
-            )
-          )
-        }
+        )
       } else {
-        // 単一タスクの更新
         const { error: updateError } = await supabase
           .from('tasks')
           .update({ title: newTitle })
@@ -881,7 +893,7 @@ export function TaskManagementApp() {
     setNewCalendarTaskTitle('');
   }
 
-  // 変更箇所: useEffect を追加し、activeTab または selectedDate が変更された場合にタスクを再フェッチ
+  // 変更箇所: useEffect を追加し、activeTab または selectedDate が変更された場合にタスクを再���ェッチ
   useEffect(() => {
     let startDate: Date
     let endDate: Date

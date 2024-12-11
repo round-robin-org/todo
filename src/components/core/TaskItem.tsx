@@ -17,8 +17,8 @@ import { useSwipeable } from 'react-swipeable'
 
 type TaskItemProps = {
   task: Task;
-  toggleStatus: (id: string) => void;
-  toggleStar: (id: string) => void;
+  toggleStatus: (id: string, occurrenceDate?: string) => void;
+  toggleStar: (id: string, occurrenceDate?: string) => void;
   onEdit: (task: Task) => void;
   deleteTask: (id: string, type?: 'single' | 'all' | 'future') => void;
   isExecuted?: boolean;
@@ -173,7 +173,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             checked={isExecuted ? true : task.status === "executed"}
             onCheckedChange={() => {
               if (task.scheduledDate) {
-                toggleStatus(task.id);
+                toggleStatus(task.id, task.occurrenceDate);
               }
             }}
             onClick={(e) => e.stopPropagation()}
@@ -215,7 +215,7 @@ export function TaskItem({ task, toggleStatus, toggleStar, onEdit, deleteTask, i
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
-              toggleStar(task.id)
+              toggleStar(task.id, task.occurrenceDate)
             }}
             aria-label={`${task.starred ? "Unstar" : "Star"} task "${task.title}"`}
           >
