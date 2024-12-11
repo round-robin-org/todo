@@ -18,7 +18,6 @@ import { useAuth } from '@src/hooks/useAuth'
 import { expandRecurringTasks } from '@src/utils/expandRecurringTasks'
 import { DropResult } from 'react-beautiful-dnd'
 import { RecurrenceRuleDialog } from './RecurrenceRuleDialog'
-import { LabelManagement } from '@src/components/core/LabelManagement'
 
 // calculateChartDateRange 関数を TaskManagementApp コンポーネントの外に移動
 const calculateChartDateRangeForPeriod = (currentDate: Date, period: 'day' | 'week' | 'month' | 'year', offset: number) => {
@@ -1022,6 +1021,7 @@ export function TaskManagementApp() {
             addTask={addTask}
             addLabel={addLabel}
             deleteLabel={deleteLabel}
+            editLabel={editLabel}
             showToggleButton={true}
             showExecutedTasks={showExecutedTasks}
             toggleExecutedTasks={toggleExecutedTasks}
@@ -1166,12 +1166,6 @@ export function TaskManagementApp() {
           onSubmit={handleRecurrenceSubmit}
         />
       )}
-      <LabelManagement 
-        labels={labels}
-        addLabel={addLabel}
-        deleteLabel={deleteLabel}
-        editLabel={editLabel}
-      />
     </div>
   )
 }

@@ -23,6 +23,7 @@ type TabContentProps = {
   showUnplannedTasks?: boolean;
   allowSelectDate?: boolean;
   isToday: boolean;
+  editLabel: (oldLabel: string, newLabel: string) => void;
 }
 
 export function TabContent({ 
@@ -40,6 +41,7 @@ export function TabContent({
   showUnplannedTasks = false,
   allowSelectDate = false,
   isToday,
+  editLabel,
 }: TabContentProps) {
   const handleAddLabel = async (newLabel: string) => {
     const trimmedLabel = newLabel.trim().toLowerCase();
@@ -73,6 +75,7 @@ export function TabContent({
             labels={labels}
             addLabel={handleAddLabel}
             deleteLabel={deleteLabel}
+            editLabel={editLabel}
           />
         </div>
       </CardHeader>
