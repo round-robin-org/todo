@@ -203,6 +203,10 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   return null
 }
 
+const calculateMidDate = (start: Date, end: Date): Date => {
+  return new Date((start.getTime() + end.getTime()) / 2)
+}
+
 export function ChartView({ 
   tasks, 
   aggregationPeriod, 
@@ -430,6 +434,8 @@ export function ChartView({
     return `${format(start, 'yyyy-MM-dd')} - ${format(end, 'yyyy-MM-dd')}`
   }
 
+  const midDate = calculateMidDate(currentRange.start, currentRange.end)
+
   return (
     <div>
       {/* Aggregation period selection */}
@@ -563,8 +569,8 @@ export function ChartView({
                 className="text-lg font-semibold"
               >
                 {aggregationPeriod === 'month'
-                  ? format(currentRange.start, 'MMMM yyyy')
-                  : format(currentRange.start, 'yyyy')}
+                  ? format(midDate, 'MMMM yyyy')
+                  : format(midDate, 'yyyy')}
               </text>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
