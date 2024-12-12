@@ -20,7 +20,7 @@ type CalendarViewProps = {
   showUnplannedTasks: boolean;
 }
 
-export function CalendarView({ selectedDate, setSelectedDate, tasks, addTask, addLabel, labels, assignTaskToDate, unassignTaskFromDate, onUnplannedClick, showUnplannedTasks }: CalendarViewProps) {
+export function CalendarView({ selectedDate, setSelectedDate, tasks, onUnplannedClick, showUnplannedTasks }: CalendarViewProps) {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });

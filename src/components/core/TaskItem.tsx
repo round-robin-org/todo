@@ -53,9 +53,7 @@ export function TaskItem({
   labels, 
   updateTaskLabel, 
   updateTaskTitle,
-  addLabel, 
-  deleteLabel,
-  setLabels, 
+  addLabel,
   disableScheduling = false, 
   updateTaskMemo 
 }: TaskItemProps) {

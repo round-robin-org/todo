@@ -33,6 +33,7 @@ import { ChartContainer, ChartLegendContent } from "@src/components/ui/chart"
 import { Task } from '@src/lib/types'
 import { Button } from "@src/components/ui/button"
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Payload, ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent'
 
 type AggregationPeriod = 'day' | 'week' | 'month' | 'year'
 
@@ -90,7 +91,7 @@ interface GoalData {
 
 interface CustomTooltipProps {
   active?: boolean
-  payload?: any
+  payload?: Payload<ValueType, NameType>[]
   label?: string
   tasks: Task[]
   chartType: 'task' | 'goal'
@@ -173,12 +174,12 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
       <div className="custom-tooltip bg-white border border-gray-200 p-2 rounded shadow-lg">
         {aggregationPeriod === 'week' ? (
           <>
-            {payload.map((p: any, index: number) => (
+            {payload?.map((p: Payload<ValueType, NameType>, index: number) => (
               <p key={index} className="label font-semibold">{`${p.name}: ${p.value}`}</p>
             ))}
           </>
         ) : (
-          <p className="label font-semibold">{`${payload[0].name}: ${payload[0].value}`}</p>
+          payload?.[0] && <p className="label font-semibold">{`${payload[0].name}: ${payload[0].value}`}</p>
         )}
         <ul className="mt-1 text-xs max-h-40 overflow-y-auto">
           {filteredTasks.map(task => (
@@ -411,11 +412,6 @@ export function ChartView({
 
   const handleToday = () => {
     setNavigationOffset(0)
-  }
-
-  const formatRange = () => {
-    const { start, end } = currentRange
-    return `${format(start, 'yyyy-MM-dd')} - ${format(end, 'yyyy-MM-dd')}`
   }
 
   const midDate = calculateMidDate(currentRange.start, currentRange.end)

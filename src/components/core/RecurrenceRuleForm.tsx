@@ -41,16 +41,6 @@ export function RecurrenceRuleForm({
   const [routineEndsType, setRoutineEndsType] = useState(initialRoutine?.ends.type || 'never');
   const [routineEndsValue, setRoutineEndsValue] = useState(initialRoutine?.ends.value || '');
 
-  const getNthWeek = (date: Date | null): 'First' | 'Second' | 'Third' | 'Fourth' | 'Last' => {
-    if (!date) return 'First';
-    const day = getDate(date);
-    if (day >= 1 && day <= 7) return 'First';
-    if (day >= 8 && day <= 14) return 'Second';
-    if (day >= 15 && day <= 21) return 'Third';
-    if (day >= 22 && day <= 28) return 'Fourth';
-    return 'Last';
-  };
-
   useEffect(() => {
     if (selectedDate && !initialRoutine) {
       setRoutineStarts(format(selectedDate, 'yyyy-MM-dd'));

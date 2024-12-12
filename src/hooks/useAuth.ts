@@ -10,7 +10,6 @@ export function useAuth() {
   const router = useRouter()
 
   useEffect(() => {
-    // 初期セッションの確認
     const checkSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
@@ -25,7 +24,6 @@ export function useAuth() {
 
     checkSession()
 
-    // 認証状態の変更を監視
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
