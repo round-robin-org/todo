@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase } from '@src/lib/supabase'
-import { Task } from '@src/lib/types'
+import { Routine, Task } from '@src/lib/types'
 import { toast } from 'sonner'
 import { useAuth } from '@src/hooks/useAuth'
 import { expandRecurringTasks } from '@src/utils/expandRecurringTasks'
@@ -10,13 +10,11 @@ export function useTasks() {
   const userId = user?.id
 
   const [tasks, setTasks] = useState<Task[]>([])
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
   const fetchTasks = useCallback(async (startDate: Date, endDate: Date) => {
     if (!userId) {
-      console.warn('ユーザーIDが取得できませんでした。')
-      setError('ユーザーが認証されていません。')
+      toast.error('Authentication is required to fetch tasks.')
       return
     }
 
@@ -33,20 +31,37 @@ export function useTasks() {
         .eq('user_id', userId)
 
       if (error) {
-        console.error('Supabaseからのエラー:', error)
+        console.error('Failed to fetch tasks:', error)
         throw error
       }
 
-      const formattedTasks: Task[] = data.map((task: any) => ({
+      const formattedTasks: Task[] = data.map((task: {
+        id: number;
+        title: string;
+        memo?: string;
+        status: string;
+        starred?: boolean;
+        scheduled_date?: string;
+        labels?: { name: string };
+        routine?: Routine;
+        original_task_id?: string;
+        exceptions?: {
+          [date: string]: {
+            status?: 'executed' | 'planned' | 'deleted';
+            starred?: boolean;
+            memo?: string;
+          };
+        };
+      }) => ({
         id: task.id.toString(),
         title: task.title,
         memo: task.memo || '',
         status: task.status === 'executed' ? 'executed' : 'planned',
         starred: task.starred || false,
         scheduledDate: task.scheduled_date || null,
-        label: task.labels?.name || null,
+        label: task.labels?.name || '',
         routine: task.routine || null,
-        originalId: task.original_task_id || null,
+        originalId: task.original_task_id || undefined,
         exceptions: task.exceptions || {}
       }))
 
@@ -55,26 +70,15 @@ export function useTasks() {
 
       const combinedTasks = [...unplannedTasks, ...expandedTasks]
       setTasks(combinedTasks);
-    } catch (error: any) {
-      console.error('タスクのフェッチに失敗しました:', error)
-      setError('Failed to fetch tasks.')
-      toast.error('タスクの取得に失敗しました。')
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Failed to fetch tasks:', error)
+        toast.error('Failed to fetch tasks.')
+      }
     } finally {
       setLoading(false)
     }
   }, [userId])
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('tasks-channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, payload => {
-      })
-      .subscribe()
-
-    return () => {
-      supabase.channel('tasks-channel').unsubscribe()
-    }
-  }, [userId])
-
-  return { tasks, setTasks, error, loading, fetchTasks }
+  return { tasks, setTasks, loading, fetchTasks }
 }
