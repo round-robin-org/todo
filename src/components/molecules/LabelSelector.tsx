@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/atoms/select"
 import { Task } from '@src/lib/types'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
+import { Input } from '../atoms/input'
+import { Button } from '../atoms/button'
 import { toast } from 'sonner'
 
 type LabelSelectorProps = {

@@ -28,9 +28,9 @@ import {
   endOfYear,
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { ChartContainer, ChartLegendContent } from "@src/components/ui/chart"
+import { ChartContainer, ChartLegendContent } from "@src/components/atoms/chart"
 import { Task } from '@src/lib/types'
-import { Button } from "@src/components/ui/button"
+import { Button } from "@src/components/atoms/button"
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Payload, ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent'
 
@@ -368,8 +368,6 @@ export function ChartView({
       name,
       ...stats,
     }))
-
-    console.log('Aggregated Goal Data:', goalDataArray) // Debug log
     setGoalData(goalDataArray)
   }, [tasks, navigationOffset, aggregationPeriod])
 

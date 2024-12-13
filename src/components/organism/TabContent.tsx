@@ -1,10 +1,10 @@
 'use client'
 
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
-import { LabelManagement } from '@src/components/core/LabelManagement'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/atoms/card"
+import { LabelManagement } from '@src/components/molecules/LabelManagement'
 import { Task } from '@src/lib/types'
-import { Button } from "@src/components/ui/button"
+import { Button } from "@src/components/atoms/button"
 import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 

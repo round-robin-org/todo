@@ -2,9 +2,9 @@
 
 import React from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
-import { Button } from "@src/components/ui/button"
+import { Button } from "@src/components/atoms/button"
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
-import { Badge } from "@src/components/ui/badge"
+import { Badge } from "@src/components/atoms/badge"
 import { Task } from '@src/lib/types'
 
 type CalendarViewProps = {

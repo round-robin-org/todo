@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Button } from "@src/components/ui/button"
+import { Button } from "@src/components/atoms/button"
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@src/hooks/useAuth'
 

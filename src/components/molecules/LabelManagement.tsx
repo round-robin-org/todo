@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { Button } from "@src/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@src/components/ui/dialog"
-import { Input } from "@src/components/ui/input"
+import { Button } from "@src/components/atoms/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@src/components/atoms/dialog"
+import { Input } from "@src/components/atoms/input"
 import { Trash2, Edit2 } from 'lucide-react'
 
 type LabelManagementProps = {

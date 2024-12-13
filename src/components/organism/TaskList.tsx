@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
-import { TaskItem } from '@src/components/core/TaskItem'
+import { TaskItem } from '@src/components/molecules/TaskItem'
 import { Task } from '@src/lib/types'
-import { Input } from "@src/components/ui/input"
-import { Button } from "@src/components/ui/button"
+import { Input } from "@src/components/atoms/input"
+import { Button } from "@src/components/atoms/button"
 import { toast } from "sonner"
 import { format } from 'date-fns'
 

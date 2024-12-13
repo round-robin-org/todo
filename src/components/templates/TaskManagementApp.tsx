@@ -1,20 +1,20 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../atoms/tabs"
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfWeek, endOfWeek, addDays, addWeeks, addMonths, addYears } from 'date-fns'
-import { Header } from '@src/components/auth/Header'
-import { CalendarView } from '@src/components/core/CalendarView'
-import { ChartView } from '@src/components/core/ChartView'
+import { Header } from '@src/components/organism/Header'
+import { CalendarView } from '@src/components/organism/CalendarView'
+import { ChartView } from '@src/components/organism/ChartView'
 import { useTasks } from '@src/hooks/useTasks'
-import { TaskList } from '@src/components/core/TaskList'
-import { TabContent } from '@src/components/core/TabContent'
+import { TaskList } from '@src/components/organism/TaskList'
+import { TabContent } from '@src/components/organism/TabContent'
 import { Task, Routine } from '@src/lib/types'
 import { supabase } from '@src/lib/supabase'
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '../atoms/card'
 import { useAuth } from '@src/hooks/useAuth'
-import { RecurrenceRuleDialog } from './RecurrenceRuleDialog'
+import { RecurrenceRuleDialog } from '../molecules/RecurrenceRuleDialog'
 
 const calculateChartDateRangeForPeriod = (currentDate: Date, period: 'day' | 'week' | 'month' | 'year', offset: number) => {
   let start: Date

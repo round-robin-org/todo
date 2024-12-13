@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@src/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@src/components/atoms/dialog"
 import { Routine } from '@src/lib/types'
 import { RecurrenceRuleForm } from './RecurrenceRuleForm'
 

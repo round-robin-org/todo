@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button } from "@src/components/ui/button"
-import { Input } from "@src/components/ui/input"
-import { Label } from "@src/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/ui/select"
-import { Checkbox } from "@src/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@src/components/ui/radio-group"
+import { Button } from "@src/components/atoms/button"
+import { Input } from "@src/components/atoms/input"
+import { Label } from "@src/components/atoms/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/atoms/select"
+import { Checkbox } from "@src/components/atoms/checkbox"
+import { RadioGroup, RadioGroupItem } from "@src/components/atoms/radio-group"
 import { format, getDay, getDate, getDaysInMonth } from 'date-fns'
 import { Routine } from '@src/lib/types'
 

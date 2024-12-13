@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { Checkbox } from "@src/components/ui/checkbox"
-import { Badge } from "@src/components/ui/badge"
-import { Button } from "@src/components/ui/button"
+import { Checkbox } from "@src/components/atoms/checkbox"
+import { Badge } from "@src/components/atoms/badge"
+import { Button } from "@src/components/atoms/button"
 import { Star, Trash, CalendarCheck, AlertCircle, Repeat, Calendar, Copy, X } from 'lucide-react'
 import { Task } from '@src/lib/types'
 import {
@@ -11,8 +11,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@src/components/ui/dropdown-menu"
-import { LabelSelector } from '@src/components/core/LabelSelector'
+} from "@src/components/atoms/dropdown-menu"
+import { LabelSelector } from '@src/components/molecules/LabelSelector'
 import { useSwipeable } from 'react-swipeable'
 
 type TaskItemProps = {

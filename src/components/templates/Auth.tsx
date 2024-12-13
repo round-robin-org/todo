@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
-import { Button } from "@src/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/atoms/card"
+import { Button } from "@src/components/atoms/button"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export function Auth() {
