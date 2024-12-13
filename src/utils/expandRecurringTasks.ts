@@ -14,10 +14,8 @@ export function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: 
         const formattedDate = format(date, 'yyyy-MM-dd')
         const exception = task.exceptions?.[formattedDate]
 
-        // 削除された日付をスキップ
         if (exception?.status === 'deleted') continue
 
-        // 終了日以降のタスクをスキップ
         if (task.routine.ends?.type === 'on' && date > new Date(task.routine.ends.value as string)) {
           continue
         }

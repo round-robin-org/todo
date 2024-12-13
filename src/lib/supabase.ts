@@ -7,10 +7,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-// クライアントコンポーネント用のSupabaseクライアントを作成
 export const supabase = createClientComponentClient()
 
-// 認証済みセッションを使用するためのヘルパー関数
 export async function getAuthenticatedClient() {
   const {
     data: { session },
