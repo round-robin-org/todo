@@ -626,7 +626,7 @@ export function TaskManagementApp() {
     }
   }
 
-  const updateTaskTitleHandler = async (taskId: string, newTitle: string, updateType?: 'global' | 'single') => {
+  const updateTaskTitleHandler = async (taskId: string, newTitle: string) => {
     if (!userId) {
       toast.error('Authentication is required.')
       return
@@ -638,43 +638,23 @@ export function TaskManagementApp() {
 
       const updateId = targetTask.originalId || taskId
 
-      const finalUpdateType = updateType || 'single';
+      const { error: updateError } = await supabase
+        .from('tasks')
+        .update({ title: newTitle })
+        .eq('id', updateId)
+        .eq('user_id', userId)
       
-      if (finalUpdateType === 'global') {
-        const { error: updateError } = await supabase
-          .from('tasks')
-          .update({ title: newTitle })
-          .eq('id', updateId)
-          .eq('user_id', userId)
-        
-        if (updateError) {
-          throw updateError
-        }
-
-        setTasks(prevTasks =>
-          prevTasks.map(t =>
-            t.originalId === targetTask.originalId
-              ? { ...t, title: newTitle }
-              : t
-          )
-        )
-      } else {
-        const { error: updateError } = await supabase
-          .from('tasks')
-          .update({ title: newTitle })
-          .eq('id', taskId)
-          .eq('user_id', userId)
-        
-        if (updateError) {
-          throw updateError
-        }
-
-        setTasks(prevTasks =>
-          prevTasks.map(t =>
-            t.id === taskId ? { ...t, title: newTitle } : t
-          )
-        )
+      if (updateError) {
+        throw updateError
       }
+
+      setTasks(prevTasks =>
+        prevTasks.map(t =>
+          t.originalId === targetTask.originalId
+            ? { ...t, title: newTitle }
+            : t
+        )
+      )
 
       toast.success('Task title updated successfully')
     } catch (error: unknown) {

@@ -21,7 +21,7 @@ type TaskListProps = {
   executedTasks?: Task[];
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
-  updateTaskTitle: (taskId: string, newTitle: string, updateType?: 'single' | 'global') => Promise<void>;
+  updateTaskTitle: (taskId: string, newTitle: string) => Promise<void>;
   addTask: (task: Task) => void;
   addLabel: (label: string) => Promise<void>;
   deleteLabel: (label: string) => Promise<void>;

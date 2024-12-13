@@ -27,7 +27,7 @@ type TaskItemProps = {
   setTaskToSchedule?: (task: Task & { mode?: 'schedule' | 'copy' } | null) => void;
   labels: string[];
   updateTaskLabel: (taskId: string, newLabel: string) => void;
-  updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => Promise<void>;
+  updateTaskTitle: (id: string, newTitle: string) => Promise<void>;
   addTask: (task: Task) => void;
   addLabel: (newLabel: string) => Promise<void>;
   deleteLabel: (label: string) => Promise<void>;
@@ -99,8 +99,7 @@ export function TaskItem({
 
   const handleTitleBlur = () => {
     if (editedTitle.trim() !== task.title) {
-      const updateType = task.routine ? 'global' : 'single'
-      updateTaskTitle(task.id, editedTitle.trim(), updateType)
+      updateTaskTitle(task.id, editedTitle.trim())
     }
     setIsEditingTitle(false)
   }
