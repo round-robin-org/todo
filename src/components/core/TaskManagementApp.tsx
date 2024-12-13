@@ -153,7 +153,6 @@ export function TaskManagementApp() {
           mode: undefined,
           status: 'planned'
         };
-        console.log('Creating new task with status:', newTask.status);
         addTask(newTask);
       } else {
         assignTaskToDate(schedulingTask.id, date);
@@ -198,7 +197,7 @@ export function TaskManagementApp() {
         status: 'planned',
         starred: taskData.starred,
         scheduled_date: taskData.scheduledDate,
-        label: taskData.label === 'none' ? null : taskData.label,
+        label: taskData.label && taskData.label.trim() !== '' ? taskData.label : null,
         routine: taskData.routine,
         user_id: userId
       };
@@ -286,8 +285,7 @@ export function TaskManagementApp() {
       }
       
       toast.success('Task status updated');
-    } catch (error) {
-      console.error('Failed to update status:', error);
+    } catch {
       toast.error('Failed to update status.');
     }
   };
@@ -346,16 +344,13 @@ export function TaskManagementApp() {
       }
       
       toast.success('Task star updated');
-    } catch (error) {
-      console.error('Failed to update star:', error);
+    } catch {
       toast.error('Failed to update star.');
     }
   };
 
   const addLabel = async (newLabel: string, taskId?: string) => {
-    console.log("addLabel called with:", newLabel);
     if (!userId) {
-      console.warn('User ID not found.');
       toast.error('User not authenticated.');
       return;
     }
@@ -374,8 +369,7 @@ export function TaskManagementApp() {
       }
 
       toast.success('Label added successfully');
-    } catch (error) {
-      console.error('Failed to add label:', error);
+    } catch {
       toast.error('Failed to add label');
     }
   };
@@ -393,8 +387,7 @@ export function TaskManagementApp() {
 
         const uniqueLabels = [...new Set(data.map(label => label.name))];
         setLabels(uniqueLabels);
-      } catch (error) {
-        console.error('Failed to fetch labels:', error);
+      } catch {
         toast.error('Failed to fetch labels');
       }
     };
@@ -505,7 +498,6 @@ export function TaskManagementApp() {
       toast.success('Task deleted successfully');
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Failed to delete task:', error);
         toast.error(`Failed to delete task: ${error.message}`);
       }
     }
@@ -529,8 +521,7 @@ export function TaskManagementApp() {
         prevTasks.map(t => t.id === taskId ? { ...t, scheduledDate: format(date, 'yyyy-MM-dd') } : t)
       )
       toast.success('Task scheduled successfully')
-    } catch (error) {
-      console.error('Failed to schedule task:', error)
+    } catch {
       toast.error('Failed to schedule task.')
     }
   }
@@ -544,7 +535,6 @@ export function TaskManagementApp() {
         .eq('user_id', userId)
 
       if (error) {
-        console.error('Failed to unassign task from date:', error)
         toast.error('Failed to unassign task from date.')
         return
       }
@@ -553,8 +543,7 @@ export function TaskManagementApp() {
         prevTasks.map(t => t.id === taskId ? { ...t, scheduledDate: null } : t)
       )
       toast.success('Task scheduled date removed.')
-    } catch (error) {
-      console.error('Failed to unassign task from date:', error)
+    } catch {
       toast.error('Failed to unassign task from date.')
     }
   }
@@ -571,8 +560,7 @@ export function TaskManagementApp() {
 
       setLabels(prevLabels => prevLabels.filter(label => label !== labelToDelete));
       toast.success('Label deleted successfully');
-    } catch (error) {
-      console.error('Failed to delete label:', error);
+    } catch {
       toast.error('Failed to delete label');
     }
   };
@@ -620,7 +608,6 @@ export function TaskManagementApp() {
       toast.success('Label updated successfully')
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Failed to update label:', error)
         toast.error(`Failed to update label: ${error.message}`)
       }
     }
@@ -650,7 +637,7 @@ export function TaskManagementApp() {
 
       setTasks(prevTasks =>
         prevTasks.map(t =>
-          t.originalId === targetTask.originalId
+          t.id === targetTask.originalId || t.id === targetTask.id
             ? { ...t, title: newTitle }
             : t
         )
@@ -659,7 +646,6 @@ export function TaskManagementApp() {
       toast.success('Task title updated successfully')
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Failed to update task title:', error)
         toast.error(`Failed to update task title: ${error.message}`)
       }
     }
@@ -721,8 +707,7 @@ export function TaskManagementApp() {
       toast.success('Recurring task updated successfully');
 
       fetchTasks(startOfMonth(selectedDate), endOfMonth(selectedDate));
-    } catch (error) {
-      console.error('Failed to update recurring task:', error);
+    } catch {
       toast.error('Failed to update recurring task');
     }
 
@@ -767,7 +752,6 @@ export function TaskManagementApp() {
       toast.success('Label updated successfully');
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Failed to update label:', error);
         toast.error(`Failed to update label: ${error.message}`);
       }
     }
@@ -848,7 +832,6 @@ export function TaskManagementApp() {
       toast.success('Task memo updated successfully');
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Failed to update task memo:', error);
         toast.error(`Failed to update task memo: ${error.message}`);
       }
     }

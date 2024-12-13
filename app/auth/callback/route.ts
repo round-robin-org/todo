@@ -18,7 +18,6 @@ export async function GET(request: Request) {
     }
     return NextResponse.redirect(new URL('/', requestUrl.origin))
   } catch {
-    console.error('Authentication callback failed')
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 } 

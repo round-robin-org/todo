@@ -31,7 +31,6 @@ export function useTasks() {
         .eq('user_id', userId)
 
       if (error) {
-        console.error('Failed to fetch tasks:', error)
         throw error
       }
 
@@ -72,7 +71,6 @@ export function useTasks() {
       setTasks(combinedTasks);
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Failed to fetch tasks:', error)
         toast.error('Failed to fetch tasks.')
       }
     } finally {

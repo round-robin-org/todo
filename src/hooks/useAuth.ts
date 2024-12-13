@@ -15,9 +15,7 @@ export function useAuth() {
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) throw error
         setUser(session?.user ?? null)
-      } catch (error) {
-        console.error('Session check error:', error)
-      } finally {
+      } catch {
         setLoading(false)
       }
     }
@@ -27,7 +25,6 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event)
       setUser(session?.user ?? null)
       setLoading(false)
 
