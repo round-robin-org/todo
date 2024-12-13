@@ -17,16 +17,15 @@ export type Routine = {
 
 export type Task = {
   id: string;
-  originalId?: string; // 繰り返しタスクの元のID
-  isRecurring?: boolean; // 繰り返しタスクかどうか
-  occurrenceDate?: string; // 繰り返しタスクの発生日
+  originalId?: string;
   title: string;
   memo: string;
   status: 'executed' | 'planned' | 'deleted';
   starred: boolean;
-  scheduledDate: string | null;
   label: string;
+  scheduledDate: string | null;
   routine: Routine | null;
+  occurrenceDate?: string;
   exceptions?: {
     [date: string]: {
       status?: 'executed' | 'planned' | 'deleted';
@@ -34,6 +33,5 @@ export type Task = {
       memo?: string;
     };
   };
-  isScheduling?: boolean;
   mode?: 'schedule' | 'copy';
 } 

@@ -24,20 +24,18 @@ export function expandRecurringTasks(tasks: Task[], rangeStart: Date, rangeEnd: 
 
         expandedTasks.push({
           ...task,
-          originalId: task.id,
+          title: task.title,
           id: `${task.id}-${formattedDate}`,
+          originalId: task.id,
+          label: task.label,
           scheduledDate: formattedDate,
           status: exception?.status || task.status,
           starred: exception?.starred ?? task.starred,
           memo: exception?.memo || task.memo,
-          label: task.label,
-          title: task.title,
-          isRecurring: true,
           occurrenceDate: formattedDate
         })
       }
     } else {
-      // 繰り返しでないタスクは、指定された期間内にある場合のみ追加
       if (task.scheduledDate && new Date(task.scheduledDate) >= rangeStart && new Date(task.scheduledDate) <= rangeEnd) {
         expandedTasks.push(task)
       }

@@ -29,7 +29,6 @@ type TaskItemProps = {
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   updateTaskTitle: (id: string, newTitle: string, updateType?: 'global' | 'single') => Promise<void>;
   addTask: (task: Task) => void;
-  updateTask: (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => Promise<void>;
   addLabel: (newLabel: string) => Promise<void>;
   deleteLabel: (label: string) => Promise<void>;
   isToday: boolean;
@@ -100,7 +99,7 @@ export function TaskItem({
 
   const handleTitleBlur = () => {
     if (editedTitle.trim() !== task.title) {
-      const updateType = task.isRecurring ? 'global' : 'single'
+      const updateType = task.routine ? 'global' : 'single'
       updateTaskTitle(task.id, editedTitle.trim(), updateType)
     }
     setIsEditingTitle(false)
@@ -172,8 +171,10 @@ export function TaskItem({
     <>
       <li
         {...handlers}
-        className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${isExecuted ? 'opacity-50' : ''} hover:bg-gray-50 flex items-center ${
-          task.isScheduling 
+        className={`relative p-2 bg-background rounded-lg shadow cursor-pointer transition-opacity ${
+          isExecuted ? 'opacity-50' : ''
+        } hover:bg-gray-50 flex items-center ${
+          task.mode 
             ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 space-x-2'
             : 'border-transparent'
         }`}

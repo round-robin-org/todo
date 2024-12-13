@@ -112,14 +112,14 @@ export function TaskManagementApp() {
       setTasks(prevTasks =>
         prevTasks.map(t => ({
           ...t,
-          isScheduling: false
+          mode: undefined
         }))
       );
       setSchedulingTask(null);
       return;
     }
 
-    if (task.isRecurring) {
+    if (task.routine) {
       toast.error('Recurring tasks cannot be scheduled directly.');
       return;
     }
@@ -130,8 +130,8 @@ export function TaskManagementApp() {
     setTasks(prevTasks =>
       prevTasks.map(t =>
         t.id === task.id
-          ? { ...t, isScheduling: true }
-          : { ...t, isScheduling: false }
+          ? { ...t, mode }
+          : { ...t, mode: undefined }
       )
     );
 
@@ -151,8 +151,7 @@ export function TaskManagementApp() {
           id: '',
           scheduledDate: format(date, 'yyyy-MM-dd'),
           mode: undefined,
-          status: 'planned',
-          isScheduling: false
+          status: 'planned'
         };
         console.log('Creating new task with status:', newTask.status);
         addTask(newTask);
@@ -163,7 +162,7 @@ export function TaskManagementApp() {
       setTasks(prevTasks =>
         prevTasks.map(t =>
           t.id === schedulingTask.id
-            ? { ...t, isScheduling: false }
+            ? { ...t, mode: undefined }
             : t
         )
       );
@@ -234,136 +233,6 @@ export function TaskManagementApp() {
     }
   };
 
-  const updateTask = async (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => {
-    if (!userId) {
-      toast.error('User not authenticated.');
-      return;
-    }
-
-      try {
-        const finalLabel = updatedTask.label;
-
-      if (updatedTask.label && !labels.includes(updatedTask.label)) {
-        const trimmedNewLabel = updatedTask.label.trim().toLowerCase();
-        if (trimmedNewLabel === 'new' || trimmedNewLabel === 'none') {
-          toast.error('"new" or "none" is reserved label name.');
-          return;
-        }
-
-        const { data: existingLabel } = await supabase
-          .from('labels')
-          .select('name')
-          .eq('name', updatedTask.label)
-          .single();
-
-        if (!existingLabel) {
-          const { error: labelError } = await supabase
-            .from('labels')
-            .insert({ name: updatedTask.label, user_id: userId })
-            .select()
-            .single();
-
-          if (labelError) {
-            console.error('Failed to add label:', labelError);
-            toast.error(`Failed to add label: ${labelError.message}`);
-            return;
-          }
-
-          setLabels(prev => [...prev, updatedTask.label]);
-        }
-      }
-
-      if (updatedTask.isRecurring && updatedTask.updateType === 'global') {
-        const { error: updateError } = await supabase
-          .from('tasks')
-          .update({
-            routine: updatedTask.routine,
-            exceptions: {}
-          })
-          .eq('id', updatedTask.originalId)
-          .eq('user_id', userId)
-          .select();
-
-        if (updateError) throw updateError;
-
-        setTasks(prevTasks =>
-          prevTasks.map(t =>
-            t.originalId === updatedTask.originalId
-              ? { ...t, routine: updatedTask.routine, exceptions: {} }
-              : t
-          )
-        );
-      } else if (updatedTask.isRecurring && updatedTask.updateType === 'single') {
-        const newExceptions = {
-          ...updatedTask.exceptions,
-          [updatedTask.scheduledDate!]: {
-            ...updatedTask.exceptions?.[updatedTask.scheduledDate!],
-            memo: updatedTask.memo
-          }
-        };
-
-        const { error: parentError } = await supabase
-          .from('tasks')
-          .update({
-            title: updatedTask.title,
-            label: updatedTask.label,
-            routine: updatedTask.routine,
-            exceptions: newExceptions,
-            user_id: userId
-          })
-          .eq('id', updatedTask.originalId)
-          .eq('user_id', userId)
-          .select();
-
-        if (parentError) throw parentError;
-
-        setTasks(prevTasks =>
-          prevTasks.map(t =>
-            t.originalId === updatedTask.originalId
-              ? {
-                  ...t,
-                  title: updatedTask.title,
-                  label: updatedTask.label,
-                  routine: updatedTask.routine,
-                  exceptions: newExceptions
-                }
-              : t
-          )
-        );
-      } else {
-        const { error } = await supabase
-          .from('tasks')
-          .update({
-            title: updatedTask.title,
-            memo: updatedTask.memo,
-            status: updatedTask.status,
-            starred: updatedTask.starred,
-            scheduled_date: updatedTask.scheduledDate,
-            label: finalLabel === 'none' ? null : finalLabel,
-            routine: updatedTask.routine || null,
-            user_id: userId
-          })
-          .eq('id', updatedTask.id)
-          .eq('user_id', userId)
-          .select();
-
-        if (error) throw error;
-
-        setTasks(prevTasks => (
-          prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask, label: finalLabel } : t)
-        ));
-      }
-
-      toast.success('Task updated successfully');
-      fetchTasks(startDate, endDate);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Failed to update task:', error);
-        toast.error(`Failed to update task: ${error.message}`);
-      }
-    }
-  };
-
   const toggleTaskStatus = async (taskId: string, occurrenceDate?: string) => {
     try {
       const task = tasks.find(t => t.id === taskId);
@@ -371,7 +240,7 @@ export function TaskManagementApp() {
 
       const updatedStatus = task.status === 'executed' ? 'planned' : 'executed';
 
-      if (task.isRecurring && task.originalId && occurrenceDate) {
+      if (task.routine && task.originalId && occurrenceDate) {
         const newExceptions = {
           ...task.exceptions,
           [occurrenceDate]: {
@@ -430,7 +299,7 @@ export function TaskManagementApp() {
 
       const updatedStar = !task.starred;
 
-      if (task.isRecurring && task.originalId && occurrenceDate) {
+      if (task.routine && task.originalId && occurrenceDate) {
         const newExceptions = {
           ...task.exceptions,
           [occurrenceDate]: {
@@ -543,7 +412,7 @@ export function TaskManagementApp() {
       const taskToDelete = tasks.find(t => t.id === taskId);
       if (!taskToDelete) throw new Error('Task not found');
 
-      if (taskToDelete.isRecurring) {
+      if (taskToDelete.routine) {
         const originalId = taskToDelete.originalId;
         const currentDate = taskToDelete.scheduledDate;
         let newExceptions = taskToDelete.exceptions || {};
@@ -730,7 +599,7 @@ export function TaskManagementApp() {
 
       if (error) throw error
 
-      if (targetTask.isRecurring) {
+      if (targetTask.routine) {
         setTasks(prevTasks =>
           prevTasks.map(t =>
             t.originalId === targetTask.originalId
@@ -842,14 +711,41 @@ export function TaskManagementApp() {
     fetchTasks(startDate, endDate)
   }, [activeTab, selectedDate, aggregationPeriod, navigationOffset, fetchTasks])
 
-  const handleRecurrenceSubmit = (routine: Routine) => {
-    if (editingTaskRoutine) {
-      updateTask({
-        ...editingTaskRoutine,
-        routine,
-        updateType: 'global'
-      });
+  const handleRecurrenceSubmit = async (routine: Routine) => {
+    if (!editingTaskRoutine || !userId) {
+      toast.error('Failed to update recurring task.');
+      return;
     }
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          routine: routine,
+          exceptions: {}
+        })
+        .eq('id', editingTaskRoutine.originalId || editingTaskRoutine.id)
+        .eq('user_id', userId)
+        .select();
+
+      if (error) throw error;
+
+      setTasks(prevTasks =>
+        prevTasks.map(t =>
+          t.originalId === editingTaskRoutine.originalId
+            ? { ...t, routine: routine, exceptions: {} }
+            : t
+        )
+      );
+
+      toast.success('Recurring task updated successfully');
+
+      fetchTasks(startOfMonth(selectedDate), endOfMonth(selectedDate));
+    } catch (error) {
+      console.error('Failed to update recurring task:', error);
+      toast.error('Failed to update recurring task');
+    }
+
     setShowRecurrenceDialog(false);
     setEditingTaskRoutine(null);
   };
@@ -907,7 +803,7 @@ export function TaskManagementApp() {
       const targetTask = tasks.find(t => t.id === taskId);
       if (!targetTask) throw new Error('Task not found');
 
-      if (targetTask.isRecurring && targetTask.originalId && occurrenceDate) {
+      if (targetTask.routine && targetTask.originalId && occurrenceDate) {
         const newExceptions = {
           ...targetTask.exceptions,
           [occurrenceDate]: {
@@ -937,7 +833,7 @@ export function TaskManagementApp() {
             return t;
           })
         );
-      } else if (targetTask.isRecurring) {
+      } else if (targetTask.routine) {
         const { error: updateError } = await supabase
           .from('tasks')
           .update({ memo: newMemo, exceptions: {} })
@@ -1037,7 +933,6 @@ export function TaskManagementApp() {
                     setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
                     updateTaskTitle={updateTaskTitleHandler}
-                    updateTask={updateTask}
                     addLabel={addLabel}
                     deleteLabel={deleteLabel}
                     addTask={addTask}
@@ -1071,7 +966,6 @@ export function TaskManagementApp() {
                     setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
                     updateTaskTitle={updateTaskTitleHandler}
-                    updateTask={updateTask}
                     addLabel={addLabel}
                     deleteLabel={deleteLabel}
                     addTask={addTask}

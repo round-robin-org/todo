@@ -23,7 +23,6 @@ type TaskListProps = {
   updateTaskLabel: (taskId: string, newLabel: string) => void;
   updateTaskTitle: (taskId: string, newTitle: string, updateType?: 'single' | 'global') => Promise<void>;
   addTask: (task: Task) => void;
-  updateTask: (updatedTask: Task & { updateType?: 'single' | 'future' | 'global' }) => Promise<void>;
   addLabel: (label: string) => Promise<void>;
   deleteLabel: (label: string) => Promise<void>;
   isToday: boolean;
@@ -49,7 +48,6 @@ export function TaskList({
   updateTaskLabel, 
   updateTaskTitle, 
   addTask, 
-  updateTask, 
   addLabel, 
   deleteLabel, 
   isToday, 
@@ -122,7 +120,6 @@ export function TaskList({
             updateTaskLabel={updateTaskLabel}
             updateTaskTitle={updateTaskTitle}
             addTask={addTask}
-            updateTask={updateTask}
             addLabel={addLabel}
             deleteLabel={deleteLabel}
             isToday={isToday}
@@ -152,7 +149,6 @@ export function TaskList({
               updateTaskLabel={updateTaskLabel}
               updateTaskTitle={updateTaskTitle}
               addTask={addTask}
-              updateTask={updateTask}
               addLabel={addLabel}
               deleteLabel={deleteLabel}
               isToday={isToday}
