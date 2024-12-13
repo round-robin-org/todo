@@ -79,13 +79,14 @@ interface TaskData {
   name: string
   plannedTasks?: number
   executedTasks?: number
+  remainingTasks?: number
   value?: number
 }
 
 interface GoalData {
   name: string
-  planned: number
-  executed: number
+  executedTasks: number
+  remainingTasks: number
 }
 
 interface CustomTooltipProps {
@@ -219,20 +220,25 @@ export function ChartView({
 
   const [colorExecuted, setColorExecuted] = useState<string>('#8884d8')
   const [colorPlanned, setColorPlanned] = useState<string>('#82ca9d')
+  const [colorRemaining, setColorRemaining] = useState<string>('#ffc658')
 
   useEffect(() => {
     const root = document.documentElement
     const executed = getComputedStyle(root).getPropertyValue('--color-executed').trim()
     const planned = getComputedStyle(root).getPropertyValue('--color-planned').trim()
+    const remaining = getComputedStyle(root).getPropertyValue('--color-remaining').trim()
     if (executed) {
       setColorExecuted(`hsl(${executed})`)
     }
     if (planned) {
       setColorPlanned(`hsl(${planned})`)
     }
+    if (remaining) {
+      setColorRemaining(`hsl(${remaining})`)
+    }
   }, [])
 
-  const PIE_COLORS = [colorExecuted, colorPlanned]
+  const PIE_COLORS = [colorExecuted, colorRemaining]
 
   useEffect(() => {
     const { start, end } = calculateChartDateRange(aggregationPeriod, navigationOffset)
@@ -258,15 +264,16 @@ export function ChartView({
         const dayTasks = tasks.filter(task => task.scheduledDate === dateStr)
         const plannedTasks = dayTasks.length
         const executedTasks = dayTasks.filter(t => t.status === 'executed').length
+        const remainingTasks = plannedTasks - executedTasks
 
         data.push({
           name: dateStr,
-          plannedTasks,
           executedTasks,
+          remainingTasks,
         })
       }
     } else if (aggregationPeriod === 'month') {
-      const weeksInMonth: { week: number; plannedTasks: number; executedTasks: number }[] = []
+      const weeksInMonth: { week: number; executedTasks: number; remainingTasks: number }[] = []
       let currentWeekStart = startOfWeek(start, { locale: ja })
       let weekNumber = 1
 
@@ -278,11 +285,12 @@ export function ChartView({
         )
         const plannedTasks = weekTasks.length
         const executedTasks = weekTasks.filter(t => t.status === 'executed').length
+        const remainingTasks = plannedTasks - executedTasks
 
         weeksInMonth.push({
           week: weekNumber,
-          plannedTasks,
           executedTasks,
+          remainingTasks,
         })
 
         currentWeekStart = addWeeks(currentWeekStart, 1)
@@ -292,12 +300,12 @@ export function ChartView({
       weeksInMonth.forEach(weekData => {
         data.push({
           name: `W${weekData.week}`,
-          plannedTasks: weekData.plannedTasks,
           executedTasks: weekData.executedTasks,
+          remainingTasks: weekData.remainingTasks,
         })
       })
     } else if (aggregationPeriod === 'year') {
-      const monthsInYear: { month: number; plannedTasks: number; executedTasks: number }[] = []
+      const monthsInYear: { month: number; executedTasks: number; remainingTasks: number }[] = []
       let currentMonthStart = startOfMonth(start)
 
       while (currentMonthStart <= end) {
@@ -312,8 +320,8 @@ export function ChartView({
 
         monthsInYear.push({
           month: currentMonthStart.getMonth(),
-          plannedTasks: monthTasks.length,
-          executedTasks: monthTasks.filter(t => t.status === 'executed').length
+          executedTasks: monthTasks.filter(t => t.status === 'executed').length,
+          remainingTasks: monthTasks.filter(t => t.status !== 'executed').length
         })
 
         currentMonthStart = addMonths(currentMonthStart, 1)
@@ -321,14 +329,14 @@ export function ChartView({
 
       data.push(...monthsInYear.map(monthData => ({
         name: format(new Date(start.getFullYear(), monthData.month), 'MMMM'),
-        plannedTasks: monthData.plannedTasks,
-        executedTasks: monthData.executedTasks
+        executedTasks: monthData.executedTasks,
+        remainingTasks: monthData.remainingTasks
       })))
     }
 
     setTaskData(data)
 
-    const labelStats: Record<string, { planned: number; executed: number }> = {}
+    const labelStats: Record<string, { planned: number; executedTasks: number; remainingTasks: number }> = {}
 
     const targetDateStr = format(start, 'yyyy-MM-dd')
 
@@ -342,11 +350,13 @@ export function ChartView({
       if (aggregationPeriod === 'day') {
         if (task.scheduledDate === targetDateStr) {
           if (!labelStats[normalizedLabel]) {
-            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
+            labelStats[normalizedLabel] = { planned: 0, executedTasks: 0, remainingTasks: 0 };
           }
           labelStats[normalizedLabel].planned++;
           if (task.status === 'executed') {
-            labelStats[normalizedLabel].executed++;
+            labelStats[normalizedLabel].executedTasks++;
+          } else {
+            labelStats[normalizedLabel].remainingTasks++;
           }
         }
       } else {
@@ -354,11 +364,13 @@ export function ChartView({
         const taskDate = new Date(task.scheduledDate);
         if (isWithinInterval(taskDate, { start, end })) {
           if (!labelStats[normalizedLabel]) {
-            labelStats[normalizedLabel] = { planned: 0, executed: 0 };
+            labelStats[normalizedLabel] = { planned: 0, executedTasks: 0, remainingTasks: 0 };
           }
           labelStats[normalizedLabel].planned++;
           if (task.status === 'executed') {
-            labelStats[normalizedLabel].executed++;
+            labelStats[normalizedLabel].executedTasks++;
+          } else {
+            labelStats[normalizedLabel].remainingTasks++;
           }
         }
       }
@@ -366,32 +378,32 @@ export function ChartView({
 
     const goalDataArray: GoalData[] = Object.entries(labelStats).map(([name, stats]) => ({
       name,
-      ...stats,
+      executedTasks: stats.executedTasks,
+      remainingTasks: stats.remainingTasks,
     }))
 
-    console.log('Aggregated Goal Data:', goalDataArray) // Debug log
     setGoalData(goalDataArray)
   }, [tasks, navigationOffset, aggregationPeriod])
 
   const chartConfigTask = {
-    plannedTasks: {
-      label: "Planned Tasks",
-      color: colorPlanned,
-    },
     executedTasks: {
       label: "Executed Tasks",
       color: colorExecuted,
     },
+    remainingTasks: {
+      label: "Remaining Tasks",
+      color: colorRemaining,
+    },
   }
 
   const chartConfigGoal = {
-    planned: {
-      label: "Planned",
-      color: colorPlanned,
-    },
-    executed: {
-      label: "Executed",
+    executedTasks: {
+      label: "Executed Tasks",
       color: colorExecuted,
+    },
+    remainingTasks: {
+      label: "Remaining Tasks",
+      color: colorRemaining,
     },
   }
 
@@ -518,16 +530,16 @@ export function ChartView({
             />
             <Legend content={<ChartLegendContent />} />
             <Bar
-              dataKey="plannedTasks"
-              stackId="a"
-              fill={chartConfigTask.plannedTasks.color}
-              name={chartConfigTask.plannedTasks.label}
-            />
-            <Bar
               dataKey="executedTasks"
               stackId="a"
               fill={chartConfigTask.executedTasks.color}
               name={chartConfigTask.executedTasks.label}
+            />
+            <Bar
+              dataKey="remainingTasks"
+              stackId="a"
+              fill={chartConfigTask.remainingTasks.color}
+              name={chartConfigTask.remainingTasks.label}
             />
           </BarChart>
         ) : (
@@ -561,16 +573,16 @@ export function ChartView({
             />
             <Legend content={<ChartLegendContent />} />
             <Bar
-              dataKey="plannedTasks"
-              stackId="a"
-              fill={chartConfigTask.plannedTasks.color}
-              name={chartConfigTask.plannedTasks.label}
-            />
-            <Bar
               dataKey="executedTasks"
               stackId="a"
               fill={chartConfigTask.executedTasks.color}
               name={chartConfigTask.executedTasks.label}
+            />
+            <Bar
+              dataKey="remainingTasks"
+              stackId="a"
+              fill={chartConfigTask.remainingTasks.color}
+              name={chartConfigTask.remainingTasks.label}
             />
           </BarChart>
         )}
@@ -598,16 +610,16 @@ export function ChartView({
             />
             <Legend content={<ChartLegendContent />} />
             <Bar
-              dataKey="executed"
+              dataKey="executedTasks"
               stackId="a"
-              fill={chartConfigGoal.executed.color}
-              name={chartConfigGoal.executed.label}
+              fill={chartConfigGoal.executedTasks.color}
+              name={chartConfigGoal.executedTasks.label}
             />
             <Bar
-              dataKey="planned"
+              dataKey="remainingTasks"
               stackId="a"
-              fill={chartConfigGoal.planned.color}
-              name={chartConfigGoal.planned.label}
+              fill={chartConfigGoal.remainingTasks.color}
+              name={chartConfigGoal.remainingTasks.label}
             />
           </BarChart>
         ) : (
