@@ -104,13 +104,13 @@ function buildRecurrenceRule(routine: Routine) {
 
 function mapWeekday(day: string): Weekday | undefined {
   const dayMap: Record<string, Weekday> = {
-    'Sun': new Weekday(0),
-    'Mon': new Weekday(1),
-    'Tue': new Weekday(2),
-    'Wed': new Weekday(3),
-    'Thu': new Weekday(4),
-    'Fri': new Weekday(5),
-    'Sat': new Weekday(6)
+    'Mon': new Weekday(0),
+    'Tue': new Weekday(1),
+    'Wed': new Weekday(2),
+    'Thu': new Weekday(3),
+    'Fri': new Weekday(4),
+    'Sat': new Weekday(5),
+    'Sun': new Weekday(6),
   }
   return dayMap[day]
 }

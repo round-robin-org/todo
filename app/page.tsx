@@ -12,11 +12,6 @@ export default function Page() {
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-    }
-
-    checkAuth()
   }, [supabase.auth])
 
   if (loading) {

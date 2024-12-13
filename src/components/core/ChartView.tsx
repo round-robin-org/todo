@@ -12,7 +12,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
 } from 'recharts'
 import {
   format,
@@ -458,166 +457,162 @@ export function ChartView({
         </div>
       </div>
 
-      <ChartContainer config={chartConfigTask} className="min-h-[300px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {aggregationPeriod === 'day' ? (
-            <PieChart>
-              <text
-                x="50%"
-                y="10%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="text-lg font-semibold"
-              >
-                {format(currentRange.start, 'yyyy-MM-dd')}
-              </text>
-              <Pie
-                data={taskData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                fill={colorPlanned}
-                label
-              >
-                {taskData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                content={({ active, payload, label }) => (
-                  <CustomTooltip
-                    active={active}
-                    payload={payload}
-                    label={label}
-                    tasks={tasks}
-                    chartType="task"
-                    currentRange={currentRange}
-                    aggregationPeriod={aggregationPeriod}
-                  />
-                )}
-              />
-              <Legend />
-            </PieChart>
-          ) : aggregationPeriod === 'week' ? (
-            <BarChart data={taskData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip
-                content={({ active, payload, label }) => (
-                  <CustomTooltip
-                    active={active}
-                    payload={payload}
-                    label={label}
-                    tasks={tasks}
-                    chartType="task"
-                    currentRange={currentRange}
-                    aggregationPeriod={aggregationPeriod}
-                  />
-                )}
-              />
-              <Legend content={<ChartLegendContent />} />
-              <Bar
-                dataKey="plannedTasks"
-                stackId="a"
-                fill={chartConfigTask.plannedTasks.color}
-                name={chartConfigTask.plannedTasks.label}
-              />
-              <Bar
-                dataKey="executedTasks"
-                stackId="a"
-                fill={chartConfigTask.executedTasks.color}
-                name={chartConfigTask.executedTasks.label}
-              />
-            </BarChart>
-          ) : (
-            <BarChart data={taskData}>
-              <text
-                x="50%"
-                y="10%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="text-lg font-semibold"
-              >
-                {aggregationPeriod === 'month'
-                  ? format(midDate, 'MMMM yyyy')
-                  : format(midDate, 'yyyy')}
-              </text>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip
-                content={({ active, payload, label }) => (
-                  <CustomTooltip
-                    active={active}
-                    payload={payload}
-                    label={label}
-                    tasks={tasks}
-                    chartType="task"
-                    currentRange={currentRange}
-                    aggregationPeriod={aggregationPeriod}
-                  />
-                )}
-              />
-              <Legend content={<ChartLegendContent />} />
-              <Bar
-                dataKey="plannedTasks"
-                stackId="a"
-                fill={chartConfigTask.plannedTasks.color}
-                name={chartConfigTask.plannedTasks.label}
-              />
-              <Bar
-                dataKey="executedTasks"
-                stackId="a"
-                fill={chartConfigTask.executedTasks.color}
-                name={chartConfigTask.executedTasks.label}
-              />
-            </BarChart>
-          )}
-        </ResponsiveContainer>
+      <ChartContainer config={chartConfigTask} className="h-[300px] w-full">
+        {aggregationPeriod === 'day' ? (
+          <PieChart width={554} height={300}>
+            <text
+              x="50%"
+              y="10%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="text-lg font-semibold"
+            >
+              {format(currentRange.start, 'yyyy-MM-dd')}
+            </text>
+            <Pie
+              data={taskData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill={colorPlanned}
+              label
+            >
+              {taskData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload, label }) => (
+                <CustomTooltip
+                  active={active}
+                  payload={payload}
+                  label={label}
+                  tasks={tasks}
+                  chartType="task"
+                  currentRange={currentRange}
+                  aggregationPeriod={aggregationPeriod}
+                />
+              )}
+            />
+            <Legend />
+          </PieChart>
+        ) : aggregationPeriod === 'week' ? (
+          <BarChart width={554} height={300} data={taskData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip
+              content={({ active, payload, label }) => (
+                <CustomTooltip
+                  active={active}
+                  payload={payload}
+                  label={label}
+                  tasks={tasks}
+                  chartType="task"
+                  currentRange={currentRange}
+                  aggregationPeriod={aggregationPeriod}
+                />
+              )}
+            />
+            <Legend content={<ChartLegendContent />} />
+            <Bar
+              dataKey="plannedTasks"
+              stackId="a"
+              fill={chartConfigTask.plannedTasks.color}
+              name={chartConfigTask.plannedTasks.label}
+            />
+            <Bar
+              dataKey="executedTasks"
+              stackId="a"
+              fill={chartConfigTask.executedTasks.color}
+              name={chartConfigTask.executedTasks.label}
+            />
+          </BarChart>
+        ) : (
+          <BarChart width={554} height={300} data={taskData}>
+            <text
+              x="50%"
+              y="10%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="text-lg font-semibold"
+            >
+              {aggregationPeriod === 'month'
+                ? format(midDate, 'MMMM yyyy')
+                : format(midDate, 'yyyy')}
+            </text>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip
+              content={({ active, payload, label }) => (
+                <CustomTooltip
+                  active={active}
+                  payload={payload}
+                  label={label}
+                  tasks={tasks}
+                  chartType="task"
+                  currentRange={currentRange}
+                  aggregationPeriod={aggregationPeriod}
+                />
+              )}
+            />
+            <Legend content={<ChartLegendContent />} />
+            <Bar
+              dataKey="plannedTasks"
+              stackId="a"
+              fill={chartConfigTask.plannedTasks.color}
+              name={chartConfigTask.plannedTasks.label}
+            />
+            <Bar
+              dataKey="executedTasks"
+              stackId="a"
+              fill={chartConfigTask.executedTasks.color}
+              name={chartConfigTask.executedTasks.label}
+            />
+          </BarChart>
+        )}
       </ChartContainer>
 
       <h3 className="font-semibold mt-8 mb-2">Goal-based Task Count</h3>
-      <ChartContainer config={chartConfigGoal} className="min-h-[300px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {goalData.length > 0 ? (
-            <BarChart layout="vertical" data={goalData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" />
-              <Tooltip
-                content={({ active, payload, label }) => (
-                  <CustomTooltip
-                    active={active}
-                    payload={payload}
-                    label={label}
-                    tasks={tasks}
-                    chartType="goal"
-                    currentRange={currentRange}
-                    aggregationPeriod={aggregationPeriod}
-                  />
-                )}
-              />
-              <Legend content={<ChartLegendContent />} />
-              <Bar
-                dataKey="executed"
-                stackId="a"
-                fill={chartConfigGoal.executed.color}
-                name={chartConfigGoal.executed.label}
-              />
-              <Bar
-                dataKey="planned"
-                stackId="a"
-                fill={chartConfigGoal.planned.color}
-                name={chartConfigGoal.planned.label}
-              />
-            </BarChart>
-          ) : (
-            <p className="text-center text-gray-500">No data available for goal-based task count.</p>
-          )}
-        </ResponsiveContainer>
+      <ChartContainer config={chartConfigGoal} className="h-[300px] w-full">
+        {goalData.length > 0 ? (
+          <BarChart width={554} height={300} layout="vertical" data={goalData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" />
+            <YAxis dataKey="name" type="category" />
+            <Tooltip
+              content={({ active, payload, label }) => (
+                <CustomTooltip
+                  active={active}
+                  payload={payload}
+                  label={label}
+                  tasks={tasks}
+                  chartType="goal"
+                  currentRange={currentRange}
+                  aggregationPeriod={aggregationPeriod}
+                />
+              )}
+            />
+            <Legend content={<ChartLegendContent />} />
+            <Bar
+              dataKey="executed"
+              stackId="a"
+              fill={chartConfigGoal.executed.color}
+              name={chartConfigGoal.executed.label}
+            />
+            <Bar
+              dataKey="planned"
+              stackId="a"
+              fill={chartConfigGoal.planned.color}
+              name={chartConfigGoal.planned.label}
+            />
+          </BarChart>
+        ) : (
+          <p className="text-center text-gray-500">No data available for goal-based task count.</p>
+        )}
       </ChartContainer>
     </div>
   )
