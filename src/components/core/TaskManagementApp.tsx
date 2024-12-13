@@ -550,13 +550,21 @@ export function TaskManagementApp() {
 
   const deleteLabel = async (labelToDelete: string) => {
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
+        .from('tasks')
+        .update({ label: null })
+        .eq('label', labelToDelete)
+        .eq('user_id', userId);
+
+      if (updateError) throw updateError;
+
+      const { error: deleteError } = await supabase
         .from('labels')
         .delete()
         .eq('name', labelToDelete)
-        .eq('user_id', userId)
+        .eq('user_id', userId);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
 
       setLabels(prevLabels => prevLabels.filter(label => label !== labelToDelete));
       toast.success('Label deleted successfully');
