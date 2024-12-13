@@ -104,8 +104,7 @@ export function TaskManagementApp() {
     ? viewTasks.filter(task => !task.scheduledDate && task.status === "executed")
     : viewTasks.filter(task => task.scheduledDate === format(selectedDate, 'yyyy-MM-dd') && task.status === "executed");
 
-  const unplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status === "planned")
-  const executedUnplannedTasks = viewTasks.filter(task => !task.scheduledDate && task.status !== "planned")
+  const unplannedTasks = viewTasks.filter(task => !task.scheduledDate && !task.routine && task.status === "planned")
 
   const setTaskToScheduleHandler = (task: Task & { mode?: 'schedule' | 'copy' } | null) => {
     if (!task) {
@@ -735,13 +734,21 @@ export function TaskManagementApp() {
     }
 
     try {
-      const { error } = await supabase
+      const { data: existingLabels, error: existingError } = await supabase
         .from('labels')
-        .update({ name: newLabel })
-        .eq('name', oldLabel)
+        .select('name')
+        .eq('name', newLabel)
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (existingError) throw existingError;
+
+      if (!existingLabels || existingLabels.length === 0) {
+        const { error: createError } = await supabase
+          .from('labels')
+          .insert({ name: newLabel, user_id: userId });
+
+        if (createError) throw createError;
+      }
 
       const { error: updateTasksError } = await supabase
         .from('tasks')
@@ -751,8 +758,15 @@ export function TaskManagementApp() {
 
       if (updateTasksError) throw updateTasksError;
 
-      setLabels(prevLabels => prevLabels.map(label => label === oldLabel ? newLabel : label));
+      const { error: deleteError } = await supabase
+        .from('labels')
+        .delete()
+        .eq('name', oldLabel)
+        .eq('user_id', userId);
 
+      if (deleteError) throw deleteError;
+
+      setLabels(prevLabels => prevLabels.filter(label => label !== oldLabel).concat(newLabel));
       setTasks(prevTasks => prevTasks.map(task => 
         task.label === oldLabel ? { ...task, label: newLabel } : task
       ));
@@ -932,7 +946,6 @@ export function TaskManagementApp() {
                     unassignFromDate={unassignTaskFromDate}
                     setTaskToSchedule={setTaskToScheduleHandler}
                     showExecutedTasks={showExecutedTasks}
-                    executedTasks={executedUnplannedTasks}
                     labels={labels}
                     setLabels={setLabels}
                     updateTaskLabel={updateTaskLabel}
