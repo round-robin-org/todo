@@ -132,6 +132,10 @@ export function TaskItem({
 
   const handleMemoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setEditedMemo(e.target.value);
+    
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
   };
 
   const handleMemoBlur = () => {
@@ -142,9 +146,11 @@ export function TaskItem({
   };
 
   const handleMemoKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      e.currentTarget.blur();
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        e.preventDefault();
+        handleMemoBlur();
+      }
     }
   };
 
@@ -330,9 +336,9 @@ export function TaskItem({
                   onBlur={handleMemoBlur}
                   onKeyDown={handleMemoKeyDown}
                   autoFocus
-                  rows={2}
-                  className="text-sm text-gray-500 bg-transparent border rounded p-1 focus:outline-none focus:border-gray-400 resize-none w-full"
-                  placeholder="Add memo..."
+                  rows={task.memo ? task.memo.split('\n').length : 1}
+                  className="text-sm text-gray-500 bg-transparent border rounded p-1 focus:outline-none focus:border-gray-400 resize-y w-full overflow-hidden"
+                  placeholder=""
                 />
               ) : (
                 <p 
@@ -366,7 +372,7 @@ export function TaskItem({
                       );
                     })
                   ) : (
-                    "Add memo..."
+                    "..."
                   )}
                 </p>
               )}

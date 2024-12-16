@@ -83,7 +83,7 @@ interface TaskData {
   value?: number
 }
 
-interface GoalData {
+interface categoryData {
   name: string
   executedTasks: number
   remainingTasks: number
@@ -94,7 +94,7 @@ interface CustomTooltipProps {
   payload?: Payload<ValueType, NameType>[]
   label?: string
   tasks: Task[]
-  chartType: 'task' | 'goal'
+  chartType: 'task' | 'Category'
   currentRange: { start: Date; end: Date }
   aggregationPeriod: AggregationPeriod
 }
@@ -142,20 +142,20 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
           isWithinInterval(new Date(task.scheduledDate), { start: monthStartDate, end: monthEndDate })
         )
       }
-    } else if (chartType === 'goal') {
-      const goalName = label ? label.trim() : ''
+    } else if (chartType === 'Category') {
+      const CategoryName = label ? label.trim() : ''
 
-      if (!goalName) {
+      if (!CategoryName) {
         return null
       }
 
       if (aggregationPeriod === 'day') {
         filteredTasks = tasks.filter(task =>
-          task.label?.trim() === goalName && task.scheduledDate === targetDateStr
+          task.label?.trim() === CategoryName && task.scheduledDate === targetDateStr
         )
       } else {
         filteredTasks = tasks.filter(task =>
-          task.label?.trim() === goalName &&
+          task.label?.trim() === CategoryName &&
           task.scheduledDate &&
           isWithinInterval(new Date(task.scheduledDate), { start: currentRange.start, end: currentRange.end })
         )
@@ -212,7 +212,7 @@ export function ChartView({
   setNavigationOffset 
 }: ChartViewProps) {
   const [taskData, setTaskData] = useState<TaskData[]>([])
-  const [goalData, setGoalData] = useState<GoalData[]>([])
+  const [categoryData, setcategoryData] = useState<categoryData[]>([])
   const [currentRange, setCurrentRange] = useState<{ start: Date; end: Date }>({
     start: startOfWeek(new Date(), { locale: ja }),
     end: endOfWeek(new Date(), { locale: ja }),
@@ -376,13 +376,13 @@ export function ChartView({
       }
     });
 
-    const goalDataArray: GoalData[] = Object.entries(labelStats).map(([name, stats]) => ({
+    const categoryDataArray: categoryData[] = Object.entries(labelStats).map(([name, stats]) => ({
       name,
       executedTasks: stats.executedTasks,
       remainingTasks: stats.remainingTasks,
     }))
 
-    setGoalData(goalDataArray)
+    setcategoryData(categoryDataArray)
   }, [tasks, navigationOffset, aggregationPeriod])
 
   const chartConfigTask = {
@@ -396,7 +396,7 @@ export function ChartView({
     },
   }
 
-  const chartConfigGoal = {
+  const chartConfigCategory = {
     executedTasks: {
       label: "Executed Tasks",
       color: colorExecuted,
@@ -588,10 +588,16 @@ export function ChartView({
         )}
       </ChartContainer>
 
-      <h3 className="font-semibold mt-8 mb-2">Goal-based Task Count</h3>
-      <ChartContainer config={chartConfigGoal} className="h-[300px] w-full">
-        {goalData.length > 0 ? (
-          <BarChart width={554} height={300} layout="vertical" data={goalData}>
+      <h3 className="font-semibold mt-8 mb-2">Category-based Task Count</h3>
+      <ChartContainer config={chartConfigCategory} className="h-[300px] w-full">
+        {categoryData.length > 0 ? (
+          <BarChart
+            width={554}
+            height={300}
+            layout="vertical"
+            data={categoryData}
+            margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" />
             <YAxis dataKey="name" type="category" />
@@ -602,7 +608,7 @@ export function ChartView({
                   payload={payload}
                   label={label}
                   tasks={tasks}
-                  chartType="goal"
+                  chartType="Category"
                   currentRange={currentRange}
                   aggregationPeriod={aggregationPeriod}
                 />
@@ -612,18 +618,18 @@ export function ChartView({
             <Bar
               dataKey="executedTasks"
               stackId="a"
-              fill={chartConfigGoal.executedTasks.color}
-              name={chartConfigGoal.executedTasks.label}
+              fill={chartConfigCategory.executedTasks.color}
+              name={chartConfigCategory.executedTasks.label}
             />
             <Bar
               dataKey="remainingTasks"
               stackId="a"
-              fill={chartConfigGoal.remainingTasks.color}
-              name={chartConfigGoal.remainingTasks.label}
+              fill={chartConfigCategory.remainingTasks.color}
+              name={chartConfigCategory.remainingTasks.label}
             />
           </BarChart>
         ) : (
-          <p className="text-center text-gray-500">No data available for goal-based task count.</p>
+          <p className="text-center text-gray-500">Category-based task count data is not available.</p>
         )}
       </ChartContainer>
     </div>
