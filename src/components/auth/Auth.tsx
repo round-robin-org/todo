@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import Image from 'next/image'
+// import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@src/components/ui/card"
 import { Button } from "@src/components/ui/button"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -37,7 +37,7 @@ export function Auth() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen space-y-6">
-      <Image src="/favicon.ico" alt="Favicon" width={64} height={64} />
+      {/* <Image src="/round_robin.png" alt="Round Robin" width={64} height={64} /> */}
       <Card className="w-96">
         <CardHeader className="text-center">
           <CardTitle>Welcome</CardTitle>
