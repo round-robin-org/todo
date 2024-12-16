@@ -1,0 +1,35 @@
+steps:
+  # Dockerイメージをビルド
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t',
+      '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$COMMIT_SHA',
+      '.'
+    ]
+  # DockerイメージをArtifact Registryにプッシュ
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push',
+      '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$COMMIT_SHA'
+    ]
+  # Cloud Runにデプロイ
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run',
+      'deploy',
+      '${_SERVICE}',
+      '--image',
+      '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$COMMIT_SHA',
+      '--region',
+      '${_REGION}',
+      '--platform',
+      'managed',
+      '--allow-unauthenticated'
+    ]
+    timeout: '1200s'
+substitutions:
+  _REGION: 'asia-northeast1' # デプロイ先のリージョン
+  _REPOSITORY: 'my-repository' # Artifact Registryのリポジトリ名
+  _SERVICE: 'my-nextjs-app' # Cloud Runのサービス名 
